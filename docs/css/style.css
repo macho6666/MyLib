@@ -2364,6 +2364,12 @@ header h1 {
 [data-theme="light"] .index-category-bar-bg {
   background: #e0e0e0;
 }
-.thumb-wrapper.loaded .no-image-text {
+/* No Image 텍스트: 기본 보임 */
+.no-image-text {
+  display: flex;
+}
+
+/* 실제 이미지 로드되면 숨기기 */
+.thumb-wrapper .thumb[data-loaded="true"]:not([src*="svg"]) ~ .no-image-text {
   display: none !important;
 }
