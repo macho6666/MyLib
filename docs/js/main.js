@@ -1819,6 +1819,89 @@ function clearIndexLogDisplay() {
     container.innerHTML = '<div class="index-log-entry"><span class="index-log-time">--:--:--</span><span class="index-log-msg">대기 중...</span></div>';
     document.getElementById('indexLogCount').textContent = '0 줄';
 }
+// ===== Data Sync =====
+async function dataSync() {
+  var choice = confirm(
+    "Drive 동기화 옵션:\n\n" +
+    "확인 = Drive에 저장\n" +
+    "취소 = Drive에서 불러오기"
+  );
+  
+  if (choice) {
+    // Drive에 저장
+    await saveToDrive();
+  } else {
+    // Drive에서 불러오기
+    await loadFromDrive();
+  }
+}
+
+async function saveToDrive() {
+  showToast("Drive에 저장 중...");
+  
+  try {
+    var userData = {
+      version: VIEWER_VERSION,
+      exportDate: new Date().toISOString(),
+      tags: customTags,
+      seriesTags: seriesTags,
+      calendar: calendarData,
+      favorites: favorites,
+      settings: {
+        adultFilter: adultFilterEnabled,
+        theme: localStorage.getItem('toki_theme'),
+        domains: JSON.parse(localStorage.getItem('toki_domains') || '{}')
+      }
+    };
+    
+    await API.request('save_user_data', { userData: userData });
+    showToast("✅ Drive에 저장 완료!");
+    
+  } catch (e) {
+    showToast("❌ 저장 실패: " + e.message, 5000);
+  }
+}
+
+async function loadFromDrive() {
+  if (!confirm("Drive에서 불러오면 현재 데이터가 덮어씌워집니다. 계속하시겠습니까?")) {
+    return;
+  }
+  
+  showToast("Drive에서 불러오는 중...");
+  
+  try {
+    var userData = await API.request('load_user_data', {});
+    
+    if (userData.tags) customTags = userData.tags;
+    if (userData.seriesTags) seriesTags = userData.seriesTags;
+    if (userData.calendar) calendarData = userData.calendar;
+    if (userData.favorites) favorites = userData.favorites;
+    
+    if (userData.settings) {
+      if (userData.settings.adultFilter !== undefined) {
+        adultFilterEnabled = userData.settings.adultFilter;
+      }
+      if (userData.settings.theme) {
+        localStorage.setItem('toki_theme', userData.settings.theme);
+        loadSavedTheme();
+      }
+      if (userData.settings.domains) {
+        localStorage.setItem('toki_domains', JSON.stringify(userData.settings.domains));
+        loadDomains();
+      }
+    }
+    
+    saveLocalData();
+    updateSidebarTags();
+    updateAdultToggle();
+    applyFilters();
+    
+    showToast("✅ Drive에서 불러오기 완료!");
+    
+  } catch (e) {
+    showToast("❌ 불러오기 실패: " + e.message, 5000);
+  }
+}
 // ===== Window 등록 =====
 window.refreshDB = refreshDB;
 window.toggleSettings = toggleSettings;
