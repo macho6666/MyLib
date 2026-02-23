@@ -67,6 +67,22 @@
 
       <div class="sidebar-section">
         <div class="sidebar-item accordion-header" onclick="toggleSettingsAccordion()">
+          <div class="sidebar-divider"></div>
+
+<div class="sidebar-section">
+  <div class="sidebar-item" onclick="openIndexModal('quick')">
+    ⚡ Index Quick Update
+  </div>
+  <div class="sidebar-item" onclick="openIndexModal('full')">
+    🔨 Index Full Update
+  </div>
+</div>
+
+<div class="sidebar-divider"></div>
+
+<div class="sidebar-section">
+  <div class="sidebar-item accordion-header" onclick="toggleSettingsAccordion()">
+    
           <span>Settings</span>
           <span class="accordion-icon" id="settingsIcon">▼</span>
         </div>
@@ -93,20 +109,29 @@
           </div>
 
           <div class="settings-group">
-            <div class="settings-label">서버 연결</div>
-            <div class="input-row">
-              <label>Folder ID</label>
-              <input type="text" id="setting_folderId" class="config-input" placeholder="Google Drive Folder ID" />
-            </div>
-            <div class="input-row">
-              <label>GAS ID</label>
-              <input type="text" id="setting_deployId" class="config-input" placeholder="AKfycb..." />
-            </div>
-            <div class="input-row">
-              <label>API Key</label>
-              <input type="password" id="setting_apiKey" class="config-input" placeholder="API Key" />
-            </div>
-          </div>
+<div class="settings-group">
+  <div class="settings-label">서버 연결</div>
+  <div class="input-row">
+    <label>Folder ID</label>
+    <input type="text" id="setting_folderId" class="config-input" placeholder="Google Drive Folder ID" />
+  </div>
+  <div class="input-row">
+    <label>GAS ID</label>
+    <input type="text" id="setting_deployId" class="config-input" placeholder="AKfycb..." />
+  </div>
+  <div class="input-row">
+    <label>API ID</label>
+    <input type="text" id="setting_apiId" class="config-input" placeholder="ID" />
+  </div>
+  <div class="input-row">
+    <label>Password</label>
+    <input type="password" id="setting_apiPassword" class="config-input" placeholder="Password" />
+  </div>
+  <div class="input-row">
+    <label>Email</label>
+    <input type="email" id="setting_notifyEmail" class="config-input" placeholder="알림 받을 이메일" />
+  </div>
+</div>
 
           <div class="settings-group">
             <div class="settings-label">뷰어 설정</div>
@@ -131,6 +156,7 @@
           </div>
 
           <button class="btn btn-save-settings" onclick="saveActiveSettings()">저장</button>
+          <button class="btn btn-logout" onclick="logout()" style="margin-top:8px; background:var(--danger);">로그아웃</button>
         </div>
       </div>
     </div>
@@ -161,36 +187,40 @@
     </main>
   </div>
 
-  <!-- ===== CONFIG MODAL ===== -->
-  <div id="configModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title">⚙️ 서버 연결 설정</div>
+<!-- ===== CONFIG MODAL ===== -->
+<div id="configModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ 서버 연결 설정</div>
+    </div>
+    <div class="modal-body" style="text-align: center">
+      <p style="color: var(--text-tertiary); font-size: 14px; margin-bottom: 20px">
+        Google Apps Script 배포 URL과 인증 정보를 입력하세요.
+      </p>
+      <div class="config-group">
+        <label class="config-label">GAS 웹 앱 URL</label>
+        <input type="text" id="configApiUrl" class="config-input" placeholder="https://script.google.com/macros/s/.../exec" />
       </div>
-      <div class="modal-body" style="text-align: center">
-        <p style="color: #aaa; font-size: 14px; margin-bottom: 20px">
-          Google Apps Script 배포 URL과 폴더 ID를 입력하세요.<br />
-          (PC에서 Tampermonkey 스크립트 실행 시 자동 설정됩니다.)
-        </p>
-        <div class="config-group">
-          <label class="config-label">GAS 웹 앱 URL</label>
-          <input type="text" id="configApiUrl" class="config-input" placeholder="https://script.google.com/macros/s/.../exec" />
-        </div>
-        <div class="config-group">
-          <label class="config-label">루트 폴더 ID</label>
-          <input type="text" id="configFolderId" class="config-input" placeholder="Google Drive Folder ID" />
-        </div>
-        <div class="config-group">
-          <label class="config-label">API Key (보안)</label>
-          <input type="password" id="configApiKey" class="config-input" placeholder="API Key (선택사항)" />
-          <small style="color: #777; font-size: 11px; display: block; margin-top: 5px;">
-            UserScript 사용 시 자동으로 주입됩니다.
-          </small>
-        </div>
-        <button class="btn btn-save" onclick="saveManualConfig()">설정 저장</button>
+      <div class="config-group">
+        <label class="config-label">루트 폴더 ID</label>
+        <input type="text" id="configFolderId" class="config-input" placeholder="Google Drive Folder ID" />
       </div>
+      <div class="config-group">
+        <label class="config-label">API ID</label>
+        <input type="text" id="configApiId" class="config-input" placeholder="ID" />
+      </div>
+      <div class="config-group">
+        <label class="config-label">Password</label>
+        <input type="password" id="configApiPassword" class="config-input" placeholder="Password" />
+      </div>
+      <div class="config-group">
+        <label class="config-label">알림 이메일 (선택)</label>
+        <input type="email" id="configNotifyEmail" class="config-input" placeholder="email@example.com" />
+      </div>
+      <button class="btn btn-save" onclick="saveManualConfig()">설정 저장</button>
     </div>
   </div>
+</div>
 
   <!-- ===== DETAIL MODAL ===== -->
   <div id="detailModal" class="modal-overlay">
@@ -460,6 +490,84 @@
       </div>
     </div>
   </div>
+    
+    <!-- ===== INDEX UPDATE MODAL ===== -->
+<div id="indexModal" class="modal-overlay">
+  <div class="modal index-modal">
+    <div class="modal-header">
+      <div class="modal-title">📚 Index Update</div>
+      <button class="modal-close" onclick="closeIndexModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Status -->
+      <div class="index-status">
+        <span id="indexStatusBadge" class="index-status-badge idle">⏹ 대기 중</span>
+        <span id="indexModeLabel" class="index-mode-label"></span>
+      </div>
+
+      <!-- Stats -->
+      <div class="index-stats">
+        <div class="index-stat-item">
+          <div class="index-stat-value" id="indexProcessed">0</div>
+          <div class="index-stat-label">처리됨</div>
+        </div>
+        <div class="index-stat-item">
+          <div class="index-stat-value" id="indexTotal">0</div>
+          <div class="index-stat-label">전체</div>
+        </div>
+        <div class="index-stat-item">
+          <div class="index-stat-value" id="indexMissing">0</div>
+          <div class="index-stat-label">커버 누락</div>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="index-progress" id="indexProgressSection" style="display:none;">
+        <div class="index-progress-header">
+          <span id="indexProgressText">0%</span>
+          <span id="indexProgressDetail">0 / 0</span>
+        </div>
+        <div class="index-progress-bar-bg">
+          <div class="index-progress-bar-fill" id="indexProgressBar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="index-categories" id="indexCategories"></div>
+
+      <!-- Log -->
+      <div class="index-log-header">
+        <label>
+          <input type="checkbox" id="indexAutoScroll" checked />
+          자동 스크롤
+        </label>
+        <span class="index-log-count" id="indexLogCount">0 줄</span>
+      </div>
+      <div class="index-log-container" id="indexLogContainer">
+        <div class="index-log-entry">
+          <span class="index-log-time">--:--:--</span>
+          <span class="index-log-msg">대기 중...</span>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="index-buttons">
+        <button class="index-btn index-btn-full" id="indexBtnFull" onclick="startIndexUpdate('full')">
+          🔨 Full Rebuild
+        </button>
+        <button class="index-btn index-btn-quick" id="indexBtnQuick" onclick="startIndexUpdate('quick')">
+          ⚡ Quick Update
+        </button>
+        <button class="index-btn index-btn-pause" id="indexBtnPause" onclick="pauseIndexUpdate()" disabled>
+          ⏸ 일시정지
+        </button>
+        <button class="index-btn index-btn-close" onclick="closeIndexModal()">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
     <!-- ===== VIEWER OVERLAY ===== -->
   <div id="viewerOverlay" class="viewer-overlay">
     <div class="viewer-content" id="viewerContent" onclick="handleViewerClick(event)">
