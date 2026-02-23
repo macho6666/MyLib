@@ -400,38 +400,6 @@
       </div>
     </div>
   </div>
-
-  <!-- ===== BACKUP MODAL ===== -->
-  <div id="backupModal" class="modal-overlay">
-    <div class="modal backup-modal">
-      <div class="modal-header">
-        <div class="modal-title">백업 / 복원</div>
-        <button class="modal-close" onclick="closeBackupModal()">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="backup-section">
-          <h4>백업 다운로드</h4>
-          <p>캘린더, 태그, 즐겨찾기, 설정 데이터를 JSON 파일로 다운로드합니다.</p>
-          <button class="btn btn-backup" onclick="downloadBackup()">백업 다운로드</button>
-        </div>
-        <div class="backup-section">
-          <h4>백업 업로드</h4>
-          <p>이전에 저장한 백업 파일을 업로드하여 복원합니다.</p>
-          <input type="file" id="backupFileInput" accept=".json" style="display:none" onchange="uploadBackup(event)">
-          <button class="btn btn-backup" onclick="document.getElementById('backupFileInput').click()">백업 업로드</button>
-        </div>
-        <div class="backup-section">
-          <h4>Google Drive 동기화</h4>
-          <p>데이터를 Google Drive에 저장/불러오기 합니다.</p>
-          <div class="backup-buttons">
-            <button class="btn btn-backup" onclick="syncToDrive()">Drive에 저장</button>
-            <button class="btn btn-backup" onclick="syncFromDrive()">Drive에서 불러오기</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ===== CALENDAR MODAL ===== -->
   <div id="calendarModal" class="modal-overlay">
     <div class="modal calendar-modal">
