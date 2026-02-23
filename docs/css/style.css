@@ -2364,3 +2364,6 @@ header h1 {
 [data-theme="light"] .index-category-bar-bg {
   background: #e0e0e0;
 }
+.thumb-wrapper.loaded .no-image-text {
+  display: none !important;
+}
