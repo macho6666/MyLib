@@ -2015,3 +2015,352 @@ header h1 {
   justify-content: space-between;
   align-items: center;
 }
+
+/* ========================================== */
+/* 📋 Index Update Log Modal                 */
+/* ========================================== */
+
+.index-modal {
+  max-width: 700px;
+  width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.index-modal .modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Status Section */
+.index-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.index-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.index-status-badge.idle {
+  background: var(--success);
+  color: white;
+}
+
+.index-status-badge.running {
+  background: var(--warning);
+  color: white;
+  animation: indexPulse 2s infinite;
+}
+
+.index-status-badge.paused {
+  background: var(--danger);
+  color: white;
+}
+
+@keyframes indexPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.index-mode-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Stats Grid */
+.index-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.index-stat-item {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+}
+
+.index-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.index-stat-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* Progress Bar */
+.index-progress {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.index-progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.index-progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.index-progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  background: linear-gradient(90deg, var(--accent), var(--link));
+}
+
+/* Category List */
+.index-categories {
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.index-category-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.index-category-item:last-child {
+  border-bottom: none;
+}
+
+.index-category-name {
+  width: 80px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.index-category-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-primary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.index-category-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.index-category-bar-fill.done {
+  background: var(--success);
+}
+
+.index-category-bar-fill.wip {
+  background: var(--warning);
+}
+
+.index-category-bar-fill.wait {
+  background: var(--text-tertiary);
+}
+
+.index-category-count {
+  width: 60px;
+  text-align: right;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+/* Log Container */
+.index-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.index-log-header label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.index-log-header input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+.index-log-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.index-log-container {
+  flex: 1;
+  min-height: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.index-log-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.index-log-container::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+.index-log-container::-webkit-scrollbar-thumb {
+  background: var(--text-tertiary);
+  border-radius: 3px;
+}
+
+.index-log-entry {
+  display: flex;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.index-log-time {
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  min-width: 65px;
+}
+
+.index-log-msg {
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+/* Buttons */
+.index-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.index-btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.index-btn:hover {
+  transform: translateY(-1px);
+}
+
+.index-btn:active {
+  transform: translateY(0);
+}
+
+.index-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.index-btn-full {
+  background: var(--accent);
+  color: white;
+}
+
+.index-btn-full:hover:not(:disabled) {
+  background: var(--link);
+}
+
+.index-btn-quick {
+  background: var(--warning);
+  color: white;
+}
+
+.index-btn-quick:hover:not(:disabled) {
+  background: #e65100;
+}
+
+.index-btn-pause {
+  background: var(--danger);
+  color: white;
+}
+
+.index-btn-pause:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.index-btn-close {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.index-btn-close:hover:not(:disabled) {
+  background: var(--bg-primary);
+}
+
+/* Light Mode Overrides */
+[data-theme="light"] .index-log-container {
+  background: #f5f5f5;
+  border-color: #ddd;
+}
+
+[data-theme="light"] .index-log-time {
+  color: #888;
+}
+
+[data-theme="light"] .index-log-msg {
+  color: #333;
+}
+
+[data-theme="light"] .index-progress-bar-bg {
+  background: #e0e0e0;
+}
+
+[data-theme="light"] .index-category-bar-bg {
+  background: #e0e0e0;
+}
