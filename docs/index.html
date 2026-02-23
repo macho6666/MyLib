@@ -66,23 +66,18 @@
       <div class="sidebar-divider" id="tagDivider" style="display:none;"></div>
 
       <div class="sidebar-section">
+        <div class="sidebar-item" onclick="openIndexModal('quick')">
+          ⚡ Index Quick Update
+        </div>
+        <div class="sidebar-item" onclick="openIndexModal('full')">
+          🔨 Index Full Update
+        </div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
         <div class="sidebar-item accordion-header" onclick="toggleSettingsAccordion()">
-<div class="sidebar-divider"></div>
-
-<div class="sidebar-section">
-  <div class="sidebar-item" onclick="openIndexModal('quick')">
-    ⚡ Index Quick Update
-  </div>
-  <div class="sidebar-item" onclick="openIndexModal('full')">
-    🔨 Index Full Update
-  </div>
-</div>
-
-<div class="sidebar-divider"></div>
-
-<div class="sidebar-section">
-  <div class="sidebar-item accordion-header" onclick="toggleSettingsAccordion()">
-    
           <span>Settings</span>
           <span class="accordion-icon" id="settingsIcon">▼</span>
         </div>
@@ -107,30 +102,29 @@
               <input type="text" id="url_booktoki" class="config-input" placeholder="469" />
             </div>
           </div>
-
           <div class="settings-group">
-  <div class="settings-label">서버 연결</div>
-  <div class="input-row">
-    <label>Folder ID</label>
-    <input type="text" id="setting_folderId" class="config-input" placeholder="Google Drive Folder ID" />
-  </div>
-  <div class="input-row">
-    <label>GAS ID</label>
-    <input type="text" id="setting_deployId" class="config-input" placeholder="AKfycb..." />
-  </div>
-  <div class="input-row">
-    <label>API ID</label>
-    <input type="text" id="setting_apiId" class="config-input" placeholder="ID" />
-  </div>
-  <div class="input-row">
-    <label>Password</label>
-    <input type="password" id="setting_apiPassword" class="config-input" placeholder="Password" />
-  </div>
-  <div class="input-row">
-    <label>Email</label>
-    <input type="email" id="setting_notifyEmail" class="config-input" placeholder="알림 받을 이메일" />
-  </div>
-</div>
+            <div class="settings-label">서버 연결</div>
+            <div class="input-row">
+              <label>Folder ID</label>
+              <input type="text" id="setting_folderId" class="config-input" placeholder="Google Drive Folder ID" />
+            </div>
+            <div class="input-row">
+              <label>GAS ID</label>
+              <input type="text" id="setting_deployId" class="config-input" placeholder="AKfycb..." />
+            </div>
+            <div class="input-row">
+              <label>API ID</label>
+              <input type="text" id="setting_apiId" class="config-input" placeholder="ID" />
+            </div>
+            <div class="input-row">
+              <label>Password</label>
+              <input type="password" id="setting_apiPassword" class="config-input" placeholder="Password" />
+            </div>
+            <div class="input-row">
+              <label>Email</label>
+              <input type="email" id="setting_notifyEmail" class="config-input" placeholder="알림 받을 이메일" />
+            </div>
+          </div>
 
           <div class="settings-group">
             <div class="settings-label">뷰어 설정</div>
