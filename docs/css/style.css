@@ -2364,12 +2364,12 @@ header h1 {
 [data-theme="light"] .index-category-bar-bg {
   background: #e0e0e0;
 }
-/* No Image 텍스트: 기본 보임 */
+/* No Image 텍스트: 기본 숨김 */
 .no-image-text {
-  display: flex;
+  display: none;
 }
 
-/* 실제 이미지 로드되면 숨기기 */
-.thumb-wrapper .thumb[data-loaded="true"]:not([src*="svg"]) ~ .no-image-text {
-  display: none !important;
+/* SVG(빈 이미지)일 때만 보이기 */
+.thumb-wrapper .thumb[src*="svg"] ~ .no-image-text {
+  display: flex;
 }
