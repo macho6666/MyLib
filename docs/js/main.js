@@ -8,7 +8,12 @@ const DEFAULT_DOMAINS = {
 
 const VIEWER_VERSION = "v2.0.0";
 window.TOKI_VIEWER_VERSION = VIEWER_VERSION;
-
+// ===== Index Update 관련 =====
+let indexRefreshInterval = null;
+let indexLastLogRow = 2;
+let indexLastKnownTotalRows = 0;
+let indexLogFetching = false;
+let indexIsRunning = false;
 let allSeries = [];
 const thumbnailQueue = [];
 let isLoadingThumbnail = false;
@@ -1429,11 +1434,13 @@ function saveActiveSettings() {
 
     var folderId = document.getElementById('setting_folderId').value.trim();
     var deployId = document.getElementById('setting_deployId').value.trim();
-    var apiKey = document.getElementById('setting_apiKey').value.trim();
+    var apiId = document.getElementById('setting_apiId').value.trim();
+    var apiPassword = document.getElementById('setting_apiPassword').value.trim();
+    var notifyEmail = document.getElementById('setting_notifyEmail').value.trim();
     
     if (folderId && deployId) {
         var apiUrl = "https://script.google.com/macros/s/" + deployId + "/exec";
-        API.setConfig(apiUrl, folderId, apiKey);
+        API.setConfig(apiUrl, folderId, apiId, apiPassword, notifyEmail);
     }
 
     var vMode = document.getElementById('pref_2page').checked ? '2page' : '1page';
@@ -1447,9 +1454,9 @@ function saveActiveSettings() {
     localStorage.setItem('toki_v_rtl', vRtl);
     localStorage.setItem('toki_v_engine', vEngine);
 
-    showToast("설정이 저장되었습니다.");
+    showToast("Settings saved");
     
-    if(folderId && deployId) refreshDB();
+    if(folderId && deployId && apiId && apiPassword) refreshDB();
 }
 
 function loadDomains() {
@@ -1464,14 +1471,18 @@ function loadDomains() {
 
     var elFolder = document.getElementById('setting_folderId');
     var elDeploy = document.getElementById('setting_deployId');
-    var elApiKey = document.getElementById('setting_apiKey');
+    var elApiId = document.getElementById('setting_apiId');
+    var elApiPassword = document.getElementById('setting_apiPassword');
+    var elNotifyEmail = document.getElementById('setting_notifyEmail');
     
     if (API._config.folderId && elFolder) elFolder.value = API._config.folderId;
     if (API._config.baseUrl && elDeploy) {
         var match = API._config.baseUrl.match(/\/s\/([^\/]+)\/exec/);
         if (match && match[1]) elDeploy.value = match[1];
     }
-    if (API._config.apiKey && elApiKey) elApiKey.value = API._config.apiKey;
+    if (API._config.apiId && elApiId) elApiId.value = API._config.apiId;
+    if (API._config.apiPassword && elApiPassword) elApiPassword.value = API._config.apiPassword;
+    if (API._config.notifyEmail && elNotifyEmail) elNotifyEmail.value = API._config.notifyEmail;
 
     var vMode = localStorage.getItem('toki_v_mode') || '1page';
     var vCover = (localStorage.getItem('toki_v_cover') === 'true');
@@ -1494,20 +1505,40 @@ function loadDomains() {
 
 function saveManualConfig() {
     var url = document.getElementById('configApiUrl').value.trim();
-    var id = document.getElementById('configFolderId').value.trim();
-    var apiKeyEl = document.getElementById('configApiKey');
-    var apiKey = apiKeyEl ? apiKeyEl.value.trim() : '';
+    var folderId = document.getElementById('configFolderId').value.trim();
+    var apiId = document.getElementById('configApiId').value.trim();
+    var apiPassword = document.getElementById('configApiPassword').value.trim();
+    var notifyEmail = document.getElementById('configNotifyEmail').value.trim();
     
-    if (!url || !id) {
-        alert("URL과 Folder ID를 모두 입력해주세요.");
+    if (!url || !folderId || !apiId || !apiPassword) {
+        alert("URL, Folder ID, API ID, Password를 모두 입력해주세요.");
         return;
     }
     
-    API.setConfig(url, id, apiKey);
+    API.setConfig(url, folderId, apiId, apiPassword, notifyEmail);
     document.getElementById('configModal').style.display = 'none';
     refreshDB();
 }
-
+function logout() {
+    if (!confirm('로그아웃 하시겠습니까?')) return;
+    
+    API.logout();
+    
+    // 화면 초기화
+    document.getElementById('grid').innerHTML = '';
+    allSeries = [];
+    
+    // 설정 모달 표시
+    document.getElementById('configModal').style.display = 'flex';
+    
+    // 사이드바 닫기
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar && sidebar.classList.contains('open')) {
+        toggleSidebar();
+    }
+    
+    showToast('Logged out');
+}
 // ===== Window 등록 =====
 window.refreshDB = refreshDB;
 window.toggleSettings = toggleSettings;
