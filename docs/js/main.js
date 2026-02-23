@@ -1299,94 +1299,6 @@ function addCalendarRecord() {
     showToast('기록 추가됨');
 }
 
-// ===== 백업/복원 =====
-function showBackupRestore() {
-    document.getElementById('backupModal').style.display = 'flex';
-    
-    var sidebar = document.getElementById('sidebar');
-    if (sidebar && sidebar.classList.contains('open')) {
-        toggleSidebar();
-    }
-}
-
-function closeBackupModal() {
-    document.getElementById('backupModal').style.display = 'none';
-}
-
-function downloadBackup() {
-    var data = {
-        version: VIEWER_VERSION,
-        exportDate: new Date().toISOString(),
-        tags: customTags,
-        seriesTags: seriesTags,
-        calendar: calendarData,
-        favorites: favorites,
-        settings: {
-            adultFilter: adultFilterEnabled,
-            theme: localStorage.getItem('toki_theme'),
-            domains: JSON.parse(localStorage.getItem('toki_domains') || '{}')
-        }
-    };
-    
-    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'toki_backup_' + new Date().toISOString().split('T')[0] + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    showToast('백업 다운로드 완료');
-}
-
-function uploadBackup(event) {
-    var file = event.target.files[0];
-    if (!file) return;
-    
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            var data = JSON.parse(e.target.result);
-            
-            if (data.tags) customTags = data.tags;
-            if (data.seriesTags) seriesTags = data.seriesTags;
-            if (data.calendar) calendarData = data.calendar;
-            if (data.favorites) favorites = data.favorites;
-            if (data.settings) {
-                if (data.settings.adultFilter !== undefined) {
-                    adultFilterEnabled = data.settings.adultFilter;
-                }
-                if (data.settings.theme) {
-                    localStorage.setItem('toki_theme', data.settings.theme);
-                    loadSavedTheme();
-                }
-                if (data.settings.domains) {
-                    localStorage.setItem('toki_domains', JSON.stringify(data.settings.domains));
-                    loadDomains();
-                }
-            }
-            
-            saveLocalData();
-            updateSidebarTags();
-            updateAdultToggle();
-            applyFilters();
-            
-            showToast('백업 복원 완료');
-        } catch (err) {
-            showToast('백업 파일 오류');
-        }
-    };
-    reader.readAsText(file);
-}
-
-function syncToDrive() {
-    showToast('Drive 동기화 - 아직 구현되지 않았습니다');
-}
-
-function syncFromDrive() {
-    showToast('Drive 동기화 - 아직 구현되지 않았습니다');
-}
-
 // ===== 기타 함수들 =====
 function toggleSettings() {
     var el = document.getElementById('domainPanel');
@@ -1944,12 +1856,6 @@ window.showCalendar = showCalendar;
 window.closeCalendarModal = closeCalendarModal;
 window.changeMonth = changeMonth;
 window.addCalendarRecord = addCalendarRecord;
-window.showBackupRestore = showBackupRestore;
-window.closeBackupModal = closeBackupModal;
-window.downloadBackup = downloadBackup;
-window.uploadBackup = uploadBackup;
-window.syncToDrive = syncToDrive;
-window.syncFromDrive = syncFromDrive;
 window.showFavorites = showFavorites;
 window.toggleFavorite = toggleFavorite;
 window.logout = logout;
@@ -1957,3 +1863,6 @@ window.openIndexModal = openIndexModal;
 window.closeIndexModal = closeIndexModal;
 window.startIndexUpdate = startIndexUpdate;
 window.pauseIndexUpdate = pauseIndexUpdate;
+window.dataSync = dataSync;
+window.saveToDrive = saveToDrive;
+window.loadFromDrive = loadFromDrive;
