@@ -5,73 +5,87 @@
 
 class TokiApiClient {
     constructor() {
-        // ⭐ 기본값 하드코딩 (설정 패널에서 변경 가능)
-        this.DEFAULTS = {
-            baseUrl: '',
-            folderId: '',
-            apiKey: ''
-        };
-
         this._config = {
             baseUrl: '',
             folderId: '',
-            apiKey: ''
+            apiId: '',
+            apiPassword: '',
+            notifyEmail: ''
         };
 
         this._loadConfig();
     }
 
     /**
-     * 설정 로드 우선순위:
-     * 1. localStorage (사용자가 설정에서 변경한 값)
-     * 2. 기본값 (하드코딩)
+     * 설정 로드 (localStorage)
      */
     _loadConfig() {
-        this._config.baseUrl = localStorage.getItem('TOKI_API_URL') || this.DEFAULTS.baseUrl;
-        this._config.folderId = localStorage.getItem('TOKI_ROOT_ID') || this.DEFAULTS.folderId;
-        this._config.apiKey = localStorage.getItem('TOKI_API_KEY') || this.DEFAULTS.apiKey;
+        this._config.baseUrl = localStorage.getItem('TOKI_API_URL') || '';
+        this._config.folderId = localStorage.getItem('TOKI_ROOT_ID') || '';
+        this._config.apiId = localStorage.getItem('TOKI_API_ID') || '';
+        this._config.apiPassword = localStorage.getItem('TOKI_API_PASSWORD') || '';
+        this._config.notifyEmail = localStorage.getItem('TOKI_NOTIFY_EMAIL') || '';
 
         if (this._config.baseUrl) {
-            console.log('✅ Config loaded (localStorage > Defaults)');
+            console.log('✅ Config loaded from localStorage');
         }
     }
 
     /**
-     * API 설정 저장 (설정 패널 또는 UserScript에서 호출)
+     * API 설정 저장
      */
-    setConfig(url, id, apiKey) {
+    setConfig(url, folderId, apiId, apiPassword, notifyEmail) {
         if (url) {
             this._config.baseUrl = url;
             localStorage.setItem('TOKI_API_URL', url);
         }
-        if (id) {
-            this._config.folderId = id;
-            localStorage.setItem('TOKI_ROOT_ID', id);
+        if (folderId) {
+            this._config.folderId = folderId;
+            localStorage.setItem('TOKI_ROOT_ID', folderId);
         }
-        if (apiKey) {
-            this._config.apiKey = apiKey;
-            localStorage.setItem('TOKI_API_KEY', apiKey);
+        if (apiId) {
+            this._config.apiId = apiId;
+            localStorage.setItem('TOKI_API_ID', apiId);
+        }
+        if (apiPassword) {
+            this._config.apiPassword = apiPassword;
+            localStorage.setItem('TOKI_API_PASSWORD', apiPassword);
+        }
+        if (notifyEmail) {
+            this._config.notifyEmail = notifyEmail;
+            localStorage.setItem('TOKI_NOTIFY_EMAIL', notifyEmail);
         }
 
         console.log('✅ Config updated & saved');
     }
 
     /**
-     * 설정을 기본값으로 초기화
+     * 로그아웃 (Password만 삭제)
+     */
+    logout() {
+        this._config.apiPassword = '';
+        localStorage.removeItem('TOKI_API_PASSWORD');
+        console.log('🔒 Logged out (password cleared)');
+    }
+
+    /**
+     * 설정 전체 초기화
      */
     resetConfig() {
         localStorage.removeItem('TOKI_API_URL');
         localStorage.removeItem('TOKI_ROOT_ID');
-        localStorage.removeItem('TOKI_API_KEY');
+        localStorage.removeItem('TOKI_API_ID');
+        localStorage.removeItem('TOKI_API_PASSWORD');
+        localStorage.removeItem('TOKI_NOTIFY_EMAIL');
         this._loadConfig();
-        console.log('🔄 Config reset to defaults');
+        console.log('🔄 Config reset');
     }
 
     /**
      * API 통신을 위한 필수 설정 확인
      */
     isConfigured() {
-        return this._config.baseUrl && this._config.folderId;
+        return this._config.baseUrl && this._config.folderId && this._config.apiId && this._config.apiPassword;
     }
 
     /**
@@ -84,7 +98,9 @@ class TokiApiClient {
             ...payload,
             type: type,
             folderId: payload.folderId || this._config.folderId,
-            apiKey: this._config.apiKey,
+            apiId: this._config.apiId,
+            apiPassword: this._config.apiPassword,
+            notifyEmail: this._config.notifyEmail,
             protocolVersion: 3
         };
 
