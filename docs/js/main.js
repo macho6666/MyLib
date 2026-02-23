@@ -1,10 +1,4 @@
 const NO_IMAGE_SVG = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%3E%3C%2Fsvg%3E";
-const DEFAULT_DOMAINS = {
-    newtoki: '469',
-    manatoki: '469',
-    booktoki: '469'
-};
-
 const VIEWER_VERSION = "v2.0.0";
 window.TOKI_VIEWER_VERSION = VIEWER_VERSION;
 // ===== Index Update 관련 =====
@@ -1303,46 +1297,7 @@ function toggleSettings() {
     var el = document.getElementById('domainPanel');
     if (el) el.style.display = el.style.display === 'block' ? 'none' : 'block';
 }
-
-function getDynamicLink(series) {
-    if (series.platformUrl) return series.platformUrl;
-    
-    var meta = series.metadata || {};
-    if (meta.platformUrl) return meta.platformUrl;
-    
-    var contentId = series.sourceId;
-    var cat = series.category || meta.category || '';
-
-    if (!cat) {
-        if ((series.name || "").includes("북토끼")) cat = "Novel";
-        else if ((series.name || "").includes("마나토끼")) cat = "Manga";
-        else cat = "Webtoon";
-    }
-
-    var saved = JSON.parse(localStorage.getItem('toki_domains')) || DEFAULT_DOMAINS;
-    
-    var baseUrl = "https://newtoki" + saved.newtoki + ".com";
-    var path = "/webtoon/";
-
-    if (cat === "Novel") { 
-        baseUrl = "https://booktoki" + saved.booktoki + ".com"; 
-        path = "/novel/"; 
-    } else if (cat === "Manga") { 
-        baseUrl = "https://manatoki" + saved.manatoki + ".net"; 
-        path = "/comic/"; 
-    }
-
-    return contentId ? (baseUrl + path + contentId) : "#";
-}
-
 function saveActiveSettings() {
-    var domains = {
-        newtoki: document.getElementById('url_newtoki').value.trim() || DEFAULT_DOMAINS.newtoki,
-        manatoki: document.getElementById('url_manatoki').value.trim() || DEFAULT_DOMAINS.manatoki,
-        booktoki: document.getElementById('url_booktoki').value.trim() || DEFAULT_DOMAINS.booktoki
-    };
-    localStorage.setItem('toki_domains', JSON.stringify(domains));
-
     var folderId = document.getElementById('setting_folderId').value.trim();
     var deployId = document.getElementById('setting_deployId').value.trim();
     var apiId = document.getElementById('setting_apiId').value.trim();
@@ -1371,15 +1326,6 @@ function saveActiveSettings() {
 }
 
 function loadDomains() {
-    var saved = JSON.parse(localStorage.getItem('toki_domains')) || DEFAULT_DOMAINS;
-    var elNew = document.getElementById('url_newtoki');
-    var elMana = document.getElementById('url_manatoki');
-    var elBook = document.getElementById('url_booktoki');
-    
-    if(elNew) elNew.value = saved.newtoki;
-    if(elMana) elMana.value = saved.manatoki;
-    if(elBook) elBook.value = saved.booktoki;
-
     var elFolder = document.getElementById('setting_folderId');
     var elDeploy = document.getElementById('setting_deployId');
     var elApiId = document.getElementById('setting_apiId');
