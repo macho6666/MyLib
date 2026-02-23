@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyLib</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="css/style.css?v=2.3.1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="js/bridge.js"></script>
+  <script src="js/api_client.js"></script>
+  <script src="js/main.js"></script>
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Menu">
+    <span class="toggle-icon">☰</span>
+  </button>
+
+  <div id="sidebar" class="sidebar">
+<div class="sidebar-header">
+  <div class="sidebar-logo">MyLib</div>
+  <div class="sidebar-title-row">
+    <span class="sidebar-title">Menu</span>
+    <button class="sidebar-close" onclick="toggleSidebar()">×</button>
+  </div>
+</div>
+
+    <div class="sidebar-content">
+      <div class="sidebar-item theme-toggle" onclick="toggleTheme()">
+        <span class="item-text">Dark / Light</span>
+        <span class="theme-indicator" id="themeIndicator">🌙</span>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-item active" data-tab="all" onclick="switchTab('all')">All</div>
+        <div class="sidebar-item" data-tab="Novel" onclick="switchTab('Novel')">Novel</div>
+        <div class="sidebar-item" data-tab="Webtoon" onclick="switchTab('Webtoon')">Webtoon</div>
+        <div class="sidebar-item" data-tab="Manga" onclick="switchTab('Manga')">Comic</div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-item" onclick="toggleAdultFilter()">
+          <span>Adult</span>
+          <span class="toggle-switch" id="adultToggle"></span>
+        </div>
+        <div class="sidebar-item" onclick="showFavorites()">Favorites</div>
+        <div class="sidebar-item" onclick="showCalendar()">Calendar</div>
+        <div class="sidebar-item" onclick="showTags()">Tags</div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <!-- 태그 목록 -->
+      <div class="sidebar-section" id="tagSection" style="display:none;">
+        <div class="sidebar-section-title">Tags</div>
+        <div id="sidebarTagList" class="sidebar-tag-list"></div>
+      </div>
+
+      <div class="sidebar-divider" id="tagDivider" style="display:none;"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-item accordion-header" onclick="toggleSettingsAccordion()">
+          <span>Settings</span>
+          <span class="accordion-icon" id="settingsIcon">▼</span>
+        </div>
+        
+        <div class="accordion-content" id="settingsContent">
+          <div class="settings-group">
+            <div class="settings-item" onclick="showBackupRestore()">백업/복원</div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-label">바로가기 도메인</div>
+            <div class="input-row">
+              <label>마나토끼</label>
+              <input type="text" id="url_manatoki" class="config-input" placeholder="469" />
+            </div>
+            <div class="input-row">
+              <label>뉴토끼</label>
+              <input type="text" id="url_newtoki" class="config-input" placeholder="469" />
+            </div>
+            <div class="input-row">
+              <label>북토끼</label>
+              <input type="text" id="url_booktoki" class="config-input" placeholder="469" />
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-label">서버 연결</div>
+            <div class="input-row">
+              <label>Folder ID</label>
+              <input type="text" id="setting_folderId" class="config-input" placeholder="Google Drive Folder ID" />
+            </div>
+            <div class="input-row">
+              <label>GAS ID</label>
+              <input type="text" id="setting_deployId" class="config-input" placeholder="AKfycb..." />
+            </div>
+            <div class="input-row">
+              <label>API Key</label>
+              <input type="password" id="setting_apiKey" class="config-input" placeholder="API Key" />
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-label">뷰어 설정</div>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="pref_2page" />
+                <span>2쪽 보기</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="pref_cover" />
+                <span>표지 우선</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="pref_rtl" />
+                <span>일본만화(우좌)</span>
+              </label>
+            </div>
+            <div style="display:none;">
+              <input type="radio" name="view_engine" value="foliate" />
+              <input type="radio" name="view_engine" value="legacy" checked />
+            </div>
+          </div>
+
+          <button class="btn btn-save-settings" onclick="saveActiveSettings()">저장</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-version" id="viewerVersionDisplay">Version: Loading...</div>
+  </div>
+
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <div class="app-container">
+    <header>
+      <div class="header-top">
+        <h1 onclick="location.reload()">MyLib</h1>
+      </div>
+      <div class="header-controls">
+        <div class="search-wrapper">
+          <input type="text" id="search" class="search-box" placeholder="Search..." onkeyup="filterData()" />
+        </div>
+        <button class="btn-theme-header" onclick="toggleTheme()" title="Theme">
+          <span class="theme-icon" id="headerThemeIcon">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="grid-container" id="grid"></div>
+      <div class="calendar-page" id="calendarPage" style="display: none;"></div>
+    </main>
+  </div>
+
+  <!-- ===== CONFIG MODAL ===== -->
+  <div id="configModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ 서버 연결 설정</div>
+      </div>
+      <div class="modal-body" style="text-align: center">
+        <p style="color: #aaa; font-size: 14px; margin-bottom: 20px">
+          Google Apps Script 배포 URL과 폴더 ID를 입력하세요.<br />
+          (PC에서 Tampermonkey 스크립트 실행 시 자동 설정됩니다.)
+        </p>
+        <div class="config-group">
+          <label class="config-label">GAS 웹 앱 URL</label>
+          <input type="text" id="configApiUrl" class="config-input" placeholder="https://script.google.com/macros/s/.../exec" />
+        </div>
+        <div class="config-group">
+          <label class="config-label">루트 폴더 ID</label>
+          <input type="text" id="configFolderId" class="config-input" placeholder="Google Drive Folder ID" />
+        </div>
+        <div class="config-group">
+          <label class="config-label">API Key (보안)</label>
+          <input type="password" id="configApiKey" class="config-input" placeholder="API Key (선택사항)" />
+          <small style="color: #777; font-size: 11px; display: block; margin-top: 5px;">
+            UserScript 사용 시 자동으로 주입됩니다.
+          </small>
+        </div>
+        <button class="btn btn-save" onclick="saveManualConfig()">설정 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DETAIL MODAL ===== -->
+  <div id="detailModal" class="modal-overlay">
+    <div class="modal detail-modal">
+      <div class="modal-header">
+        <div class="modal-title" id="detailTitle">작품 제목</div>
+        <div class="modal-header-actions">
+          <button class="btn-favorite" onclick="toggleFavorite()" title="즐겨찾기">
+            <span id="favoriteIcon">☆</span>
+          </button>
+          <button class="btn-header-edit" onclick="openEditFromDetail()">Edit</button>
+          <button class="modal-close" onclick="closeDetailModal()">×</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <!-- 커버 -->
+        <div class="detail-cover-wrapper" onclick="toggleDetailEpisodes()">
+          <img id="detailCover" class="detail-cover" src="" alt="cover">
+          <div class="detail-cover-no-image" id="detailCoverNoImage">No Image</div>
+          <div class="cover-hint">클릭하여 회차 보기</div>
+        </div>
+
+        <!-- 태그 (제목 밑) -->
+        <div class="detail-tags" id="detailTags"></div>
+
+        <!-- 회차 목록 -->
+        <div class="detail-episodes" id="detailEpisodes" style="display:none;">
+          <div class="episode-header">
+            <a id="detailDriveLink" href="#" target="_blank">구글드라이브로 이동</a>
+            <button class="btn-refresh-episodes" onclick="refreshDetailEpisodes()">Refresh</button>
+          </div>
+          <div class="episode-list-wrapper">
+            <div id="detailEpisodeList"></div>
+          </div>
+        </div>
+
+        <!-- 작품 정보 -->
+        <div class="detail-info">
+          <div class="info-row">
+            <span class="info-label">제목</span>
+            <span class="info-value" id="detailInfoTitle">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">작가</span>
+            <span class="info-value" id="detailInfoAuthor">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">상태</span>
+            <span class="info-value" id="detailInfoStatus">-</span>
+          </div>
+          <div class="info-row clickable" onclick="openPlatformSite()">
+            <span class="info-label">플랫폼</span>
+            <span class="info-value info-link" id="detailInfoPlatform">-</span>
+          </div>
+        </div><!-- 작품 소개 (토글) --><div class="description-wrapper" id="descWrapper">
+          <div class="description-label">작품 소개</div>
+          <div class="description-content" id="detailInfoDescription">
+            소개 정보가 없습니다.
+          </div>
+          <button class="desc-toggle-btn" id="descToggleBtn" onclick="toggleDescription()"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- ===== EDIT MODAL ===== -->
+  <div id="editModal" class="modal-overlay">
+    <div class="modal edit-modal">
+      <div class="modal-header">
+        <div class="modal-title">Edit</div>
+        <button class="modal-close" onclick="closeEditModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <!-- 커버 이미지 -->
+        <div class="edit-cover-section">
+          <div class="edit-cover-preview">
+            <img id="editCoverPreview" src="" alt="커버">
+            <div class="edit-cover-no-image" id="editCoverNoImage">No Image</div>
+          </div>
+          <div class="edit-cover-actions">
+            <label class="btn btn-upload" for="editCoverFile">커버 업로드</label>
+            <input type="file" id="editCoverFile" accept="image/*" style="display:none" onchange="handleCoverSelect(event)">
+            <div class="edit-cover-filename" id="editCoverFilename"></div>
+          </div>
+        </div>
+
+        <!-- 편집 폼 -->
+        <div class="edit-form">
+          <!-- 제목 + 성인작품 체크 (같은 줄) -->
+<div class="edit-field">
+  <div class="edit-field-header">
+    <label>제목</label>
+    <label class="checkbox-label-adult">
+      <span>🔞 성인작품</span>
+      <input type="checkbox" id="editAdult">
+    </label>
+  </div>
+  <input type="text" id="editTitle" placeholder="작품 제목">
+</div>
+          <div class="edit-field">
+            <label>작가</label>
+            <input type="text" id="editAuthor" placeholder="작가명 (여러명: 쉼표 구분)">
+          </div>
+          <div class="edit-field">
+            <label>연재상태</label>
+            <select id="editStatus">
+              <option value="Unknown">알수없음</option>
+              <option value="연재중">연재중</option>
+              <option value="완결">완결</option>
+              <option value="휴재">휴재</option>
+            </select>
+          </div>
+          <div class="edit-field">
+            <label>플랫폼</label>
+            <select id="editPublisher">
+              <option value="">미지정</option>
+              <option value="네이버">네이버</option>
+              <option value="카카오">카카오</option>
+              <option value="문피아">문피아</option>
+              <option value="조아라">조아라</option>
+              <option value="리디">리디</option>
+              <option value="노벨피아">노벨피아</option>
+              <option value="레진코믹스">레진코믹스</option>
+              <option value="탑툰">탑툰</option>
+              <option value="봄툰">봄툰</option>
+              <option value="일본만화">일본만화</option>
+              <option value="기타플랫폼">기타플랫폼</option>
+            </select>
+          </div>
+          <div class="edit-field">
+            <label>플랫폼 링크</label>
+            <input type="text" id="editPlatformUrl" placeholder="https://...">
+          </div>
+          <div class="edit-field">
+            <label>작품 소개</label>
+            <textarea id="editDescription" placeholder="작품 소개를 입력하세요..."></textarea>
+          </div>
+          <div class="edit-field">
+            <label>태그</label>
+            <div class="edit-tags-container" id="editTagsContainer"></div>
+            <div class="edit-tags-select" id="editTagsSelect"></div>
+          </div>
+        </div>
+
+        <!-- 숨김 필드 -->
+        <input type="hidden" id="editSourceId">
+        <input type="hidden" id="editUrl">
+        <input type="hidden" id="editCategory">
+
+        <!-- 버튼 -->
+        <div class="edit-buttons">
+          <button class="btn edit-btn-cancel" onclick="closeEditModal()">취소</button>
+          <button class="btn edit-btn-save" onclick="saveEditInfo()">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== EPISODE MODAL ===== -->
+  <div id="episodeModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">회차 목록</div>
+        <button class="modal-close" onclick="closeEpisodeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="episodeList" class="episode-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAGS MODAL ===== -->
+  <div id="tagsModal" class="modal-overlay">
+    <div class="modal tags-modal">
+      <div class="modal-header">
+        <div class="modal-title">태그 관리</div>
+        <button class="modal-close" onclick="closeTagsModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="tags-create">
+          <input type="text" class="config-input" id="newTagInput" placeholder="새 태그 이름 (예: 판타지)">
+          <button class="btn btn-add-tag" onclick="createTag()">추가</button>
+        </div>
+        <div class="tags-list" id="tagsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BACKUP MODAL ===== -->
+  <div id="backupModal" class="modal-overlay">
+    <div class="modal backup-modal">
+      <div class="modal-header">
+        <div class="modal-title">백업 / 복원</div>
+        <button class="modal-close" onclick="closeBackupModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="backup-section">
+          <h4>백업 다운로드</h4>
+          <p>캘린더, 태그, 즐겨찾기, 설정 데이터를 JSON 파일로 다운로드합니다.</p>
+          <button class="btn btn-backup" onclick="downloadBackup()">백업 다운로드</button>
+        </div>
+        <div class="backup-section">
+          <h4>백업 업로드</h4>
+          <p>이전에 저장한 백업 파일을 업로드하여 복원합니다.</p>
+          <input type="file" id="backupFileInput" accept=".json" style="display:none" onchange="uploadBackup(event)">
+          <button class="btn btn-backup" onclick="document.getElementById('backupFileInput').click()">백업 업로드</button>
+        </div>
+        <div class="backup-section">
+          <h4>Google Drive 동기화</h4>
+          <p>데이터를 Google Drive에 저장/불러오기 합니다.</p>
+          <div class="backup-buttons">
+            <button class="btn btn-backup" onclick="syncToDrive()">Drive에 저장</button>
+            <button class="btn btn-backup" onclick="syncFromDrive()">Drive에서 불러오기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CALENDAR MODAL ===== -->
+  <div id="calendarModal" class="modal-overlay">
+    <div class="modal calendar-modal">
+      <div class="modal-header">
+        <div class="modal-title">독서 캘린더</div>
+        <button class="modal-close" onclick="closeCalendarModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="calendar-container">
+          <!-- 통계 -->
+          <div class="calendar-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="statCompleted">0</span>
+              <span class="stat-label">완독</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="statDropped">0</span>
+              <span class="stat-label">포기</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="statReading">0</span>
+              <span class="stat-label">읽는중</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="statTotal">0</span>
+              <span class="stat-label">총</span>
+            </div>
+          </div>
+
+          <!-- 달력 -->
+          <div class="calendar-wrapper">
+            <div class="calendar-header">
+              <button class="cal-nav" onclick="changeMonth(-1)">◀</button>
+              <span class="cal-title" id="calendarTitle">2025년 1월</span>
+              <button class="cal-nav" onclick="changeMonth(1)">▶</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </div>
+
+          <!-- 날짜별 기록 -->
+          <div class="calendar-records" id="calendarRecords">
+            <div class="records-header">
+              <span class="records-date" id="recordsDate">날짜를 선택하세요</span>
+            </div>
+            <div class="records-list" id="recordsList"></div>
+            <button class="btn-add-record" onclick="addCalendarRecord()">+ 작품 추가</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- ===== VIEWER OVERLAY ===== -->
+  <div id="viewerOverlay" class="viewer-overlay">
+    <div class="viewer-content" id="viewerContent" onclick="handleViewerClick(event)">
+      <div class="nav-zone nav-prev"></div>
+      <div class="nav-zone nav-next"></div>
+      <div id="viewerImageContainer" class="viewer-image-container"></div>
+      <div id="viewerScrollContainer" class="viewer-scroll-container" style="display: none"></div>
+      <div id="pageCounter" class="page-counter">- / -</div>
+    </div>
+
+    <div id="viewerControls" class="viewer-controls">
+      <div class="viewer-header">
+        <span class="viewer-title" id="viewerTitle">TokiViewer</span>
+        <button class="btn-icon close-btn" onclick="closeViewer()">×</button>
+      </div>
+
+      <div class="viewer-footer">
+        <div class="footer-row main-row">
+          <button class="btn-icon" onclick="openEpisodeListFromViewer()" title="목차">📑</button>
+
+          <div class="slider-container">
+            <span id="sliderCurrent" class="slider-label">1</span>
+            <input type="range" id="pageSlider" min="1" max="100" value="1" step="1" oninput="onSliderInput(this.value)" onchange="onSliderChange(this.value)" />
+            <span id="sliderTotal" class="slider-label">100</span>
+          </div>
+
+          <div class="nav-buttons">
+            <button class="btn-icon" onclick="navigateViewer(-1)">◀</button>
+            <button class="btn-icon" onclick="navigateViewer(1)">▶</button>
+          </div>
+        </div>
+
+        <div class="footer-row settings-row">
+          <button id="btnTwoPage" class="btn-toggle image-only" onclick="toggleViewMode()">2쪽 보기</button>
+          <button id="btnCover" class="btn-toggle image-only" onclick="toggleCoverMode()">표지 먼저</button>
+          <button id="btnScroll" class="btn-toggle" onclick="toggleScrollMode()">스크롤 보기</button>
+          <button id="btnRtl" class="btn-toggle image-only" onclick="toggleRtlMode()">일본어(우좌)</button>
+
+          <button class="btn-toggle epub-only" onclick="changeFontSize(-2)">글자 -</button>
+          <button class="btn-toggle epub-only" onclick="changeFontSize(2)">글자 +</button>
+
+          <div class="divider"></div>
+          <button id="btnPreload" class="btn-toggle" onclick="togglePreloadMode()">미리 로딩</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE LOADER ===== -->
+  <div id="pageLoader" class="loader-overlay" style="display:none;">
+    <div class="spinner"></div>
+    <div class="loader-text">데이터 불러오는 중...</div>
+  </div>
+
+  <script type="module" src="js/include.js?v=3.3.4"></script>
+</body>
+</html>
