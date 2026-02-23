@@ -1539,6 +1539,286 @@ function logout() {
     
     showToast('Logged out');
 }
+// =======================================================
+// 📊 Index Update 함수들
+// =======================================================
+
+function openIndexModal(mode) {
+    document.getElementById('indexModal').style.display = 'flex';
+    
+    // 사이드바 닫기
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar && sidebar.classList.contains('open')) {
+        toggleSidebar();
+    }
+    
+    // 상태 새로고침 시작
+    refreshIndexStatus();
+    startIndexAutoRefresh();
+    
+    // 모드에 따라 바로 시작할지 확인
+    if (mode === 'quick' || mode === 'full') {
+        setTimeout(function() {
+            startIndexUpdate(mode);
+        }, 500);
+    }
+}
+
+function closeIndexModal() {
+    document.getElementById('indexModal').style.display = 'none';
+    stopIndexAutoRefresh();
+}
+
+function startIndexAutoRefresh() {
+    stopIndexAutoRefresh();
+    indexRefreshInterval = setInterval(function() {
+        refreshIndexStatus();
+        refreshIndexLogs();
+    }, 1500);
+}
+
+function stopIndexAutoRefresh() {
+    if (indexRefreshInterval) {
+        clearInterval(indexRefreshInterval);
+        indexRefreshInterval = null;
+    }
+}
+
+async function refreshIndexStatus() {
+    try {
+        var data = await API.request('index_get_status', {});
+        updateIndexUI(data);
+    } catch (e) {
+        console.error('Index status error:', e);
+    }
+}
+
+function updateIndexUI(data) {
+    var wasRunning = indexIsRunning;
+    indexIsRunning = data.running;
+    
+    // 완료 알림
+    if (wasRunning && !indexIsRunning) {
+        showToast('✅ Index update complete!');
+        refreshDB(null, true); // 라이브러리 새로고침
+    }
+    
+    // 상태 배지
+    var badge = document.getElementById('indexStatusBadge');
+    if (data.running) {
+        badge.className = 'index-status-badge running';
+        badge.textContent = '▶ 실행 중';
+    } else if (data.mode && data.processed > 0 && data.processed < data.totalSeries) {
+        badge.className = 'index-status-badge paused';
+        badge.textContent = '⏸ 일시정지';
+    } else {
+        badge.className = 'index-status-badge idle';
+        badge.textContent = '⏹ 대기 중';
+    }
+    
+    // 모드 라벨
+    var modeLabel = document.getElementById('indexModeLabel');
+    if (data.mode === 'full') modeLabel.textContent = 'Full Rebuild';
+    else if (data.mode === 'quick') modeLabel.textContent = 'Quick Update';
+    else modeLabel.textContent = '';
+    
+    // 통계
+    document.getElementById('indexProcessed').textContent = data.processed || 0;
+    document.getElementById('indexTotal').textContent = data.totalSeries || 0;
+    document.getElementById('indexMissing').textContent = data.missingCovers || 0;
+    
+    // 진행률
+    var progressSection = document.getElementById('indexProgressSection');
+    if ((data.running || data.mode) && data.totalSeries > 0) {
+        progressSection.style.display = 'block';
+        var pct = data.percent || 0;
+        document.getElementById('indexProgressText').textContent = pct + '%';
+        document.getElementById('indexProgressDetail').textContent = data.processed + ' / ' + data.totalSeries;
+        document.getElementById('indexProgressBar').style.width = pct + '%';
+    } else {
+        progressSection.style.display = 'none';
+    }
+    
+    // 카테고리 목록
+    var catList = document.getElementById('indexCategories');
+    catList.innerHTML = '';
+    if (data.categories && data.categories.length > 0) {
+        for (var i = 0; i < data.categories.length; i++) {
+            var cat = data.categories[i];
+            var catTotal = (data.categorySeriesCounts && data.categorySeriesCounts[cat.name]) || 0;
+            var catDone = (data.categoryDoneCounts && data.categoryDoneCounts[cat.name]) || 0;
+            if (catTotal === 0) continue;
+            
+            var pct = Math.floor((catDone / catTotal) * 100);
+            var cls = catDone >= catTotal ? 'done' : (catDone > 0 ? 'wip' : 'wait');
+            
+            var item = document.createElement('div');
+            item.className = 'index-category-item';
+            item.innerHTML =
+                '<span class="index-category-name">' + cat.name + '</span>' +
+                '<div class="index-category-bar-bg"><div class="index-category-bar-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
+                '<span class="index-category-count">' + catDone + '/' + catTotal + '</span>';
+            catList.appendChild(item);
+        }
+    }
+    
+    // 버튼 상태
+    var isPaused = !data.running && data.mode && data.processed > 0 && data.processed < data.totalSeries;
+    
+    document.getElementById('indexBtnFull').disabled = data.running;
+    document.getElementById('indexBtnQuick').disabled = data.running;
+    document.getElementById('indexBtnPause').disabled = !data.running;
+    
+    var btnFull = document.getElementById('indexBtnFull');
+    var btnQuick = document.getElementById('indexBtnQuick');
+    
+    if (isPaused && data.mode === 'full') {
+        btnFull.innerHTML = '▶ 재개 (Full)';
+        btnFull.disabled = false;
+        btnQuick.disabled = true;
+    } else if (isPaused && data.mode === 'quick') {
+        btnQuick.innerHTML = '▶ 재개 (Quick)';
+        btnQuick.disabled = false;
+        btnFull.disabled = true;
+    } else {
+        btnFull.innerHTML = '🔨 Full Rebuild';
+        btnQuick.innerHTML = '⚡ Quick Update';
+    }
+}
+
+async function refreshIndexLogs() {
+    if (indexLogFetching) return;
+    indexLogFetching = true;
+    
+    try {
+        var data = await API.request('index_get_logs', { startRow: indexLastLogRow });
+        updateIndexLogs(data);
+    } catch (e) {
+        console.error('Index logs error:', e);
+    } finally {
+        indexLogFetching = false;
+    }
+}
+
+function updateIndexLogs(data) {
+    if (!data) return;
+    
+    // 로그 초기화 감지
+    if (data.totalRows < indexLastKnownTotalRows) {
+        indexLastLogRow = 2;
+        indexLastKnownTotalRows = 0;
+        var container = document.getElementById('indexLogContainer');
+        container.innerHTML = '';
+        document.getElementById('indexLogCount').textContent = '0 줄';
+        return;
+    }
+    
+    indexLastKnownTotalRows = data.totalRows;
+    
+    if (!data.logs || data.logs.length === 0) return;
+    
+    var container = document.getElementById('indexLogContainer');
+    
+    // 대기 중 메시지 제거
+    var placeholder = container.querySelector('.index-log-msg');
+    if (placeholder && placeholder.textContent === '대기 중...') {
+        container.innerHTML = '';
+    }
+    
+    // 로그 추가
+    for (var i = 0; i < data.logs.length; i++) {
+        var entry = document.createElement('div');
+        entry.className = 'index-log-entry';
+        entry.innerHTML =
+            '<span class="index-log-time">' + escapeHtml(data.logs[i].time) + '</span>' +
+            '<span class="index-log-msg">' + escapeHtml(data.logs[i].message) + '</span>';
+        container.appendChild(entry);
+    }
+    
+    indexLastLogRow = indexLastLogRow + data.logs.length;
+    document.getElementById('indexLogCount').textContent = (indexLastLogRow - 2) + ' 줄';
+    
+    // 자동 스크롤
+    if (document.getElementById('indexAutoScroll').checked) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function startIndexUpdate(mode) {
+    if (indexIsRunning) {
+        showToast('이미 작업이 진행 중입니다.', 5000);
+        return;
+    }
+    
+    var msg = mode === 'full' 
+        ? 'Full Rebuild를 시작하시겠습니까?\n모든 폴더를 처음부터 스캔합니다.'
+        : 'Quick Update를 시작하시겠습니까?\n변경사항만 업데이트합니다.';
+    
+    if (!confirm(msg)) return;
+    
+    // 로그 초기화
+    clearIndexLogDisplay();
+    
+    showToast(mode === 'full' ? '🔨 Full Rebuild 시작...' : '⚡ Quick Update 시작...');
+    
+    try {
+        // 1. 초기화
+        var initType = mode === 'full' ? 'index_start_full' : 'index_start_quick';
+        var initResult = await API.request(initType, {});
+        
+        if (!initResult.success) {
+            showToast('❌ ' + initResult.message, 5000);
+            return;
+        }
+        
+        // 2. 실행
+        var runType = mode === 'full' ? 'index_run_full' : 'index_run_quick';
+        API.request(runType, {}).catch(function(e) {
+            console.log('Index run started (async)');
+        });
+        
+        showToast('✅ ' + initResult.message);
+        
+    } catch (e) {
+        showToast('❌ 오류: ' + e.message, 5000);
+    }
+}
+
+async function pauseIndexUpdate() {
+    if (!indexIsRunning) {
+        showToast('실행 중인 작업이 없습니다.');
+        return;
+    }
+    
+    if (!confirm('작업을 일시정지하시겠습니까?')) return;
+    
+    try {
+        var result = await API.request('index_pause', {});
+        if (result.success) {
+            showToast('⏸ 일시정지 완료');
+        } else {
+            showToast(result.message, 5000);
+        }
+    } catch (e) {
+        showToast('❌ 오류: ' + e.message, 5000);
+    }
+}
+
+function clearIndexLogDisplay() {
+    indexLastLogRow = 2;
+    indexLastKnownTotalRows = 0;
+    indexLogFetching = false;
+    var container = document.getElementById('indexLogContainer');
+    container.innerHTML = '<div class="index-log-entry"><span class="index-log-time">--:--:--</span><span class="index-log-msg">대기 중...</span></div>';
+    document.getElementById('indexLogCount').textContent = '0 줄';
+}
 // ===== Window 등록 =====
 window.refreshDB = refreshDB;
 window.toggleSettings = toggleSettings;
@@ -1589,3 +1869,8 @@ window.syncToDrive = syncToDrive;
 window.syncFromDrive = syncFromDrive;
 window.showFavorites = showFavorites;
 window.toggleFavorite = toggleFavorite;
+window.logout = logout;
+window.openIndexModal = openIndexModal;
+window.closeIndexModal = closeIndexModal;
+window.startIndexUpdate = startIndexUpdate;
+window.pauseIndexUpdate = pauseIndexUpdate;
