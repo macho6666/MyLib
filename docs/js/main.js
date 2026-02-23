@@ -1813,9 +1813,6 @@ async function loadFromDrive() {
     showToast("❌ 불러오기 실패: " + e.message, 5000);
   }
 }
-.thumb-wrapper.loaded .no-image-text {
-  display: none !important;
-}
 // ===== Window 등록 =====
 window.refreshDB = refreshDB;
 window.toggleSettings = toggleSettings;
