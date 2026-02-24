@@ -65,17 +65,18 @@
 
       <div class="sidebar-divider" id="tagDivider" style="display:none;"></div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-item" onclick="openIndexModal('quick')">
-          ⚡ Index Quick Update
-        </div>
-        <div class="sidebar-item" onclick="openIndexModal('full')">
-          🔨 Index Full Update
-        </div>   
-<div class="sidebar-item" onclick="dataSync()">
-  ↻ Data Sync
+<div class="sidebar-section">
+  <div class="sidebar-item" onclick="openIndexModal('quick')">
+    ϟ Quick Update
+  </div>
+  <div class="sidebar-item" onclick="openIndexModal('full')">
+    ⟳ Full Rebuild
+  </div>
+  <div class="sidebar-item" onclick="dataSync()">
+    ↻ Data Sync
+  </div>
 </div>
-      </div>
+          </div>
 
       <div class="sidebar-divider"></div>
 
@@ -86,9 +87,6 @@
         </div>
         
         <div class="accordion-content" id="settingsContent">
-          <div class="settings-group">
-            <div class="settings-item" onclick="showBackupRestore()">백업/복원</div>
-          </div>
           <div class="settings-group">
             <div class="settings-label">뷰어 설정</div>
             <div class="checkbox-group">
@@ -112,11 +110,16 @@
           </div>
 
           <button class="btn btn-save-settings" onclick="saveActiveSettings()">저장</button>
-          <button class="btn btn-logout" onclick="logout()" style="margin-top:8px; background:var(--danger);">로그아웃</button>
         </div>
       </div>
     </div>
-    
+        <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-item" onclick="logout()">
+       → Logout
+      </div>
+    </div>
     <div class="sidebar-version" id="viewerVersionDisplay">Version: Loading...</div>
   </div>
 
