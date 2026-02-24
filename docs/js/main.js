@@ -1396,7 +1396,7 @@ function loadDomains() {
     }
 }
 
-function saveManualConfig() {
+async function saveManualConfig() {
     var url = document.getElementById('configApiUrl').value.trim();
     var folderId = document.getElementById('configFolderId').value.trim();
     var apiId = document.getElementById('configApiId').value.trim();
@@ -1404,14 +1404,22 @@ function saveManualConfig() {
     var notifyEmail = document.getElementById('configNotifyEmail').value.trim();
     
     if (!url || !folderId || !apiId || !apiPassword) {
-        alert("URL, Folder ID, API ID, Password를 모두 입력해주세요.");
+        showToast("모든 필수 항목을 입력하세요.");
         return;
     }
     
     API.setConfig(url, folderId, apiId, apiPassword, notifyEmail);
     document.getElementById('configModal').style.display = 'none';
-    refreshDB();
+    
+    try {
+        await refreshDB();
+        showToast("✅ 로그인 성공!");
+    } catch (e) {
+        showToast("❌ 로그인 실패: " + e.message, 5000);
+        showSimpleLogin();
+    }
 }
+
 function logout() {
     if (!confirm('로그아웃 하시겠습니까?')) return;
     
