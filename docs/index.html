@@ -368,57 +368,124 @@
       </div>
     </div>
   </div>
-  <!-- ===== CALENDAR MODAL ===== -->
-  <div id="calendarModal" class="modal-overlay">
-    <div class="modal calendar-modal">
-      <div class="modal-header">
-        <div class="modal-title">독서 캘린더</div>
-        <button class="modal-close" onclick="closeCalendarModal()">×</button>
+<!-- ===== CALENDAR MODAL ===== -->
+<div id="calendarModal" class="modal-overlay">
+  <div class="modal calendar-modal">
+    <div class="modal-header">
+      <div class="modal-title">Calendar</div>
+      <button class="modal-close" onclick="closeCalendarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- 달력 -->
+      <div class="calendar-wrapper">
+        <div class="calendar-header">
+          <button class="cal-nav" onclick="changeMonth(-1)">◀</button>
+          <span class="cal-title" id="calendarTitle">2025년 1월</span>
+          <button class="cal-nav" onclick="changeMonth(1)">▶</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
       </div>
-      <div class="modal-body">
-        <div class="calendar-container">
-          <!-- 통계 -->
-          <div class="calendar-stats">
-            <div class="stat-item">
-              <span class="stat-value" id="statCompleted">0</span>
-              <span class="stat-label">완독</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value" id="statDropped">0</span>
-              <span class="stat-label">포기</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value" id="statReading">0</span>
-              <span class="stat-label">읽는중</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value" id="statTotal">0</span>
-              <span class="stat-label">총</span>
-            </div>
-          </div>
 
-          <!-- 달력 -->
-          <div class="calendar-wrapper">
-            <div class="calendar-header">
-              <button class="cal-nav" onclick="changeMonth(-1)">◀</button>
-              <span class="cal-title" id="calendarTitle">2025년 1월</span>
-              <button class="cal-nav" onclick="changeMonth(1)">▶</button>
-            </div>
-            <div class="calendar-grid" id="calendarGrid"></div>
-          </div>
+      <!-- 날짜별 기록 -->
+      <div class="calendar-records" id="calendarRecords">
+        <div class="records-header">
+          <span class="records-date" id="recordsDate">Select a date</span>
+        </div>
+        <div class="records-list" id="recordsList"></div>
+        <button class="btn-add-record" onclick="openRecordModal()">+ Add Record</button>
+      </div>
 
-          <!-- 날짜별 기록 -->
-          <div class="calendar-records" id="calendarRecords">
-            <div class="records-header">
-              <span class="records-date" id="recordsDate">날짜를 선택하세요</span>
-            </div>
-            <div class="records-list" id="recordsList"></div>
-            <button class="btn-add-record" onclick="addCalendarRecord()">+ 작품 추가</button>
+      <!-- 통계 -->
+      <div class="calendar-stats">
+        <div class="stat-row">
+          <div class="stat-item-sm">
+            <span class="stat-label">Completed</span>
+            <span class="stat-value" id="statCompleted">0</span>
+          </div>
+          <div class="stat-item-sm">
+            <span class="stat-label">Dropped</span>
+            <span class="stat-value" id="statDropped">0</span>
+          </div>
+          <div class="stat-item-sm">
+            <span class="stat-label">Reading</span>
+            <span class="stat-value" id="statReading">0</span>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-item-sm">
+            <span class="stat-label">Read</span>
+            <span class="stat-value" id="statRead">0 <small>(0%)</small></span>
+          </div>
+          <div class="stat-item-sm">
+            <span class="stat-label">Remaining</span>
+            <span class="stat-value" id="statRemaining">0 <small>(0%)</small></span>
+          </div>
+          <div class="stat-item-sm">
+            <span class="stat-label">Total</span>
+            <span class="stat-value" id="statTotal">0</span>
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>
+
+<!-- ===== RECORD MODAL (날짜 기록) ===== -->
+<div id="recordModal" class="modal-overlay">
+  <div class="modal record-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="recordModalTitle">Add Record</div>
+      <button class="modal-close" onclick="closeRecordModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- 책 검색/선택 -->
+      <div class="record-field">
+        <label>Book</label>
+        <input type="text" id="recordBookSearch" class="config-input" placeholder="Search book..." oninput="searchBooks(this.value)">
+        <div class="record-book-results" id="recordBookResults"></div>
+        <input type="hidden" id="recordBookId">
+        <div class="record-selected-book" id="recordSelectedBook"></div>
+      </div>
+
+      <!-- 진행률 -->
+      <div class="record-field">
+        <label>Progress: <span id="recordProgressValue">0</span>%</label>
+        <input type="range" id="recordProgress" min="0" max="100" value="0" oninput="updateProgressValue(this.value)">
+      </div>
+
+      <!-- 상태 -->
+      <div class="record-field">
+        <label>Status</label>
+        <div class="record-status-options">
+          <label class="record-status-option">
+            <input type="radio" name="recordStatus" value="reading" checked>
+            <span>Reading</span>
+          </label>
+          <label class="record-status-option">
+            <input type="radio" name="recordStatus" value="completed">
+            <span>Completed</span>
+          </label>
+          <label class="record-status-option">
+            <input type="radio" name="recordStatus" value="dropped">
+            <span>Dropped</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 메모 -->
+      <div class="record-field">
+        <label>Memo</label>
+        <textarea id="recordMemo" class="config-input" placeholder="Notes..."></textarea>
+      </div>
+
+      <!-- 버튼 -->
+      <div class="record-buttons">
+        <button class="btn" onclick="closeRecordModal()" style="background: var(--bg-input);">Cancel</button>
+        <button class="btn" onclick="saveRecord()" style="background: var(--accent); color: white;">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
     
 <!-- ===== INDEX UPDATE MODAL ===== -->
 <div id="indexModal" class="modal-overlay">
