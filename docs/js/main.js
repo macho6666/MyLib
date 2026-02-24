@@ -1280,7 +1280,6 @@ function addCalendarRecord() {
 }
 
 function closeCalendarModal() {
-function closeCalendarModal() {
     document.getElementById('calendarModal').style.display = 'none';
 }
 
@@ -2011,3 +2010,7 @@ window.searchBooks = searchBooks;
 window.selectBook = selectBook;
 window.updateProgressValue = updateProgressValue;
 window.saveRecord = saveRecord;
+window.renderCalendar = renderCalendar;
+window.selectCalendarDate = selectCalendarDate;
+window.formatDateStr = formatDateStr;
+window.padZero = padZero;
