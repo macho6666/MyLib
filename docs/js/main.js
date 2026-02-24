@@ -1,6 +1,6 @@
 const NO_IMAGE_SVG = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%3E%3C%2Fsvg%3E";
 const VIEWER_VERSION = "연두해요 v0.1";
-window.TOKI_VIEWER_VERSION = VIEWER_VERSION;
+window.MYLIB_VIEWER_VERSION = VIEWER_VERSION;
 // ===== Index Update 관련 =====
 let indexRefreshInterval = null;
 let indexLastLogRow = 2;
@@ -66,7 +66,7 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 function handleMessage(event) {
-    if (event.data.type === 'TOKI_CONFIG') {
+    if (event.data.type === 'mylib_CONFIG') {
         var url = event.data.url;
         var folderId = event.data.folderId;
         var apiKey = event.data.apiKey;
@@ -1752,7 +1752,7 @@ async function saveToDrive() {
       settings: {
         adultFilter: adultFilterEnabled,
         theme: localStorage.getItem('mylib_theme'),
-        domains: JSON.parse(localStorage.getItem('toki_domains') || '{}')
+        domains: JSON.parse(localStorage.getItem('mylib_domains') || '{}')
       }
     };
     
@@ -1788,7 +1788,7 @@ async function loadFromDrive() {
         loadSavedTheme();
       }
       if (userData.settings.domains) {
-        localStorage.setItem('toki_domains', JSON.stringify(userData.settings.domains));
+        localStorage.setItem('mylib_domains', JSON.stringify(userData.settings.domains));
         loadDomains();
       }
     }
