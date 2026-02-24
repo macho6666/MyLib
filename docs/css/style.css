@@ -24,8 +24,8 @@
   --warning: #fbbf24;
   --danger: #f87171;
   
-  --no-image-bg: #e5e5e5;
-  --no-image-text: #a3a3a3;
+  --no-image-bg: #333333;
+  --no-image-text: #666666;
   
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
