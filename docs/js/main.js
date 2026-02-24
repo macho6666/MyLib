@@ -220,10 +220,11 @@ async function refreshDB(forceId, silent, bypassCache) {
         renderGrid(allSeries);
         showToast("Library loaded");
 
-    } catch (e) {
-        console.error("Library Fetch Error:", e);
-        showToast("❌ Load failed: " + e.message, 5000);
-    } finally {
+} catch (e) {
+    console.error("Library Fetch Error:", e);
+    showToast("❌ Load failed: " + e.message, 5000);
+    throw e;
+} finally {
         if(loader) loader.style.display = 'none';
     }
 }
