@@ -1315,8 +1315,8 @@ function showRecordsByStatus(status) {
     var listEl = document.getElementById('recordsList');
     var dateEl = document.getElementById('recordsDate');
     
-    var statusLabel = status === 'completed' ? '📚 완독' : 
-                      status === 'dropped' ? '🚫 포기' : '📖 읽는 중';
+var statusLabel = status === 'completed' ? '📚 Completed' : 
+                  status === 'dropped' ? '🚫 Dropped' : '📖 Reading';
     
     dateEl.textContent = statusLabel;
     
@@ -2070,3 +2070,5 @@ window.renderCalendar = renderCalendar;
 window.selectCalendarDate = selectCalendarDate;
 window.formatDateStr = formatDateStr;
 window.padZero = padZero;
+window.deleteCalendarRecord = deleteCalendarRecord;
+window.showRecordsByStatus = showRecordsByStatus;
