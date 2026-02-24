@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', function() {
     loadLocalData();
     
     var el = document.getElementById('viewerVersionDisplay');
-    if(el) el.innerText = "Viewer " + VIEWER_VERSION;
+    if(el) el.innerText = "MyLib " + VIEWER_VERSION;
     
     if (API.isConfigured()) {
         showToast("Connecting...");
