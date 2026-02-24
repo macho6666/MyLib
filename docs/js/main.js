@@ -46,21 +46,19 @@ window.addEventListener('DOMContentLoaded', function() {
     const el = document.getElementById('viewerVersionDisplay');
     if(el) el.innerText = "Viewer " + VIEWER_VERSION;
     
-    if (API.isConfigured()) {
-        showToast("Connecting...");
-        refreshDB(null, true);
-        loadDomains();
-    } else {
-        setTimeout(function() {
-            if (!API.isConfigured()) {
-                document.getElementById('configModal').style.display = 'flex';
-            } else {
-                showToast("Connecting...");
-                refreshDB(null, true);
-            }
-            loadDomains();
-        }, 1000);
-    }
+if (API.isConfigured()) {
+    showToast("Connecting...");
+    refreshDB(null, true);
+} else {
+    setTimeout(function() {
+        if (!API.isConfigured()) {
+            showFullConfig();  // ← 최초 접속: 전체 설정
+        } else {
+            showToast("Connecting...");
+            refreshDB(null, true);
+        }
+    }, 1000);
+}
 });
 
 function handleMessage(event) {
@@ -1414,7 +1412,18 @@ function logout() {
     if (!confirm('로그아웃 하시겠습니까?')) return;
     
     API.logout();
+    document.getElementById('grid').innerHTML = '';
+    allSeries = [];
     
+    showSimpleLogin();  // ← 이걸로 변경!
+    
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar && sidebar.classList.contains('open')) {
+        toggleSidebar();
+    }
+    
+    showToast('Logged out');
+}
     // 화면 초기화
     document.getElementById('grid').innerHTML = '';
     allSeries = [];
