@@ -158,7 +158,41 @@ function toggleSettingsAccordion() {
         if (icon) icon.textContent = '▲';
     }
 }
+// Config Modal 상세 설정 토글
+function toggleConfigDetails() {
+  var details = document.getElementById('configDetails');
+  var toggle = document.getElementById('configToggle');
+  
+  if (details.classList.contains('open')) {
+    details.classList.remove('open');
+    toggle.classList.remove('open');
+  } else {
+    details.classList.add('open');
+    toggle.classList.add('open');
+  }
+}
 
+// 간편 로그인 모드 (로그아웃 시)
+function showSimpleLogin() {
+  var details = document.getElementById('configDetails');
+  var toggle = document.getElementById('configToggle');
+  
+  details.classList.remove('open');
+  toggle.classList.remove('open');
+  
+  document.getElementById('configModal').style.display = 'flex';
+}
+
+// 전체 설정 모드 (최초 접속 시)
+function showFullConfig() {
+  var details = document.getElementById('configDetails');
+  var toggle = document.getElementById('configToggle');
+  
+  details.classList.add('open');
+  toggle.classList.add('open');
+  
+  document.getElementById('configModal').style.display = 'flex';
+}
 // ===== 라이브러리 로드 =====
 async function refreshDB(forceId, silent, bypassCache) {
     var loader = document.getElementById('pageLoader');
@@ -1811,3 +1845,6 @@ window.pauseIndexUpdate = pauseIndexUpdate;
 window.dataSync = dataSync;
 window.saveToDrive = saveToDrive;
 window.loadFromDrive = loadFromDrive;
+window.toggleConfigDetails = toggleConfigDetails;
+window.showSimpleLogin = showSimpleLogin;
+window.showFullConfig = showFullConfig;
