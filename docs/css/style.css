@@ -2446,11 +2446,16 @@ header h1 {
 .config-details.open {
   max-height: 400px;
 }
-/* Detail Modal No Image 배경 */
+/* Detail Modal 커버 배경 */
 .detail-cover-wrapper {
   background: #333333 !important;
 }
 
 [data-theme="light"] .detail-cover-wrapper {
-  background: #d4d4d4 !important;
+  background: #e5e5e5 !important;
+}
+
+/* 이미지 있으면 배경 숨기기 */
+.detail-cover-wrapper:has(.detail-cover[src]:not([src=""])) {
+  background: transparent !important;
 }
