@@ -172,17 +172,25 @@ function toggleConfigDetails() {
 
 // 간편 로그인 모드 (로그아웃 시)
 function showSimpleLogin() {
+  console.log('🔵 showSimpleLogin 시작');
+  
   var details = document.getElementById('configDetails');
   var toggle = document.getElementById('configToggle');
+  
+  console.log('🔵 details:', details);
+  console.log('🔵 toggle:', toggle);
   
   details.classList.remove('open');
   toggle.classList.remove('open');
   
-  // 비밀번호 입력창 비우기
+  console.log('🔵 비밀번호 비우기 전:', document.getElementById('configApiPassword').value);
   document.getElementById('configApiPassword').value = '';
+  console.log('🔵 비밀번호 비우기 후:', document.getElementById('configApiPassword').value);
   
   document.getElementById('configModal').style.display = 'flex';
+  console.log('🔵 showSimpleLogin 끝');
 }
+
 
 // 전체 설정 모드 (최초 접속 시)
 function showFullConfig() {
