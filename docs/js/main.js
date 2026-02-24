@@ -43,22 +43,26 @@ window.addEventListener('DOMContentLoaded', function() {
     loadSavedTheme();
     loadLocalData();
     
-    const el = document.getElementById('viewerVersionDisplay');
+    var el = document.getElementById('viewerVersionDisplay');
     if(el) el.innerText = "Viewer " + VIEWER_VERSION;
     
-if (API.isConfigured()) {
-    showToast("Connecting...");
-    refreshDB(null, true);
-} else {
-    setTimeout(function() {
-        if (!API.isConfigured()) {
-            showFullConfig();  // ← 최초 접속: 전체 설정
-        } else {
-            showToast("Connecting...");
-            refreshDB(null, true);
-        }
-    }, 1000);
-}
+    if (API.isConfigured()) {
+        showToast("Connecting...");
+        refreshDB(null, true).catch(function(e) {
+            showSimpleLogin();
+        });
+    } else {
+        setTimeout(function() {
+            if (!API.isConfigured()) {
+                showFullConfig();
+            } else {
+                showToast("Connecting...");
+                refreshDB(null, true).catch(function(e) {
+                    showSimpleLogin();
+                });
+            }
+        }, 1000);
+    }
 });
 
 function handleMessage(event) {
