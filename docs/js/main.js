@@ -1415,23 +1415,8 @@ function logout() {
     document.getElementById('grid').innerHTML = '';
     allSeries = [];
     
-    showSimpleLogin();  // ← 이걸로 변경!
+    showSimpleLogin();
     
-    var sidebar = document.getElementById('sidebar');
-    if (sidebar && sidebar.classList.contains('open')) {
-        toggleSidebar();
-    }
-    
-    showToast('Logged out');
-}
-    // 화면 초기화
-    document.getElementById('grid').innerHTML = '';
-    allSeries = [];
-    
-    // 설정 모달 표시
-    document.getElementById('configModal').style.display = 'flex';
-    
-    // 사이드바 닫기
     var sidebar = document.getElementById('sidebar');
     if (sidebar && sidebar.classList.contains('open')) {
         toggleSidebar();
