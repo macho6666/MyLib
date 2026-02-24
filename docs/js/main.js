@@ -1283,10 +1283,6 @@ function addCalendarRecord() {
     openRecordModal();
 }
 
-function closeCalendarModal() {
-    document.getElementById('calendarModal').style.display = 'none';
-}
-
 function updateCalendarStats() {
     var completed = 0, dropped = 0, reading = 0;
     var countedBooks = {};
