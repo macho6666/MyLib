@@ -2395,3 +2395,50 @@ header h1 {
   margin-bottom: 4px;
   text-align: left;
 }
+/* Config Modal 토글 */
+.config-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.config-toggle:hover {
+  color: var(--text-primary);
+}
+
+.config-toggle::after {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.25s ease;
+  margin-left: 8px;
+  margin-top: -4px;
+}
+
+.config-toggle.open::after {
+  transform: rotate(-135deg);
+  margin-top: 4px;
+}
+
+.config-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.config-details.open {
+  max-height: 400px;
+}
