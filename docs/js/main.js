@@ -1170,7 +1170,116 @@ function showCalendar() {
         toggleSidebar();
     }
 }
+function renderCalendar() {
+    var grid = document.getElementById('calendarGrid');
+    var titleEl = document.getElementById('calendarTitle');
+    
+    if (!grid || !titleEl) return;
+    
+    var year = currentCalendarMonth.getFullYear();
+    var month = currentCalendarMonth.getMonth();
+    
+    titleEl.textContent = year + '년 ' + (month + 1) + '월';
+    
+    grid.innerHTML = '';
+    
+    var days = ['일', '월', '화', '수', '목', '금', '토'];
+    days.forEach(function(day) {
+        var header = document.createElement('div');
+        header.className = 'cal-day-header';
+        header.textContent = day;
+        grid.appendChild(header);
+    });
+    
+    var firstDay = new Date(year, month, 1);
+    var lastDay = new Date(year, month + 1, 0);
+    var startDayOfWeek = firstDay.getDay();
+    var totalDays = lastDay.getDate();
+    
+    var today = new Date();
+    var todayStr = formatDateStr(today);
+    
+    var prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (var i = startDayOfWeek - 1; i >= 0; i--) {
+        var dayNum = prevMonthLastDay - i;
+        var dayEl = document.createElement('div');
+        dayEl.className = 'cal-day other-month';
+        dayEl.textContent = dayNum;
+        grid.appendChild(dayEl);
+    }
+    
+    for (var d = 1; d <= totalDays; d++) {
+        var dateStr = year + '-' + padZero(month + 1) + '-' + padZero(d);
+        var dayEl = document.createElement('div');
+        dayEl.className = 'cal-day';
+        dayEl.textContent = d;
+        dayEl.dataset.date = dateStr;
+        
+        if (dateStr === todayStr) {
+            dayEl.classList.add('today');
+        }
+        
+        if (dateStr === selectedCalendarDate) {
+            dayEl.classList.add('selected');
+        }
+        
+        if (calendarData[dateStr] && calendarData[dateStr].length > 0) {
+            dayEl.classList.add('has-record');
+        }
+        
+        dayEl.onclick = function() {
+            selectCalendarDate(this.dataset.date);
+        };
+        
+        grid.appendChild(dayEl);
+    }
+    
+    var totalCells = startDayOfWeek + totalDays;
+    var remainingCells = (7 - (totalCells % 7)) % 7;
+    for (var n = 1; n <= remainingCells; n++) {
+        var dayEl = document.createElement('div');
+        dayEl.className = 'cal-day other-month';
+        dayEl.textContent = n;
+        grid.appendChild(dayEl);
+    }
+}
 
+function changeMonth(delta) {
+    currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() + delta);
+    renderCalendar();
+}
+
+function selectCalendarDate(dateStr) {
+    selectedCalendarDate = dateStr;
+    
+    document.querySelectorAll('.cal-day.selected').forEach(function(el) {
+        el.classList.remove('selected');
+    });
+    
+    var dayEl = document.querySelector('.cal-day[data-date="' + dateStr + '"]');
+    if (dayEl) {
+        dayEl.classList.add('selected');
+    }
+    
+    renderCalendarRecords(dateStr);
+}
+
+function formatDateStr(date) {
+    var year = date.getFullYear();
+    var month = padZero(date.getMonth() + 1);
+    var day = padZero(date.getDate());
+    return year + '-' + month + '-' + day;
+}
+
+function padZero(num) {
+    return num < 10 ? '0' + num : '' + num;
+}
+
+function addCalendarRecord() {
+    openRecordModal();
+}
+
+function closeCalendarModal() {
 function closeCalendarModal() {
     document.getElementById('calendarModal').style.display = 'none';
 }
