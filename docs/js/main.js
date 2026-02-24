@@ -178,6 +178,9 @@ function showSimpleLogin() {
   details.classList.remove('open');
   toggle.classList.remove('open');
   
+  // 비밀번호 입력창 비우기
+  document.getElementById('configApiPassword').value = '';
+  
   document.getElementById('configModal').style.display = 'flex';
 }
 
