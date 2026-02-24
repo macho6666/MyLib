@@ -1,5 +1,5 @@
 const NO_IMAGE_SVG = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%3E%3C%2Fsvg%3E";
-const VIEWER_VERSION = "v2.0.0";
+const VIEWER_VERSION = "연두해요 v0.1";
 window.TOKI_VIEWER_VERSION = VIEWER_VERSION;
 // ===== Index Update 관련 =====
 let indexRefreshInterval = null;
