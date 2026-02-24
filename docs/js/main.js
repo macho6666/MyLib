@@ -1157,6 +1157,9 @@ function openEpisodeEdit(index) {
 }
 
 // ===== 캘린더 =====
+var selectedRecordBookId = '';
+var selectedRecordBookName = '';
+
 function showCalendar() {
     document.getElementById('calendarModal').style.display = 'flex';
     renderCalendar();
@@ -1172,83 +1175,47 @@ function closeCalendarModal() {
     document.getElementById('calendarModal').style.display = 'none';
 }
 
-function changeMonth(delta) {
-    currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() + delta);
-    renderCalendar();
-}
-
-function renderCalendar() {
-    var grid = document.getElementById('calendarGrid');
-    var title = document.getElementById('calendarTitle');
+function updateCalendarStats() {
+    var completed = 0, dropped = 0, reading = 0;
+    var countedBooks = {};
     
-    var year = currentCalendarMonth.getFullYear();
-    var month = currentCalendarMonth.getMonth();
-    
-    title.textContent = year + '년 ' + (month + 1) + '월';
-    
-    grid.innerHTML = '';
-    
-    var days = ['일', '월', '화', '수', '목', '금', '토'];
-    days.forEach(function(d) {
-        var el = document.createElement('div');
-        el.className = 'cal-day-header';
-        el.textContent = d;
-        grid.appendChild(el);
+    Object.values(calendarData).forEach(function(records) {
+        records.forEach(function(r) {
+            if (!countedBooks[r.seriesId]) {
+                countedBooks[r.seriesId] = r.status;
+                if (r.status === 'completed') completed++;
+                else if (r.status === 'dropped') dropped++;
+                else reading++;
+            } else {
+                // 최신 상태로 업데이트
+                var prevStatus = countedBooks[r.seriesId];
+                if (prevStatus !== r.status) {
+                    if (prevStatus === 'completed') completed--;
+                    else if (prevStatus === 'dropped') dropped--;
+                    else reading--;
+                    
+                    if (r.status === 'completed') completed++;
+                    else if (r.status === 'dropped') dropped++;
+                    else reading++;
+                    
+                    countedBooks[r.seriesId] = r.status;
+                }
+            }
+        });
     });
     
-    var firstDay = new Date(year, month, 1);
-    var lastDay = new Date(year, month + 1, 0);
-    var startDay = firstDay.getDay();
-    var totalDays = lastDay.getDate();
-    var today = new Date();
+    var read = completed + dropped + reading;
+    var total = allSeries.length;
+    var remaining = total - read;
+    var readPercent = total > 0 ? Math.round((read / total) * 100) : 0;
+    var remainPercent = total > 0 ? Math.round((remaining / total) * 100) : 0;
     
-    var prevLastDay = new Date(year, month, 0).getDate();
-    for (var i = startDay - 1; i >= 0; i--) {
-        var el = document.createElement('div');
-        el.className = 'cal-day other-month';
-        el.textContent = prevLastDay - i;
-        grid.appendChild(el);
-    }
-    
-    for (var i = 1; i <= totalDays; i++) {
-        var el = document.createElement('div');
-        el.className = 'cal-day';
-        el.textContent = i;
-        
-        var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
-        
-        if (calendarData[dateStr] && calendarData[dateStr].length > 0) {
-            el.classList.add('has-record');
-        }
-        
-        if (today.getFullYear() === year && today.getMonth() === month && today.getDate() === i) {
-            el.classList.add('today');
-        }
-        
-        if (selectedCalendarDate === dateStr) {
-            el.classList.add('selected');
-        }
-        
-        (function(ds) {
-            el.onclick = function() { selectCalendarDate(ds); };
-        })(dateStr);
-        
-        grid.appendChild(el);
-    }
-    
-    var remaining = 42 - (startDay + totalDays);
-    for (var i = 1; i <= remaining; i++) {
-        var el = document.createElement('div');
-        el.className = 'cal-day other-month';
-        el.textContent = i;
-        grid.appendChild(el);
-    }
-}
-
-function selectCalendarDate(dateStr) {
-    selectedCalendarDate = dateStr;
-    renderCalendar();
-    renderCalendarRecords(dateStr);
+    document.getElementById('statCompleted').textContent = completed;
+    document.getElementById('statDropped').textContent = dropped;
+    document.getElementById('statReading').textContent = reading;
+    document.getElementById('statRead').innerHTML = read + ' <small>(' + readPercent + '%)</small>';
+    document.getElementById('statRemaining').innerHTML = remaining + ' <small>(' + remainPercent + '%)</small>';
+    document.getElementById('statTotal').textContent = total;
 }
 
 function renderCalendarRecords(dateStr) {
@@ -1256,81 +1223,151 @@ function renderCalendarRecords(dateStr) {
     var listEl = document.getElementById('recordsList');
     
     var parts = dateStr.split('-');
-    dateEl.textContent = parts[0] + '년 ' + parseInt(parts[1]) + '월 ' + parseInt(parts[2]) + '일';
+    dateEl.textContent = parts[0] + '-' + parts[1] + '-' + parts[2];
     
     var records = calendarData[dateStr] || [];
     listEl.innerHTML = '';
     
     if (records.length === 0) {
-        listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-tertiary);">기록이 없습니다</div>';
+        listEl.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-tertiary); font-size: 12px;">No records</div>';
         return;
     }
     
     records.forEach(function(record) {
         var series = allSeries.find(function(s) { return s.id === record.seriesId; });
-        var name = series ? series.name : '알 수 없는 작품';
+        var name = series ? series.name : 'Unknown';
         
-        var statusIcon = record.status === '완독' ? '✅' : record.status === '포기' ? '❌' : '📖';
+        var statusText = record.status === 'completed' ? 'Completed' : 
+                        record.status === 'dropped' ? 'Dropped' : 'Reading';
         
         var item = document.createElement('div');
         item.className = 'record-item';
-        item.innerHTML = '<div class="record-title">' + statusIcon + ' ' + name + '</div><div class="record-meta">' + (record.progress || 0) + '% ' + record.status + (record.memo ? ' - ' + record.memo : '') + '</div>';
+        item.innerHTML = '<div class="record-title">' + name + '</div>' +
+                        '<div class="record-meta">' + record.progress + '% · ' + statusText + 
+                        (record.memo ? ' · ' + record.memo : '') + '</div>';
         listEl.appendChild(item);
     });
 }
 
-function updateCalendarStats() {
-    var completed = 0, dropped = 0, reading = 0;
+// Record Modal
+function openRecordModal() {
+    if (!selectedCalendarDate) {
+        showToast('Select a date first');
+        return;
+    }
     
-    Object.values(calendarData).forEach(function(records) {
-        records.forEach(function(r) {
-            if (r.status === '완독') completed++;
-            else if (r.status === '포기') dropped++;
-            else reading++;
-        });
-    });
+    document.getElementById('recordModalTitle').textContent = selectedCalendarDate;
+    document.getElementById('recordBookSearch').value = '';
+    document.getElementById('recordBookResults').innerHTML = '';
+    document.getElementById('recordBookResults').classList.remove('show');
+    document.getElementById('recordSelectedBook').classList.remove('show');
+    document.getElementById('recordBookId').value = '';
+    document.getElementById('recordProgress').value = 0;
+    document.getElementById('recordProgressValue').textContent = '0';
+    document.getElementById('recordMemo').value = '';
+    document.querySelector('input[name="recordStatus"][value="reading"]').checked = true;
     
-    document.getElementById('statCompleted').textContent = completed;
-    document.getElementById('statDropped').textContent = dropped;
-    document.getElementById('statReading').textContent = reading;
-    document.getElementById('statTotal').textContent = completed + dropped + reading;
+    selectedRecordBookId = '';
+    selectedRecordBookName = '';
+    
+    // 이전 기록 있으면 불러오기
+    var records = calendarData[selectedCalendarDate] || [];
+    if (records.length > 0) {
+        var lastRecord = records[records.length - 1];
+        var series = allSeries.find(function(s) { return s.id === lastRecord.seriesId; });
+        if (series) {
+            selectBook(series.id, series.name);
+            document.getElementById('recordProgress').value = lastRecord.progress || 0;
+            document.getElementById('recordProgressValue').textContent = lastRecord.progress || 0;
+            document.querySelector('input[name="recordStatus"][value="' + lastRecord.status + '"]').checked = true;
+        }
+    }
+    
+    document.getElementById('recordModal').style.display = 'flex';
 }
 
-function addCalendarRecord() {
-    if (!selectedCalendarDate) {
-        showToast('날짜를 먼저 선택하세요');
+function closeRecordModal() {
+    document.getElementById('recordModal').style.display = 'none';
+}
+
+function searchBooks(query) {
+    var resultsEl = document.getElementById('recordBookResults');
+    
+    if (!query || query.length < 2) {
+        resultsEl.classList.remove('show');
         return;
     }
     
-    var seriesName = prompt('작품 이름:');
-    if (!seriesName) return;
+    var matches = allSeries.filter(function(s) {
+        return s.name.toLowerCase().includes(query.toLowerCase());
+    }).slice(0, 10);
     
-    var series = allSeries.find(function(s) { return s.name.toLowerCase().includes(seriesName.toLowerCase()); });
-    if (!series) {
-        showToast('작품을 찾을 수 없습니다');
+    if (matches.length === 0) {
+        resultsEl.innerHTML = '<div class="record-book-item" style="color: var(--text-tertiary);">No results</div>';
+    } else {
+        resultsEl.innerHTML = matches.map(function(s) {
+            return '<div class="record-book-item" onclick="selectBook(\'' + s.id + '\', \'' + s.name.replace(/'/g, "\\'") + '\')">' + s.name + '</div>';
+        }).join('');
+    }
+    
+    resultsEl.classList.add('show');
+}
+
+function selectBook(id, name) {
+    selectedRecordBookId = id;
+    selectedRecordBookName = name;
+    
+    document.getElementById('recordBookId').value = id;
+    document.getElementById('recordBookSearch').value = '';
+    document.getElementById('recordBookResults').classList.remove('show');
+    
+    var selectedEl = document.getElementById('recordSelectedBook');
+    selectedEl.textContent = name;
+    selectedEl.classList.add('show');
+}
+
+function updateProgressValue(value) {
+    document.getElementById('recordProgressValue').textContent = value;
+}
+
+function saveRecord() {
+    if (!selectedRecordBookId) {
+        showToast('Please select a book');
         return;
     }
     
-    var status = prompt('상태 (읽는중/완독/포기):', '읽는중');
-    var progress = parseInt(prompt('진행률 (0-100):', '0')) || 0;
-    var memo = prompt('메모 (선택):') || '';
+    var progress = parseInt(document.getElementById('recordProgress').value);
+    var status = document.querySelector('input[name="recordStatus"]:checked').value;
+    var memo = document.getElementById('recordMemo').value.trim();
     
     if (!calendarData[selectedCalendarDate]) {
         calendarData[selectedCalendarDate] = [];
     }
     
-    calendarData[selectedCalendarDate].push({
-        seriesId: series.id,
+    // 같은 책 기록 있으면 업데이트
+    var existingIndex = calendarData[selectedCalendarDate].findIndex(function(r) {
+        return r.seriesId === selectedRecordBookId;
+    });
+    
+    var record = {
+        seriesId: selectedRecordBookId,
         status: status,
         progress: progress,
         memo: memo
-    });
+    };
+    
+    if (existingIndex >= 0) {
+        calendarData[selectedCalendarDate][existingIndex] = record;
+    } else {
+        calendarData[selectedCalendarDate].push(record);
+    }
     
     saveLocalData();
     renderCalendar();
     renderCalendarRecords(selectedCalendarDate);
     updateCalendarStats();
-    showToast('기록 추가됨');
+    closeRecordModal();
+    showToast('Record saved');
 }
 
 // ===== 기타 함수들 =====
@@ -1859,3 +1896,9 @@ window.loadFromDrive = loadFromDrive;
 window.toggleConfigDetails = toggleConfigDetails;
 window.showSimpleLogin = showSimpleLogin;
 window.showFullConfig = showFullConfig;
+window.openRecordModal = openRecordModal;
+window.closeRecordModal = closeRecordModal;
+window.searchBooks = searchBooks;
+window.selectBook = selectBook;
+window.updateProgressValue = updateProgressValue;
+window.saveRecord = saveRecord;
