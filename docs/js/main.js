@@ -1157,19 +1157,7 @@ function openEpisodeEdit(index) {
 }
 
 // ===== 캘린더 =====
-var selectedRecordBookId = '';
-var selectedRecordBookName = '';
-
-function showCalendar() {
-    document.getElementById('calendarModal').style.display = 'flex';
-    renderCalendar();
-    updateCalendarStats();
-    
-    var sidebar = document.getElementById('sidebar');
-    if (sidebar && sidebar.classList.contains('open')) {
-        toggleSidebar();
-    }
-}
+// ===== 캘린더 렌더링 =====
 function renderCalendar() {
     var grid = document.getElementById('calendarGrid');
     var titleEl = document.getElementById('calendarTitle');
@@ -1180,7 +1168,6 @@ function renderCalendar() {
     var month = currentCalendarMonth.getMonth();
     
     titleEl.textContent = year + '년 ' + (month + 1) + '월';
-    
     grid.innerHTML = '';
     
     var days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1218,11 +1205,9 @@ function renderCalendar() {
         if (dateStr === todayStr) {
             dayEl.classList.add('today');
         }
-        
         if (dateStr === selectedCalendarDate) {
             dayEl.classList.add('selected');
         }
-        
         if (calendarData[dateStr] && calendarData[dateStr].length > 0) {
             dayEl.classList.add('has-record');
         }
