@@ -1280,7 +1280,6 @@ function updateCalendarStats() {
                 else if (r.status === 'dropped') dropped++;
                 else reading++;
             } else {
-                // 최신 상태로 업데이트
                 var prevStatus = countedBooks[r.seriesId];
                 if (prevStatus !== r.status) {
                     if (prevStatus === 'completed') completed--;
@@ -1303,12 +1302,60 @@ function updateCalendarStats() {
     var readPercent = total > 0 ? Math.round((read / total) * 100) : 0;
     var remainPercent = total > 0 ? Math.round((remaining / total) * 100) : 0;
     
-    document.getElementById('statCompleted').textContent = completed;
-    document.getElementById('statDropped').textContent = dropped;
-    document.getElementById('statReading').textContent = reading;
+    // 클릭 가능하게 수정
+    document.getElementById('statCompleted').innerHTML = '<span class="stat-clickable" onclick="showRecordsByStatus(\'completed\')">' + completed + '</span>';
+    document.getElementById('statDropped').innerHTML = '<span class="stat-clickable" onclick="showRecordsByStatus(\'dropped\')">' + dropped + '</span>';
+    document.getElementById('statReading').innerHTML = '<span class="stat-clickable" onclick="showRecordsByStatus(\'reading\')">' + reading + '</span>';
     document.getElementById('statRead').innerHTML = read + ' <small>(' + readPercent + '%)</small>';
     document.getElementById('statRemaining').innerHTML = remaining + ' <small>(' + remainPercent + '%)</small>';
     document.getElementById('statTotal').textContent = total;
+}
+
+function showRecordsByStatus(status) {
+    var listEl = document.getElementById('recordsList');
+    var dateEl = document.getElementById('recordsDate');
+    
+    var statusLabel = status === 'completed' ? '📚 완독' : 
+                      status === 'dropped' ? '🚫 포기' : '📖 읽는 중';
+    
+    dateEl.textContent = statusLabel;
+    
+    // 해당 상태의 모든 기록 수집 (최신 상태 기준)
+    var latestRecords = {};
+    
+    Object.keys(calendarData).forEach(function(dateStr) {
+        calendarData[dateStr].forEach(function(record) {
+            latestRecords[record.seriesId] = {
+                record: record,
+                date: dateStr
+            };
+        });
+    });
+    
+    // 상태 필터링
+    var filtered = Object.values(latestRecords).filter(function(item) {
+        return item.record.status === status;
+    });
+    
+    listEl.innerHTML = '';
+    
+    if (filtered.length === 0) {
+        listEl.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-tertiary); font-size: 12px;">기록 없음</div>';
+        return;
+    }
+    
+    filtered.forEach(function(item) {
+        var series = allSeries.find(function(s) { return s.id === item.record.seriesId; });
+        var name = series ? series.name : 'Unknown';
+        
+        var recordItem = document.createElement('div');
+        recordItem.className = 'record-item';
+        recordItem.innerHTML = 
+            '<div class="record-title">' + name + '</div>' +
+            '<div class="record-meta">' + item.record.progress + '% · ' + item.date + 
+            (item.record.memo ? ' · ' + item.record.memo : '') + '</div>';
+        listEl.appendChild(recordItem);
+    });
 }
 
 function renderCalendarRecords(dateStr) {
@@ -1326,7 +1373,7 @@ function renderCalendarRecords(dateStr) {
         return;
     }
     
-    records.forEach(function(record) {
+    records.forEach(function(record, index) {
         var series = allSeries.find(function(s) { return s.id === record.seriesId; });
         var name = series ? series.name : 'Unknown';
         
@@ -1335,13 +1382,37 @@ function renderCalendarRecords(dateStr) {
         
         var item = document.createElement('div');
         item.className = 'record-item';
-        item.innerHTML = '<div class="record-title">' + name + '</div>' +
-                        '<div class="record-meta">' + record.progress + '% · ' + statusText + 
-                        (record.memo ? ' · ' + record.memo : '') + '</div>';
+        item.innerHTML = 
+            '<div style="display:flex; justify-content:space-between; align-items:start;">' +
+                '<div>' +
+                    '<div class="record-title">' + name + '</div>' +
+                    '<div class="record-meta">' + record.progress + '% · ' + statusText + 
+                    (record.memo ? ' · ' + record.memo : '') + '</div>' +
+                '</div>' +
+                '<button class="record-delete-btn" onclick="deleteCalendarRecord(\'' + dateStr + '\', ' + index + ')" title="삭제">×</button>' +
+            '</div>';
         listEl.appendChild(item);
     });
 }
 
+function deleteCalendarRecord(dateStr, index) {
+    if (!confirm('Delete this record?')) return;
+    
+    if (calendarData[dateStr] && calendarData[dateStr][index]) {
+        calendarData[dateStr].splice(index, 1);
+        
+        // 빈 배열이면 삭제
+        if (calendarData[dateStr].length === 0) {
+            delete calendarData[dateStr];
+        }
+        
+        saveLocalData();
+        renderCalendar();
+        renderCalendarRecords(dateStr);
+        updateCalendarStats();
+        showToast('Record deleted');
+    }
+}
 // Record Modal
 function openRecordModal() {
     if (!selectedCalendarDate) {
