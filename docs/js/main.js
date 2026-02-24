@@ -1409,7 +1409,7 @@ async function saveManualConfig() {
     var notifyEmail = document.getElementById('configNotifyEmail').value.trim();
     
     if (!url || !folderId || !apiId || !apiPassword) {
-        showToast("모든 필수 항목을 입력하세요.");
+        showToast("Please fill in all required fields.");
         return;
     }
     
@@ -1418,15 +1418,15 @@ async function saveManualConfig() {
     
     try {
         await refreshDB();
-        showToast("✅ 로그인 성공!");
+        showToast("✅ Login successful!");
     } catch (e) {
-        showToast("❌ 로그인 실패: " + e.message, 5000);
+        showToast("❌ Login failed: " + e.message, 5000);
         showSimpleLogin();
     }
 }
 
 function logout() {
-    if (!confirm('로그아웃 하시겠습니까?')) return;
+    if (!confirm('Are you sure you want to logout?')) return;
     
     API.logout();
     document.getElementById('grid').innerHTML = '';
