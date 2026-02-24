@@ -2446,6 +2446,12 @@ header h1 {
 .config-details.open {
   max-height: 400px;
 }
+/* 기본 (다크모드) No Image 배경 */
+.thumb-wrapper {
+  background: #333333 !important;
+}
+
+/* Light 모드 No Image 배경 */
 [data-theme="light"] .thumb-wrapper {
   background: #d4d4d4 !important;
 }
