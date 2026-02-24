@@ -171,11 +171,11 @@
 <div id="configModal" class="modal-overlay">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">⚙️ 서버 연결 설정</div>
+      <div class="modal-title">MyLib Setting</div>
     </div>
     <div class="modal-body" style="text-align: center">
       <p style="color: var(--text-tertiary); font-size: 14px; margin-bottom: 20px">
-        Google Apps Script 배포 URL과 인증 정보를 입력하세요.
+        Google Apps Script 배포 URL및 인증 정보를 입력하세요.
       </p>
       <div class="config-group">
         <label class="config-label">GAS 웹 앱 URL</label>
@@ -186,7 +186,7 @@
         <input type="text" id="configFolderId" class="config-input" placeholder="Google Drive Folder ID" />
       </div>
       <div class="config-group">
-        <label class="config-label">API ID</label>
+        <label class="config-label">ID(API_ID)</label>
         <input type="text" id="configApiId" class="config-input" placeholder="ID" />
       </div>
       <div class="config-group">
@@ -194,10 +194,10 @@
         <input type="password" id="configApiPassword" class="config-input" placeholder="Password" />
       </div>
       <div class="config-group">
-        <label class="config-label">알림 이메일 (선택)</label>
+        <label class="config-label">Log Mail(선택)</label>
         <input type="email" id="configNotifyEmail" class="config-input" placeholder="email@example.com" />
       </div>
-      <button class="btn btn-save" onclick="saveManualConfig()">설정 저장</button>
+      <button class="btn btn-save" onclick="saveManualConfig()">Save</button>
     </div>
   </div>
 </div>
