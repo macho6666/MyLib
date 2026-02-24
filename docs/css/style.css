@@ -472,9 +472,13 @@ textarea.config-input {
 }
 
 header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-primary);
   margin-bottom: 32px;
+  padding-top: 16px;
 }
-
 .header-top {
   margin-bottom: 16px;
 }
