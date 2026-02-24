@@ -478,6 +478,7 @@ header {
   background: var(--bg-primary);
   margin-bottom: 32px;
   padding-top: 16px;
+  padding-bottom: 16px;
 }
 .header-top {
   margin-bottom: 16px;
