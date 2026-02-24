@@ -65,22 +65,6 @@
 
       <div class="sidebar-divider" id="tagDivider" style="display:none;"></div>
 
-<div class="sidebar-section">
-  <div class="sidebar-item" onclick="openIndexModal('quick')">
-    ϟ Quick Update
-  </div>
-  <div class="sidebar-item" onclick="openIndexModal('full')">
-    ⟳ Full Rebuild
-  </div>
-  <div class="sidebar-item" onclick="dataSync()">
-    ↻ Data Sync
-  </div>
-  <div class="sidebar-item" onclick="logout()">
-    → Logout
-  </div>
-</div>
-      <div class="sidebar-divider"></div>
-
       <div class="sidebar-section">
         <div class="sidebar-item accordion-header" onclick="toggleSettingsAccordion()">
           <span>Settings</span>
@@ -113,10 +97,25 @@
           <button class="btn btn-save-settings" onclick="saveActiveSettings()">저장</button>
         </div>
       </div>
-    </div>
-        <div class="sidebar-divider"></div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-item" onclick="openIndexModal('quick')">
+          ϟ Quick Update
+        </div>
+        <div class="sidebar-item" onclick="openIndexModal('full')">
+          ⟳ Full Rebuild
+        </div>
+        <div class="sidebar-item" onclick="dataSync()">
+          ↻ Data Sync
+        </div>
+        <div class="sidebar-item" onclick="logout()">
+          → Logout
+        </div>
       </div>
     </div>
+
     <div class="sidebar-version" id="viewerVersionDisplay">Version: Loading...</div>
   </div>
 
