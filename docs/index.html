@@ -420,17 +420,17 @@
     </div>
   </div>
     
-    <!-- ===== INDEX UPDATE MODAL ===== -->
+<!-- ===== INDEX UPDATE MODAL ===== -->
 <div id="indexModal" class="modal-overlay">
   <div class="modal index-modal">
     <div class="modal-header">
-      <div class="modal-title">📚 Index Update</div>
+      <div class="modal-title">Index Update</div>
       <button class="modal-close" onclick="closeIndexModal()">×</button>
     </div>
     <div class="modal-body">
       <!-- Status -->
       <div class="index-status">
-        <span id="indexStatusBadge" class="index-status-badge idle">⏹ 대기 중</span>
+        <span id="indexStatusBadge" class="index-status-badge idle">Idle</span>
         <span id="indexModeLabel" class="index-mode-label"></span>
       </div>
 
@@ -438,15 +438,15 @@
       <div class="index-stats">
         <div class="index-stat-item">
           <div class="index-stat-value" id="indexProcessed">0</div>
-          <div class="index-stat-label">처리됨</div>
+          <div class="index-stat-label">Processed</div>
         </div>
         <div class="index-stat-item">
           <div class="index-stat-value" id="indexTotal">0</div>
-          <div class="index-stat-label">전체</div>
+          <div class="index-stat-label">Total</div>
         </div>
         <div class="index-stat-item">
           <div class="index-stat-value" id="indexMissing">0</div>
-          <div class="index-stat-label">커버 누락</div>
+          <div class="index-stat-label">Missing</div>
         </div>
       </div>
 
@@ -468,30 +468,30 @@
       <div class="index-log-header">
         <label>
           <input type="checkbox" id="indexAutoScroll" checked />
-          자동 스크롤
+          Auto Scroll
         </label>
-        <span class="index-log-count" id="indexLogCount">0 줄</span>
+        <span class="index-log-count" id="indexLogCount">0 lines</span>
       </div>
       <div class="index-log-container" id="indexLogContainer">
         <div class="index-log-entry">
           <span class="index-log-time">--:--:--</span>
-          <span class="index-log-msg">대기 중...</span>
+          <span class="index-log-msg">Waiting...</span>
         </div>
       </div>
 
       <!-- Buttons -->
       <div class="index-buttons">
-        <button class="index-btn index-btn-full" id="indexBtnFull" onclick="startIndexUpdate('full')">
-          🔨 Full Rebuild
+        <button class="btn index-btn" id="indexBtnFull" onclick="startIndexUpdate('full')">
+          Full Rebuild
         </button>
-        <button class="index-btn index-btn-quick" id="indexBtnQuick" onclick="startIndexUpdate('quick')">
-          ⚡ Quick Update
+        <button class="btn index-btn" id="indexBtnQuick" onclick="startIndexUpdate('quick')">
+          Quick Update
         </button>
-        <button class="index-btn index-btn-pause" id="indexBtnPause" onclick="pauseIndexUpdate()" disabled>
-          ⏸ 일시정지
+        <button class="btn index-btn" id="indexBtnPause" onclick="pauseIndexUpdate()" disabled>
+          Pause
         </button>
-        <button class="index-btn index-btn-close" onclick="closeIndexModal()">
-          닫기
+        <button class="btn index-btn index-btn-close" onclick="closeIndexModal()">
+          Close
         </button>
       </div>
     </div>
