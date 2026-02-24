@@ -1505,18 +1505,18 @@ function updateIndexUI(data) {
         refreshDB(null, true); // 라이브러리 새로고침
     }
     
-    // 상태 배지
-    var badge = document.getElementById('indexStatusBadge');
-    if (data.running) {
-        badge.className = 'index-status-badge running';
-        badge.textContent = '▶ 실행 중';
-    } else if (data.mode && data.processed > 0 && data.processed < data.totalSeries) {
-        badge.className = 'index-status-badge paused';
-        badge.textContent = '⏸ 일시정지';
-    } else {
-        badge.className = 'index-status-badge idle';
-        badge.textContent = '⏹ 대기 중';
-    }
+// 상태 배지
+var badge = document.getElementById('indexStatusBadge');
+if (data.running) {
+    badge.className = 'index-status-badge running';
+    badge.textContent = 'Running';
+} else if (data.mode && data.processed > 0 && data.processed < data.totalSeries) {
+    badge.className = 'index-status-badge paused';
+    badge.textContent = 'Paused';
+} else {
+    badge.className = 'index-status-badge idle';
+    badge.textContent = 'Idle';
+}
     
     // 모드 라벨
     var modeLabel = document.getElementById('indexModeLabel');
