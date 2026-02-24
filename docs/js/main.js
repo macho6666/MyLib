@@ -1157,7 +1157,26 @@ function openEpisodeEdit(index) {
 }
 
 // ===== 캘린더 =====
-// ===== 캘린더 렌더링 =====
+function showCalendar() {
+    document.getElementById('calendarModal').style.display = 'flex';
+    
+    if (!selectedCalendarDate) {
+        selectedCalendarDate = formatDateStr(new Date());
+    }
+    
+    renderCalendar();
+    renderCalendarRecords(selectedCalendarDate);
+    updateCalendarStats();
+    
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar && sidebar.classList.contains('open')) {
+        toggleSidebar();
+    }
+}
+
+function closeCalendarModal() {
+    document.getElementById('calendarModal').style.display = 'none';
+}
 function renderCalendar() {
     var grid = document.getElementById('calendarGrid');
     var titleEl = document.getElementById('calendarTitle');
