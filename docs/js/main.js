@@ -78,11 +78,11 @@ function handleMessage(event) {
 // ===== 로컬 데이터 =====
 function loadLocalData() {
     try {
-        customTags = JSON.parse(localStorage.getItem('toki_tags')) || [];
-        seriesTags = JSON.parse(localStorage.getItem('toki_series_tags')) || {};
-        calendarData = JSON.parse(localStorage.getItem('toki_calendar')) || {};
-        favorites = JSON.parse(localStorage.getItem('toki_favorites')) || [];
-        adultFilterEnabled = localStorage.getItem('toki_adult_filter') === 'true';
+        customTags = JSON.parse(localStorage.getItem('mylib_tags')) || [];
+        seriesTags = JSON.parse(localStorage.getItem('mylib_series_tags')) || {};
+        calendarData = JSON.parse(localStorage.getItem('mylib_calendar')) || {};
+        favorites = JSON.parse(localStorage.getItem('mylib_favorites')) || [];
+        adultFilterEnabled = localStorage.getItem('mylib_adult_filter') === 'true';
         
         updateAdultToggle();
         updateSidebarTags();
@@ -92,11 +92,11 @@ function loadLocalData() {
 }
 
 function saveLocalData() {
-    localStorage.setItem('toki_tags', JSON.stringify(customTags));
-    localStorage.setItem('toki_series_tags', JSON.stringify(seriesTags));
-    localStorage.setItem('toki_calendar', JSON.stringify(calendarData));
-    localStorage.setItem('toki_favorites', JSON.stringify(favorites));
-    localStorage.setItem('toki_adult_filter', adultFilterEnabled);
+    localStorage.setItem('mylib_tags', JSON.stringify(customTags));
+    localStorage.setItem('mylib_series_tags', JSON.stringify(seriesTags));
+    localStorage.setItem('mylib_calendar', JSON.stringify(calendarData));
+    localStorage.setItem('mylib_favorites', JSON.stringify(favorites));
+    localStorage.setItem('mylib_adult_filter', adultFilterEnabled);
 }
 
 function clearBlobUrls() {
@@ -121,7 +121,7 @@ function toggleTheme() {
     var current = html.getAttribute('data-theme');
     var next = current === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
-    localStorage.setItem('toki_theme', next);
+    localStorage.setItem('mylib_theme', next);
     
     var indicator = document.getElementById('themeIndicator');
     var headerIcon = document.getElementById('headerThemeIcon');
@@ -132,7 +132,7 @@ function toggleTheme() {
 }
 
 function loadSavedTheme() {
-    var saved = localStorage.getItem('toki_theme') || 'dark';
+    var saved = localStorage.getItem('mylib_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
     
     var icon = saved === 'dark' ? '🌙' : '☀️';
@@ -1358,10 +1358,10 @@ function saveActiveSettings() {
     var vEngine = document.querySelector('input[name="view_engine"]:checked');
     vEngine = vEngine ? vEngine.value : 'legacy';
 
-    localStorage.setItem('toki_v_mode', vMode);
-    localStorage.setItem('toki_v_cover', vCover);
-    localStorage.setItem('toki_v_rtl', vRtl);
-    localStorage.setItem('toki_v_engine', vEngine);
+    localStorage.setItem('mylib_v_mode', vMode);
+    localStorage.setItem('mylib_v_cover', vCover);
+    localStorage.setItem('mylib_v_rtl', vRtl);
+    localStorage.setItem('mylib_v_engine', vEngine);
 
     showToast("Settings saved");
     
@@ -1384,10 +1384,10 @@ function loadDomains() {
     if (API._config.apiPassword && elApiPassword) elApiPassword.value = API._config.apiPassword;
     if (API._config.notifyEmail && elNotifyEmail) elNotifyEmail.value = API._config.notifyEmail;
 
-    var vMode = localStorage.getItem('toki_v_mode') || '1page';
-    var vCover = (localStorage.getItem('toki_v_cover') === 'true');
-    var vRtl = (localStorage.getItem('toki_v_rtl') === 'true');
-    var vEngine = localStorage.getItem('toki_v_engine') || 'legacy';
+    var vMode = localStorage.getItem('mylib_v_mode') || '1page';
+    var vCover = (localStorage.getItem('mylib_v_cover') === 'true');
+    var vRtl = (localStorage.getItem('mylib_v_rtl') === 'true');
+    var vEngine = localStorage.getItem('mylib_v_engine') || 'legacy';
 
     var pref2page = document.getElementById('pref_2page');
     var prefCover = document.getElementById('pref_cover');
@@ -1745,7 +1745,7 @@ async function saveToDrive() {
       favorites: favorites,
       settings: {
         adultFilter: adultFilterEnabled,
-        theme: localStorage.getItem('toki_theme'),
+        theme: localStorage.getItem('mylib_theme'),
         domains: JSON.parse(localStorage.getItem('toki_domains') || '{}')
       }
     };
@@ -1778,7 +1778,7 @@ async function loadFromDrive() {
         adultFilterEnabled = userData.settings.adultFilter;
       }
       if (userData.settings.theme) {
-        localStorage.setItem('toki_theme', userData.settings.theme);
+        localStorage.setItem('mylib_theme', userData.settings.theme);
         loadSavedTheme();
       }
       if (userData.settings.domains) {
