@@ -1430,17 +1430,168 @@ h1:hover {
   gap: 10px;
 }
 /* ===== CALENDAR MODAL ===== */
+/* Calendar Modal - Compact */
 .calendar-modal {
   max-width: 400px;
   max-height: 85vh;
 }
 
-.calendar-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.calendar-wrapper {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
 }
 
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cal-nav {
+  background: var(--bg-input);
+  border: none;
+  color: var(--text-secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 10px;
+  transition: var(--transition);
+}
+
+.cal-nav:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cal-day-header {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  padding: 6px 0;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+
+.cal-day:hover {
+  background: var(--bg-hover);
+}
+
+.cal-day.today {
+  background: var(--accent-light);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.cal-day.selected {
+  background: var(--accent);
+  color: white;
+}
+
+.cal-day.has-record::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 3px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.cal-day.other-month {
+  color: var(--text-muted);
+}
+
+/* Records */
+.calendar-records {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.records-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.records-date {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.records-list {
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.record-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+}
+
+.record-item:last-child {
+  border-bottom: none;
+}
+
+.record-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.record-meta {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.btn-add-record {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border-color);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-add-record:hover {
+  background: var(--bg-hover);
+}
+
+/* Stats - Compact */
 .calendar-stats {
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
@@ -1483,12 +1634,6 @@ h1:hover {
   color: var(--text-tertiary);
 }
 
-.stat-value {
-  display: block;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
 /* Record Modal */
 .record-modal {
   max-width: 360px;
@@ -1594,166 +1739,6 @@ h1:hover {
   gap: 10px;
   justify-content: flex-end;
   margin-top: 16px;
-}
-.stat-label {
-  display: block;
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin-top: 4px;
-}
-
-.calendar-wrapper {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  padding: 12px;
-  margin-bottom: 12px;
-}
-
-.calendar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.cal-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.cal-nav {
-  background: var(--bg-input);
-  border: none;
-  color: var(--text-secondary);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 10px;
-  transition: var(--transition);
-}
-
-.cal-nav:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-}
-
-.cal-day-header {
-  text-align: center;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  padding: 6px 0;
-}
-
-.cal-day {
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  color: var(--text-secondary);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: var(--transition);
-  position: relative;
-}
-
-.cal-day:hover {
-  background: var(--bg-hover);
-}
-
-.cal-day.today {
-  background: var(--accent-light);
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.cal-day.selected {
-  background: var(--accent);
-  color: white;
-}
-
-.cal-day.has-record::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  width: 3px;
-  height: 3px;
-  background: var(--accent);
-  border-radius: 50%;
-}
-
-.cal-day.other-month {
-  color: var(--text-muted);
-}
-
-.calendar-records {
-  background: var(--bg-input);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.records-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.records-date {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.records-list {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.record-item {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.record-item:last-child {
-  border-bottom: none;
-}
-
-.record-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.record-meta {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-
-.btn-add-record {
-  width: 100%;
-  padding: 12px;
-  background: transparent;
-  border: none;
-  border-top: 1px solid var(--border-color);
-  color: var(--link);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: var(--font-primary);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.btn-add-record:hover {
-  background: var(--bg-hover);
 }
 
 /* ===== EPISODE LIST ===== */
