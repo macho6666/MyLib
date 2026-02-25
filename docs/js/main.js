@@ -291,7 +291,7 @@ function renderGrid(seriesList) {
                 statusClass = 'completed';
             }
 
-            var authorText = authors.join(', ') || '작가 미상';
+            
             var authorClass = isAdult ? 'author adult' : 'author';
 
             card.innerHTML = 
