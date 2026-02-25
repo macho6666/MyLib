@@ -695,10 +695,10 @@ function openDetailModal(index) {
         }
     }
 
-    document.getElementById('detailInfoTitle').textContent = series.name || '-';
+document.getElementById('detailInfoTitle').textContent = series.name || '-';
     
-    var authorText = isAdult ? '🔞 ' + (authors.join(', ') || '작가 미상') : (authors.join(', ') || '작가 미상');
-    document.getElementById('detailInfoAuthor').textContent = authorText;
+var authorText = authors.join(', ') || '작가 미상';
+document.getElementById('detailInfoAuthor').textContent = authorText;
     
     document.getElementById('detailInfoStatus').textContent = meta.status || '-';
     document.getElementById('detailInfoPlatform').textContent = meta.publisher || '-';
