@@ -1334,32 +1334,6 @@ function updateCalendarStats() {
     document.getElementById('statRemaining').innerHTML = remaining + ' <small>(' + remainPercent + '%)</small>';
     document.getElementById('statTotal').textContent = total;
 }
-    // 상태 필터링
-    var filtered = Object.values(latestRecords).filter(function(item) {
-        return item.record.status === status;
-    });
-    
-    listEl.innerHTML = '';
-    
-    if (filtered.length === 0) {
-        listEl.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-tertiary); font-size: 12px;">기록 없음</div>';
-        return;
-    }
-    
-    filtered.forEach(function(item) {
-        var series = allSeries.find(function(s) { return s.id === item.record.seriesId; });
-        var name = series ? series.name : 'Unknown';
-        
-        var recordItem = document.createElement('div');
-        recordItem.className = 'record-item';
-        recordItem.innerHTML = 
-            '<div class="record-title">' + name + '</div>' +
-            '<div class="record-meta">' + item.record.progress + '% · ' + item.date + 
-            (item.record.memo ? ' · ' + item.record.memo : '') + '</div>';
-        listEl.appendChild(recordItem);
-    });
-}
-
 function renderCalendarRecords(dateStr) {
     var dateEl = document.getElementById('recordsDate');
     var listEl = document.getElementById('recordsList');
