@@ -1439,25 +1439,32 @@ function deleteCalendarRecord(dateStr, index) {
 }
 // Record Modal
 function openRecordModal() {
-    if (!selectedCalendarDate) {
-        showToast('Select a date first');
-        return;
-    }
-    
-    document.getElementById('recordModalTitle').textContent = selectedCalendarDate;
-    document.getElementById('recordBookSearch').value = '';
-    document.getElementById('recordBookResults').innerHTML = '';
-    document.getElementById('recordBookResults').classList.remove('show');
-    document.getElementById('recordSelectedBook').classList.remove('show');
-    document.getElementById('recordBookId').value = '';
-    document.getElementById('recordProgress').value = 0;
-    document.getElementById('recordProgressValue').textContent = '0';
-    document.getElementById('recordMemo').value = '';
-    document.querySelector('input[name="recordStatus"][value="reading"]').checked = true;
-    
-    selectedRecordBookId = '';
-    selectedRecordBookName = '';
-    
+  if (!selectedCalendarDate) {
+    showToast('Select a date first');
+    return;
+  }
+  
+  document.getElementById('recordModalTitle').textContent = selectedCalendarDate;
+  document.getElementById('recordBookSearch').value = '';
+  document.getElementById('recordBookResults').innerHTML = '';
+  document.getElementById('recordBookResults').classList.remove('show');
+  document.getElementById('recordSelectedBook').style.display = 'none';
+  document.getElementById('recordBookId').value = '';
+  document.getElementById('recordProgress').value = 0;
+  document.getElementById('recordProgressValue').textContent = '0';
+  document.querySelector('input[name="recordStatus"][value="reading"]').checked = true;
+  
+  // 메모 필드 초기화
+  document.getElementById('recordMemosContainer').innerHTML = 
+    '<div class="record-memo-row">' +
+      '<input type="text" class="config-input record-memo-input" placeholder="Add memo...">' +
+    '</div>';
+  
+  selectedRecordBookId = '';
+  selectedRecordBookName = '';
+  
+  document.getElementById('recordModal').style.display = 'flex';
+}
     // 이전 기록 있으면 불러오기
     var records = calendarData[selectedCalendarDate] || [];
     if (records.length > 0) {
@@ -1502,16 +1509,33 @@ function searchBooks(query) {
 }
 
 function selectBook(id, name) {
-    selectedRecordBookId = id;
-    selectedRecordBookName = name;
-    
-    document.getElementById('recordBookId').value = id;
-    document.getElementById('recordBookSearch').value = '';
-    document.getElementById('recordBookResults').classList.remove('show');
-    
-    var selectedEl = document.getElementById('recordSelectedBook');
-    selectedEl.textContent = name;
-    selectedEl.classList.add('show');
+  selectedRecordBookId = id;
+  selectedRecordBookName = name;
+  
+  document.getElementById('recordBookId').value = id;
+  document.getElementById('recordBookSearch').value = '';
+  document.getElementById('recordBookResults').classList.remove('show');
+  
+  // 커버 이미지 표시
+  var series = allSeries.find(function(s) { return s.id === id; });
+  var thumb = '';
+  if (series) {
+    if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
+      thumb = series.thumbnail;
+    } else if (series.thumbnailId) {
+      thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
+    }
+  }
+  
+  var coverEl = document.getElementById('recordSelectedCover');
+  if (thumb) {
+    coverEl.innerHTML = '<img src="' + thumb + '" alt="">';
+  } else {
+    coverEl.innerHTML = '';
+  }
+  
+  document.getElementById('recordSelectedName').textContent = name;
+  document.getElementById('recordSelectedBook').style.display = 'flex';
 }
 
 function updateProgressValue(value) {
@@ -1519,45 +1543,78 @@ function updateProgressValue(value) {
 }
 
 function saveRecord() {
-    if (!selectedRecordBookId) {
-        showToast('Please select a book');
-        return;
+  if (!selectedRecordBookId) {
+    showToast('Please select a book');
+    return;
+  }
+  
+  var progress = parseInt(document.getElementById('recordProgress').value);
+  var status = document.querySelector('input[name="recordStatus"]:checked').value;
+  
+  // 모든 메모 수집
+  var memos = [];
+  var memoInputs = document.querySelectorAll('.record-memo-input');
+  memoInputs.forEach(function(input) {
+    var memo = input.value.trim();
+    if (memo) {
+      memos.push(memo);
     }
-    
-    var progress = parseInt(document.getElementById('recordProgress').value);
-    var status = document.querySelector('input[name="recordStatus"]:checked').value;
-    var memo = document.getElementById('recordMemo').value.trim();
-    
-    if (!calendarData[selectedCalendarDate]) {
-        calendarData[selectedCalendarDate] = [];
+  });
+  
+  if (!calendarData[selectedCalendarDate]) {
+    calendarData[selectedCalendarDate] = [];
+  }
+  
+  // 같은 책 기록 있으면 업데이트
+  var existingIndex = calendarData[selectedCalendarDate].findIndex(function(r) {
+    return r.seriesId === selectedRecordBookId;
+  });
+  
+  var record = {
+    seriesId: selectedRecordBookId,
+    status: status,
+    progress: progress,
+    memos: memos
+  };
+  
+  if (existingIndex >= 0) {
+    // 기존 메모에 추가
+    var existingMemos = calendarData[selectedCalendarDate][existingIndex].memos || [];
+    record.memos = existingMemos.concat(memos);
+    calendarData[selectedCalendarDate][existingIndex] = record;
+  } else {
+    calendarData[selectedCalendarDate].push(record);
+  }
+  
+  saveLocalData();
+  renderCalendar();
+  updateCalendarStats();
+  closeRecordModal();
+  showToast('Record saved');
+  
+  // 완독 선택 시 폴더 이동 여부 묻기
+  if (status === 'completed') {
+    var series = allSeries.find(function(s) { return s.id === selectedRecordBookId; });
+    if (series && series.category !== 'Completed') {
+      setTimeout(function() {
+        if (confirm('Move "' + series.name + '" to Completed folder?')) {
+          moveToCompletedById(selectedRecordBookId);
+        }
+      }, 500);
     }
-    
-    // 같은 책 기록 있으면 업데이트
-    var existingIndex = calendarData[selectedCalendarDate].findIndex(function(r) {
-        return r.seriesId === selectedRecordBookId;
-    });
-    
-    var record = {
-        seriesId: selectedRecordBookId,
-        status: status,
-        progress: progress,
-        memo: memo
-    };
-    
-    if (existingIndex >= 0) {
-        calendarData[selectedCalendarDate][existingIndex] = record;
-    } else {
-        calendarData[selectedCalendarDate].push(record);
-    }
-    
-    saveLocalData();
-    renderCalendar();
-    renderCalendarRecords(selectedCalendarDate);
-    updateCalendarStats();
-    closeRecordModal();
-    showToast('Record saved');
+  }
 }
-
+async function moveToCompletedById(seriesId) {
+  showToast('Moving...');
+  
+  try {
+    var result = await API.request('move_to_completed', { seriesId: seriesId });
+    showToast('Moved to Completed');
+    refreshDB(null, true);
+  } catch (e) {
+    showToast('Error: ' + e.message, 5000);
+  }
+}
 // ===== 기타 함수들 =====
 function toggleSettings() {
     var el = document.getElementById('domainPanel');
@@ -2029,6 +2086,7 @@ async function loadFromDrive() {
     showToast("❌ 불러오기 실패: " + e.message, 5000);
   }
 }
+
 // ===== Completed 카테고리 =====
 async function moveToCompleted() {
   var series = window.currentDetailSeries;
@@ -2301,6 +2359,13 @@ function deleteMemo(dateStr, seriesId, memoIndex) {
     showToast('Memo deleted');
   }
 }
+function addMemoField() {
+  var container = document.getElementById('recordMemosContainer');
+  var row = document.createElement('div');
+  row.className = 'record-memo-row';
+  row.innerHTML = '<input type="text" class="config-input record-memo-input" placeholder="Add memo...">';
+  container.appendChild(row);
+}
 // ===== Window 등록 =====
 window.refreshDB = refreshDB;
 window.toggleSettings = toggleSettings;
@@ -2379,3 +2444,5 @@ window.openBookRecords = openBookRecords;
 window.closeBookRecordsModal = closeBookRecordsModal;
 window.deleteRecord = deleteRecord;
 window.deleteMemo = deleteMemo;
+window.addMemoField = addMemoField;
+window.moveToCompletedById = moveToCompletedById;
