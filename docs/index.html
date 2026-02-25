@@ -472,6 +472,7 @@
   </div>
 </div>
 <!-- ===== RECORD MODAL (날짜 기록) ===== -->
+<!-- ===== RECORD MODAL ===== -->
 <div id="recordModal" class="modal-overlay">
   <div class="modal record-modal">
     <div class="modal-header">
@@ -485,7 +486,12 @@
         <input type="text" id="recordBookSearch" class="config-input" placeholder="Search book..." oninput="searchBooks(this.value)">
         <div class="record-book-results" id="recordBookResults"></div>
         <input type="hidden" id="recordBookId">
-        <div class="record-selected-book" id="recordSelectedBook"></div>
+      </div>
+
+      <!-- 선택된 책 (커버 포함) -->
+      <div class="record-selected-book" id="recordSelectedBook" style="display:none;">
+        <div class="record-selected-cover" id="recordSelectedCover"></div>
+        <div class="record-selected-name" id="recordSelectedName"></div>
       </div>
 
       <!-- 진행률 -->
@@ -516,7 +522,12 @@
       <!-- 메모 -->
       <div class="record-field">
         <label>Memo</label>
-        <textarea id="recordMemo" class="config-input" placeholder="Notes..."></textarea>
+        <div class="record-memos-container" id="recordMemosContainer">
+          <div class="record-memo-row">
+            <input type="text" class="config-input record-memo-input" placeholder="Add memo...">
+          </div>
+        </div>
+        <button class="btn-add-memo" onclick="addMemoField()">+ Add Memo</button>
       </div>
 
       <!-- 버튼 -->
@@ -527,7 +538,6 @@
     </div>
   </div>
 </div>
-    
 <!-- ===== INDEX UPDATE MODAL ===== -->
 <div id="indexModal" class="modal-overlay">
   <div class="modal index-modal">
