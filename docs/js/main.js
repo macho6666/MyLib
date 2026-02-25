@@ -2080,6 +2080,227 @@ async function restoreToCategory(category) {
     showToast('Error: ' + e.message, 5000);
   }
 }
+// ===== 미니 책장 모달 =====
+function showRecordsByStatus(status) {
+  var statusLabel = status === 'completed' ? 'Completed' : 
+                    status === 'dropped' ? 'Dropped' : 'Reading';
+  
+  // 해당 상태의 책들 수집
+  var latestRecords = {};
+  
+  Object.keys(calendarData).forEach(function(dateStr) {
+    calendarData[dateStr].forEach(function(record) {
+      latestRecords[record.seriesId] = {
+        record: record,
+        date: dateStr
+      };
+    });
+  });
+  
+  // 상태 필터링
+  var filtered = Object.values(latestRecords).filter(function(item) {
+    return item.record.status === status;
+  });
+  
+  document.getElementById('bookshelfTitle').textContent = statusLabel + ' (' + filtered.length + ')';
+  
+  var grid = document.getElementById('bookshelfGrid');
+  grid.innerHTML = '';
+  
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-tertiary); padding: 20px;">No records</div>';
+    document.getElementById('bookshelfModal').style.display = 'flex';
+    return;
+  }
+  
+  filtered.forEach(function(item) {
+    var series = allSeries.find(function(s) { return s.id === item.record.seriesId; });
+    if (!series) return;
+    
+    var thumb = '';
+    if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
+      thumb = series.thumbnail;
+    } else if (series.thumbnailId) {
+      thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
+    }
+    
+    var bookItem = document.createElement('div');
+    bookItem.className = 'bookshelf-item';
+    bookItem.innerHTML = 
+      '<div class="bookshelf-cover">' +
+        (thumb ? '<img src="' + thumb + '" alt="">' : '<div class="bookshelf-cover-noimage">No Image</div>') +
+      '</div>' +
+      '<button class="bookshelf-delete" onclick="event.stopPropagation(); deleteBookRecords(\'' + series.id + '\')" title="Delete">x</button>' +
+      '<div class="bookshelf-name">' + series.name + '</div>';
+    
+    bookItem.onclick = function() {
+      openBookRecords(series.id);
+    };
+    
+    grid.appendChild(bookItem);
+  });
+  
+  document.getElementById('bookshelfModal').style.display = 'flex';
+}
+
+function closeBookshelfModal() {
+  document.getElementById('bookshelfModal').style.display = 'none';
+}
+
+function deleteBookRecords(seriesId) {
+  var series = allSeries.find(function(s) { return s.id === seriesId; });
+  var name = series ? series.name : 'Unknown';
+  
+  if (!confirm('Delete all records for "' + name + '"?')) return;
+  
+  // 모든 날짜에서 해당 책 기록 삭제
+  Object.keys(calendarData).forEach(function(dateStr) {
+    calendarData[dateStr] = calendarData[dateStr].filter(function(r) {
+      return r.seriesId !== seriesId;
+    });
+    if (calendarData[dateStr].length === 0) {
+      delete calendarData[dateStr];
+    }
+  });
+  
+  saveLocalData();
+  updateCalendarStats();
+  
+  // 현재 상태 다시 로드
+  var currentStatus = document.getElementById('bookshelfTitle').textContent.toLowerCase();
+  if (currentStatus.includes('completed')) {
+    showRecordsByStatus('completed');
+  } else if (currentStatus.includes('dropped')) {
+    showRecordsByStatus('dropped');
+  } else {
+    showRecordsByStatus('reading');
+  }
+  
+  showToast('Records deleted');
+}
+
+// ===== 상세 기록 모달 =====
+function openBookRecords(seriesId) {
+  var series = allSeries.find(function(s) { return s.id === seriesId; });
+  if (!series) return;
+  
+  document.getElementById('bookRecordsTitle').textContent = series.name;
+  
+  // 헤더 (커버 + 정보)
+  var thumb = '';
+  if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
+    thumb = series.thumbnail;
+  } else if (series.thumbnailId) {
+    thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
+  }
+  
+  // 최신 상태 찾기
+  var latestStatus = 'reading';
+  var latestProgress = 0;
+  Object.keys(calendarData).sort().forEach(function(dateStr) {
+    calendarData[dateStr].forEach(function(r) {
+      if (r.seriesId === seriesId) {
+        latestStatus = r.status;
+        latestProgress = r.progress;
+      }
+    });
+  });
+  
+  var statusText = latestStatus === 'completed' ? 'Completed' : 
+                   latestStatus === 'dropped' ? 'Dropped' : 'Reading';
+  
+  document.getElementById('bookRecordsHeader').innerHTML = 
+    '<div class="book-records-cover">' +
+      (thumb ? '<img src="' + thumb + '" alt="">' : '') +
+    '</div>' +
+    '<div class="book-records-info">' +
+      '<div class="book-records-name">' + series.name + '</div>' +
+      '<div class="book-records-status">Progress: ' + latestProgress + '% / ' + statusText + '</div>' +
+    '</div>';
+  
+  // 기록 목록
+  var recordsList = document.getElementById('bookRecordsList');
+  recordsList.innerHTML = '';
+  
+  var dates = Object.keys(calendarData).sort().reverse();
+  var hasRecords = false;
+  
+  dates.forEach(function(dateStr) {
+    var dayRecords = calendarData[dateStr].filter(function(r) {
+      return r.seriesId === seriesId;
+    });
+    
+    dayRecords.forEach(function(record, recordIndex) {
+      hasRecords = true;
+      
+      var item = document.createElement('div');
+      item.className = 'book-record-item';
+      
+      var memosHtml = '';
+      if (record.memos && record.memos.length > 0) {
+        record.memos.forEach(function(memo, memoIndex) {
+          memosHtml += 
+            '<div class="book-record-memo">' +
+              '<span>' + memo + '</span>' +
+              '<button class="book-record-memo-delete" onclick="deleteMemo(\'' + dateStr + '\', \'' + seriesId + '\', ' + memoIndex + ')">x</button>' +
+            '</div>';
+        });
+      }
+      
+      item.innerHTML = 
+        '<div class="book-record-date">' +
+          '<span class="book-record-date-text">' + dateStr + '</span>' +
+          '<button class="book-record-delete" onclick="deleteRecord(\'' + dateStr + '\', \'' + seriesId + '\')">x</button>' +
+        '</div>' +
+        '<div class="book-record-progress">' + record.progress + '%</div>' +
+        '<div class="book-record-memos">' + memosHtml + '</div>';
+      
+      recordsList.appendChild(item);
+    });
+  });
+  
+  if (!hasRecords) {
+    recordsList.innerHTML = '<div style="text-align: center; color: var(--text-tertiary); padding: 20px;">No records</div>';
+  }
+  
+  document.getElementById('bookRecordsModal').style.display = 'flex';
+}
+
+function closeBookRecordsModal() {
+  document.getElementById('bookRecordsModal').style.display = 'none';
+}
+
+function deleteRecord(dateStr, seriesId) {
+  if (!confirm('Delete this record?')) return;
+  
+  calendarData[dateStr] = calendarData[dateStr].filter(function(r) {
+    return r.seriesId !== seriesId;
+  });
+  
+  if (calendarData[dateStr].length === 0) {
+    delete calendarData[dateStr];
+  }
+  
+  saveLocalData();
+  updateCalendarStats();
+  openBookRecords(seriesId);
+  showToast('Record deleted');
+}
+
+function deleteMemo(dateStr, seriesId, memoIndex) {
+  if (!confirm('Delete this memo?')) return;
+  
+  var record = calendarData[dateStr].find(function(r) {
+    return r.seriesId === seriesId;
+  });
+  
+  if (record && record.memos) {
+    record.memos.splice(memoIndex, 1);
+    saveLocalData();
+    openBookRecords(seriesId);
+    showToast('Memo deleted');
+  }
+}
 // ===== Window 등록 =====
 window.refreshDB = refreshDB;
 window.toggleSettings = toggleSettings;
@@ -2151,3 +2372,10 @@ window.moveToCompleted = moveToCompleted;
 window.openRestoreModal = openRestoreModal;
 window.closeRestoreModal = closeRestoreModal;
 window.restoreToCategory = restoreToCategory;
+window.showRecordsByStatus = showRecordsByStatus;
+window.closeBookshelfModal = closeBookshelfModal;
+window.deleteBookRecords = deleteBookRecords;
+window.openBookRecords = openBookRecords;
+window.closeBookRecordsModal = closeBookRecordsModal;
+window.deleteRecord = deleteRecord;
+window.deleteMemo = deleteMemo;
