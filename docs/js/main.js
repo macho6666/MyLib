@@ -1465,22 +1465,6 @@ function openRecordModal() {
   
   document.getElementById('recordModal').style.display = 'flex';
 }
-    // 이전 기록 있으면 불러오기
-    var records = calendarData[selectedCalendarDate] || [];
-    if (records.length > 0) {
-        var lastRecord = records[records.length - 1];
-        var series = allSeries.find(function(s) { return s.id === lastRecord.seriesId; });
-        if (series) {
-            selectBook(series.id, series.name);
-            document.getElementById('recordProgress').value = lastRecord.progress || 0;
-            document.getElementById('recordProgressValue').textContent = lastRecord.progress || 0;
-            document.querySelector('input[name="recordStatus"][value="' + lastRecord.status + '"]').checked = true;
-        }
-    }
-    
-    document.getElementById('recordModal').style.display = 'flex';
-}
-
 function closeRecordModal() {
     document.getElementById('recordModal').style.display = 'none';
 }
