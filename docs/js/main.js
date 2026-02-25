@@ -2020,6 +2020,57 @@ async function loadFromDrive() {
     showToast("❌ 불러오기 실패: " + e.message, 5000);
   }
 }
+// ===== Completed 카테고리 =====
+async function moveToCompleted() {
+  var series = window.currentDetailSeries;
+  if (!series) return;
+  
+  if (series.category === 'Completed') {
+    openRestoreModal();
+    return;
+  }
+  
+  if (!confirm('Move "' + series.name + '" to Completed?')) return;
+  
+  showToast('Moving...');
+  
+  try {
+    var result = await API.request('move_to_completed', { seriesId: series.id });
+    showToast('Moved to Completed');
+    closeDetailModal();
+    refreshDB(null, true);
+  } catch (e) {
+    showToast('Error: ' + e.message, 5000);
+  }
+}
+
+function openRestoreModal() {
+  document.getElementById('restoreModal').style.display = 'flex';
+}
+
+function closeRestoreModal() {
+  document.getElementById('restoreModal').style.display = 'none';
+}
+
+async function restoreToCategory(category) {
+  var series = window.currentDetailSeries;
+  if (!series) return;
+  
+  showToast('Restoring...');
+  
+  try {
+    var result = await API.request('restore_from_completed', { 
+      seriesId: series.id,
+      targetCategory: category
+    });
+    showToast('Restored to ' + category);
+    closeRestoreModal();
+    closeDetailModal();
+    refreshDB(null, true);
+  } catch (e) {
+    showToast('Error: ' + e.message, 5000);
+  }
+}
 // ===== Window 등록 =====
 window.refreshDB = refreshDB;
 window.toggleSettings = toggleSettings;
@@ -2087,3 +2138,7 @@ window.formatDateStr = formatDateStr;
 window.padZero = padZero;
 window.deleteCalendarRecord = deleteCalendarRecord;
 window.showRecordsByStatus = showRecordsByStatus;
+window.moveToCompleted = moveToCompleted;
+window.openRestoreModal = openRestoreModal;
+window.closeRestoreModal = closeRestoreModal;
+window.restoreToCategory = restoreToCategory;
