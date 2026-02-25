@@ -187,17 +187,20 @@
   <!-- ===== DETAIL MODAL ===== -->
   <div id="detailModal" class="modal-overlay">
     <div class="modal detail-modal">
-      <div class="modal-header">
-        <div class="modal-title" id="detailTitle">작품 제목</div>
-<div class="modal-header-actions">
-  <button class="btn-favorite" onclick="toggleFavorite()" title="즐겨찾기">
-    <span id="favoriteIcon">♡</span>
-  </button>
-  <button class="btn-header-edit" id="btnMoveCompleted" onclick="moveToCompleted()">Done</button>
-  <button class="btn-header-edit" onclick="openEditFromDetail()">Edit</button>
-  <button class="modal-close" onclick="closeDetailModal()">×</button>
+<div class="modal-header">
+  <div class="modal-title-wrapper">
+    <div class="modal-title" id="detailTitle">작품 제목</div>
+    <span class="adult-badge" id="detailAdultBadge" style="display:none;">19</span>
+  </div>
+  <div class="modal-header-actions">
+    <button class="btn-favorite" onclick="toggleFavorite()" title="즐겨찾기">
+      <span id="favoriteIcon">♡</span>
+    </button>
+    <button class="btn-header-edit" id="btnMoveCompleted" onclick="moveToCompleted()">Move</button>
+    <button class="btn-header-edit" onclick="openEditFromDetail()">Edit</button>
+    <button class="modal-close" onclick="closeDetailModal()">×</button>
+  </div>
 </div>
-      </div>
       <div class="modal-body">
         <!-- 커버 -->
         <div class="detail-cover-wrapper" onclick="toggleDetailEpisodes()">
@@ -234,9 +237,9 @@
             <span class="info-label">상태</span>
             <span class="info-value" id="detailInfoStatus">-</span>
           </div>
-          <div class="info-row clickable" onclick="openPlatformSite()">
-            <span class="info-label">플랫폼</span>
-            <span class="info-value info-link" id="detailInfoPlatform">-</span>
+          <div class="info-row clickable" onclick="openPlatformSite()" style="border-bottom:none;">
+           <span class="info-label">플랫폼</span>
+           <span class="info-value info-link" id="detailInfoPlatform">-</span>
           </div>
         </div><!-- 작품 소개 (토글) --><div class="description-wrapper" id="descWrapper">
           <div class="description-label">작품 소개</div>
