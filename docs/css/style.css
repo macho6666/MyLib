@@ -1008,9 +1008,9 @@ h1:hover {
 .description-wrapper {
   position: relative;
   margin-bottom: 16px;
-  margin-top: 12px;    
-  padding-top: 8px;
-  border-top: 1px solid var(--border-color);
+  margin-top: 0;    
+  padding-top: 10px;
+  border-top: none;
 }
 .description-label {
   font-size: 12px;
