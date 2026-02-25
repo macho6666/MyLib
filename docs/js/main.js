@@ -1174,7 +1174,6 @@ function showCalendar() {
     }
     
     renderCalendar();
-    renderCalendarRecords(selectedCalendarDate);
     updateCalendarStats();
     
     var sidebar = document.getElementById('sidebar');
