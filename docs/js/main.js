@@ -1272,8 +1272,6 @@ function selectCalendarDate(dateStr) {
     if (dayEl) {
         dayEl.classList.add('selected');
     }
-    
-    renderCalendarRecords(dateStr);
 }
 
 function formatDateStr(date) {
@@ -1347,7 +1345,6 @@ function deleteCalendarRecord(dateStr, index) {
         
         saveLocalData();
         renderCalendar();
-        renderCalendarRecords(dateStr);
         updateCalendarStats();
         showToast('Record deleted');
     }
