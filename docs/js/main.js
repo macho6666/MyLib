@@ -1334,28 +1334,6 @@ function updateCalendarStats() {
     document.getElementById('statRemaining').innerHTML = remaining + ' <small>(' + remainPercent + '%)</small>';
     document.getElementById('statTotal').textContent = total;
 }
-
-function showRecordsByStatus(status) {
-    var listEl = document.getElementById('recordsList');
-    var dateEl = document.getElementById('recordsDate');
-    
-var statusLabel = status === 'completed' ? '📚 Completed' : 
-                  status === 'dropped' ? '🚫 Dropped' : '📖 Reading';
-    
-    dateEl.textContent = statusLabel;
-    
-    // 해당 상태의 모든 기록 수집 (최신 상태 기준)
-    var latestRecords = {};
-    
-    Object.keys(calendarData).forEach(function(dateStr) {
-        calendarData[dateStr].forEach(function(record) {
-            latestRecords[record.seriesId] = {
-                record: record,
-                date: dateStr
-            };
-        });
-    });
-    
     // 상태 필터링
     var filtered = Object.values(latestRecords).filter(function(item) {
         return item.record.status === status;
