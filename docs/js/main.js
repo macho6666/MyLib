@@ -1157,6 +1157,8 @@ function openEpisodeEdit(index) {
 }
 
 // ===== 캘린더 =====
+var selectedRecordBookId = '';
+var selectedRecordBookName = '';
 function showCalendar() {
     document.getElementById('calendarModal').style.display = 'flex';
     
