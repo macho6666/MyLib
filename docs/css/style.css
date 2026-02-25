@@ -2526,12 +2526,9 @@ header h1 {
     cursor: pointer;
     transition: var(--transition);
 }
-
 .stat-clickable:hover {
-    color: var(--link);
-    text-decoration: underline;
+  color: var(--text-primary);
 }
-
 /* ===== MINI BOOKSHELF MODAL ===== */
 .bookshelf-modal {
   max-width: 500px;
