@@ -1334,42 +1334,6 @@ function updateCalendarStats() {
     document.getElementById('statRemaining').innerHTML = remaining + ' <small>(' + remainPercent + '%)</small>';
     document.getElementById('statTotal').textContent = total;
 }
-function renderCalendarRecords(dateStr) {
-    var dateEl = document.getElementById('recordsDate');
-    var listEl = document.getElementById('recordsList');
-    
-    var parts = dateStr.split('-');
-    dateEl.textContent = parts[0] + '-' + parts[1] + '-' + parts[2];
-    
-    var records = calendarData[dateStr] || [];
-    listEl.innerHTML = '';
-    
-    if (records.length === 0) {
-        listEl.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-tertiary); font-size: 12px;">No records</div>';
-        return;
-    }
-    
-    records.forEach(function(record, index) {
-        var series = allSeries.find(function(s) { return s.id === record.seriesId; });
-        var name = series ? series.name : 'Unknown';
-        
-        var statusText = record.status === 'completed' ? 'Completed' : 
-                        record.status === 'dropped' ? 'Dropped' : 'Reading';
-        
-        var item = document.createElement('div');
-        item.className = 'record-item';
-        item.innerHTML = 
-            '<div style="display:flex; justify-content:space-between; align-items:start;">' +
-                '<div>' +
-                    '<div class="record-title">' + name + '</div>' +
-                    '<div class="record-meta">' + record.progress + '% · ' + statusText + 
-                    (record.memo ? ' · ' + record.memo : '') + '</div>' +
-                '</div>' +
-                '<button class="record-delete-btn" onclick="deleteCalendarRecord(\'' + dateStr + '\', ' + index + ')" title="삭제">×</button>' +
-            '</div>';
-        listEl.appendChild(item);
-    });
-}
 
 function deleteCalendarRecord(dateStr, index) {
     if (!confirm('Delete this record?')) return;
