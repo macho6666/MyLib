@@ -41,6 +41,7 @@
         <div class="sidebar-item" data-tab="Novel" onclick="switchTab('Novel')">Novel</div>
         <div class="sidebar-item" data-tab="Webtoon" onclick="switchTab('Webtoon')">Webtoon</div>
         <div class="sidebar-item" data-tab="Manga" onclick="switchTab('Manga')">Comic</div>
+        <div class="sidebar-item" data-tab="Completed" onclick="switchTab('Completed')">Completed</div>
       </div>
 
       <div class="sidebar-divider"></div>
@@ -188,13 +189,14 @@
     <div class="modal detail-modal">
       <div class="modal-header">
         <div class="modal-title" id="detailTitle">작품 제목</div>
-        <div class="modal-header-actions">
-          <button class="btn-favorite" onclick="toggleFavorite()" title="즐겨찾기">
-            <span id="favoriteIcon">☆</span>
-          </button>
-          <button class="btn-header-edit" onclick="openEditFromDetail()">Edit</button>
-          <button class="modal-close" onclick="closeDetailModal()">×</button>
-        </div>
+<div class="modal-header-actions">
+  <button class="btn-favorite" onclick="toggleFavorite()" title="즐겨찾기">
+    <span id="favoriteIcon">♡</span>
+  </button>
+  <button class="btn-header-edit" id="btnMoveCompleted" onclick="moveToCompleted()">Done</button>
+  <button class="btn-header-edit" onclick="openEditFromDetail()">Edit</button>
+  <button class="modal-close" onclick="closeDetailModal()">×</button>
+</div>
       </div>
       <div class="modal-body">
         <!-- 커버 -->
@@ -429,7 +431,22 @@
     </div>
   </div>
 </div>
-
+<!-- ===== RESTORE MODAL ===== -->
+<div id="restoreModal" class="modal-overlay">
+  <div class="modal" style="max-width: 320px;">
+    <div class="modal-header">
+      <div class="modal-title">Restore to</div>
+      <button class="modal-close" onclick="closeRestoreModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="restore-options">
+        <div class="sidebar-item" onclick="restoreToCategory('Novel')">Novel</div>
+        <div class="sidebar-item" onclick="restoreToCategory('Webtoon')">Webtoon</div>
+        <div class="sidebar-item" onclick="restoreToCategory('Manga')">Manga</div>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- ===== RECORD MODAL (날짜 기록) ===== -->
 <div id="recordModal" class="modal-overlay">
   <div class="modal record-modal">
