@@ -394,27 +394,18 @@
         <div class="calendar-grid" id="calendarGrid"></div>
       </div>
 
-      <!-- 날짜별 기록 -->
-      <div class="calendar-records" id="calendarRecords">
-        <div class="records-header">
-          <span class="records-date" id="recordsDate">Select a date</span>
-        </div>
-        <div class="records-list" id="recordsList"></div>
-        <button class="btn-add-record" onclick="openRecordModal()">+ Add Record</button>
-      </div>
-
       <!-- 통계 -->
       <div class="calendar-stats">
         <div class="stat-row">
-          <div class="stat-item-sm">
+          <div class="stat-item-sm stat-clickable" onclick="showRecordsByStatus('completed')">
             <span class="stat-label">Completed</span>
             <span class="stat-value" id="statCompleted">0</span>
           </div>
-          <div class="stat-item-sm">
+          <div class="stat-item-sm stat-clickable" onclick="showRecordsByStatus('dropped')">
             <span class="stat-label">Dropped</span>
             <span class="stat-value" id="statDropped">0</span>
           </div>
-          <div class="stat-item-sm">
+          <div class="stat-item-sm stat-clickable" onclick="showRecordsByStatus('reading')">
             <span class="stat-label">Reading</span>
             <span class="stat-value" id="statReading">0</span>
           </div>
@@ -422,11 +413,11 @@
         <div class="stat-row">
           <div class="stat-item-sm">
             <span class="stat-label">Read</span>
-            <span class="stat-value" id="statRead">0 <small>(0%)</small></span>
+            <span class="stat-value" id="statRead">0</span>
           </div>
           <div class="stat-item-sm">
             <span class="stat-label">Remaining</span>
-            <span class="stat-value" id="statRemaining">0 <small>(0%)</small></span>
+            <span class="stat-value" id="statRemaining">0</span>
           </div>
           <div class="stat-item-sm">
             <span class="stat-label">Total</span>
@@ -434,6 +425,33 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MINI BOOKSHELF MODAL ===== -->
+<div id="bookshelfModal" class="modal-overlay">
+  <div class="modal bookshelf-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="bookshelfTitle">Completed (0)</div>
+      <button class="modal-close" onclick="closeBookshelfModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="bookshelf-grid" id="bookshelfGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOOK RECORDS MODAL ===== -->
+<div id="bookRecordsModal" class="modal-overlay">
+  <div class="modal book-records-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="bookRecordsTitle">Book Records</div>
+      <button class="modal-close" onclick="closeBookRecordsModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="book-records-header" id="bookRecordsHeader"></div>
+      <div class="book-records-list" id="bookRecordsList"></div>
     </div>
   </div>
 </div>
