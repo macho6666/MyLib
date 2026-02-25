@@ -724,7 +724,14 @@ function openDetailModal(index) {
     window.currentDetailSeries = series;
     
     updateFavoriteIcon();
-
+var adultBadge = document.getElementById('detailAdultBadge');
+if (adultBadge) {
+  if (meta.adult === true) {
+    adultBadge.style.display = 'inline';
+  } else {
+    adultBadge.style.display = 'none';
+  }
+}
     modal.style.display = 'flex';
 }
 
