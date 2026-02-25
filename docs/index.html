@@ -190,7 +190,6 @@
 <div class="modal-header">
   <div class="modal-title-wrapper">
     <div class="modal-title" id="detailTitle">작품 제목</div>
-    <span class="adult-badge" id="detailAdultBadge" style="display:none;">19</span>
   </div>
   <div class="modal-header-actions">
     <button class="btn-favorite" onclick="toggleFavorite()" title="즐겨찾기">
@@ -237,11 +236,13 @@
             <span class="info-label">상태</span>
             <span class="info-value" id="detailInfoStatus">-</span>
           </div>
-          <div class="info-row clickable" onclick="openPlatformSite()" style="border-bottom:none;">
-           <span class="info-label">플랫폼</span>
-           <span class="info-value info-link" id="detailInfoPlatform">-</span>
-          </div>
-        </div><!-- 작품 소개 (토글) --><div class="description-wrapper" id="descWrapper">
+  <div class="info-row clickable" onclick="openPlatformSite()">
+  <span class="info-label">플랫폼</span>
+  <span class="info-value info-link" id="detailInfoPlatform">-</span>
+</div>
+        </div>
+      <!-- 작품 소개 (토글) -->
+        <div class="description-wrapper" id="descWrapper">
           <div class="description-label">작품 소개</div>
           <div class="description-content" id="detailInfoDescription">
             소개 정보가 없습니다.
