@@ -908,7 +908,15 @@ h1:hover {
 .episode-header a:hover {
   text-decoration: underline;
 }
+#detailDriveLink {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: var(--transition);
+}
 
+#detailDriveLink:hover {
+  color: var(--text-primary);
+}
 .btn-refresh-episodes {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
