@@ -2062,7 +2062,7 @@ function showRecordsByStatus(status) {
   grid.innerHTML = '';
   
   if (filtered.length === 0) {
-    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-tertiary); padding: 20px;">No records</div>';
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-tertiary); padding: 40px; display: flex; align-items: center; justify-content: center; height: 100%; min-height: 300px;">No records</div>';
     document.getElementById('bookshelfModal').style.display = 'flex';
     return;
   }
