@@ -63,9 +63,22 @@
         <div class="sidebar-section-title">Tags</div>
         <div id="sidebarTagList" class="sidebar-tag-list"></div>
       </div>
-
       <div class="sidebar-divider" id="tagDivider" style="display:none;"></div>
-
+      <div class="sidebar-section">
+        <div class="sidebar-item" onclick="openIndexModal('quick')">
+          ϟ Quick Update
+        </div>
+        <div class="sidebar-item" onclick="openIndexModal('full')">
+          ⟳ Full Rebuild
+        </div>
+        <div class="sidebar-item" onclick="dataSync()">
+          ↻ Data Sync
+        </div>
+        <div class="sidebar-item" onclick="logout()">
+          → Logout
+        </div>
+      </div>
+    </div>
       <div class="sidebar-section">
         <div class="sidebar-item accordion-header" onclick="toggleSettingsAccordion()">
           <span>Settings</span>
@@ -100,23 +113,6 @@
       </div>
 
       <div class="sidebar-divider"></div>
-
-      <div class="sidebar-section">
-        <div class="sidebar-item" onclick="openIndexModal('quick')">
-          ϟ Quick Update
-        </div>
-        <div class="sidebar-item" onclick="openIndexModal('full')">
-          ⟳ Full Rebuild
-        </div>
-        <div class="sidebar-item" onclick="dataSync()">
-          ↻ Data Sync
-        </div>
-        <div class="sidebar-item" onclick="logout()">
-          → Logout
-        </div>
-      </div>
-    </div>
-
     <div class="sidebar-version" id="viewerVersionDisplay">MyLib: Loading...</div>
   </div>
 
