@@ -2531,7 +2531,7 @@ header h1 {
 }
 /* ===== MINI BOOKSHELF MODAL ===== */
 .bookshelf-modal {
-  max-width: 500px;
+  max-width: 400px;
 }
 
 .bookshelf-grid {
