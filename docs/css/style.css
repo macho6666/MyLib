@@ -2533,7 +2533,11 @@ header h1 {
 .bookshelf-modal {
   max-width: 400px;
 }
-
+.bookshelf-modal .modal-body {
+  min-height: 350px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
 .bookshelf-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2797,9 +2801,4 @@ header h1 {
 
 .btn-add-memo:hover {
   color: var(--accent-hover);
-}
-.bookshelf-modal .modal-body {
-  min-height: 350px;
-  max-height: 60vh;
-  overflow-y: auto;
 }
