@@ -885,7 +885,7 @@ h1:hover {
 /* Detail Episodes */
 .detail-episodes {
   margin-bottom: 16px;
-  background: var(--bg-input);
+  background: var(--no-image-bg);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
