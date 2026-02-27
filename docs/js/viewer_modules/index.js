@@ -11,8 +11,8 @@ import * as Utils from './core/utils.js';
 // Text Viewer
 import { openTextViewer, closeTextViewer, isTextViewerOpen } from './text/index.js';
 
-// Image Viewer (기존 viewer_modules에서 분리 필요)
-// import { openImageViewer, closeImageViewer } from './image/index.js';
+// Image Viewer
+import { openImageViewer, closeImageViewer, isImageViewerOpen } from './image/index.js';
 
 /**
  * 뷰어 열기 (통합 진입점)
@@ -27,21 +27,16 @@ export async function openViewer(result, metadata) {
         // 텍스트 뷰어
         GlobalState.viewerType = 'text';
         await openTextViewer(result, metadata);
+        
     } else if (result.type === 'images') {
         // 이미지 뷰어
         GlobalState.viewerType = 'image';
-        // await openImageViewer(result, metadata);
+        await openImageViewer(result, metadata);
         
-        // 임시: 기존 이미지 뷰어 사용
-        if (typeof window.loadViewer === 'function') {
-            // main.js의 기존 함수 사용
-            showToast('이미지 뷰어는 기존 방식 사용 중');
-        } else {
-            showToast('이미지 뷰어 준비 중...', 2000);
-        }
     } else if (result.type === 'external') {
         // PDF 등 외부 링크
-        console.log('External file opened in new tab');
+        console.log('📄 External file opened in new tab');
+        
     } else {
         throw new Error('Unknown viewer type: ' + result.type);
     }
@@ -54,12 +49,7 @@ export function closeViewer() {
     if (GlobalState.viewerType === 'text') {
         closeTextViewer();
     } else if (GlobalState.viewerType === 'image') {
-        // closeImageViewer();
-        
-        // 임시: 기존 방식
-        if (typeof window.closeViewer === 'function') {
-            window.closeViewer();
-        }
+        closeImageViewer();
     }
     
     GlobalState.viewerType = null;
