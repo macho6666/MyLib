@@ -8,16 +8,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="css/style.css?v=2.3.1" />
-  
-  <!-- JSZip (필수) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  
-  <!-- Epub.js (EPUB용 - 새로 추가) -->
-  <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
-  
-  <!-- Bridge (유지) -->
   <script src="js/bridge.js"></script>
-  
+  <script src="js/api_client.js"></script>
+  <script src="js/main.js"></script>
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -141,7 +135,6 @@
       <div class="calendar-page" id="calendarPage" style="display: none;"></div>
     </main>
   </div>
-
 <!-- ===== CONFIG MODAL ===== -->
 <div id="configModal" class="modal-overlay">
   <div class="modal">
@@ -184,7 +177,6 @@
     </div>
   </div>
 </div>
-
   <!-- ===== DETAIL MODAL ===== -->
   <div id="detailModal" class="modal-overlay">
     <div class="modal detail-modal">
@@ -225,6 +217,7 @@
         </div>
 
         <!-- 작품 정보 -->
+<!-- 작품 정보 -->
 <div class="detail-info">
   <div class="info-row">
     <span class="info-label">제목</span>
@@ -254,7 +247,6 @@
       </div>
     </div>
   </div>
-
     <!-- ===== EDIT MODAL ===== -->
   <div id="editModal" class="modal-overlay">
     <div class="modal edit-modal">
@@ -377,7 +369,6 @@
       </div>
     </div>
   </div>
-
 <!-- ===== CALENDAR MODAL ===== -->
 <div id="calendarModal" class="modal-overlay">
   <div class="modal calendar-modal">
@@ -395,6 +386,7 @@
         </div>
         <div class="calendar-grid" id="calendarGrid"></div>
       </div>
+<!-- Add Record 버튼 추가 -->
 <button class="btn-add-record" onclick="openRecordModal()">+ Add Record</button>
       <!-- 통계 -->
       <div class="calendar-stats">
@@ -457,7 +449,6 @@
     </div>
   </div>
 </div>
-
 <!-- ===== RESTORE MODAL ===== -->
 <div id="restoreModal" class="modal-overlay">
   <div class="modal" style="max-width: 320px;">
@@ -474,7 +465,6 @@
     </div>
   </div>
 </div>
-
 <!-- ===== RECORD MODAL ===== -->
 <div id="recordModal" class="modal-overlay">
   <div class="modal record-modal">
@@ -541,7 +531,6 @@
     </div>
   </div>
 </div>
-
 <!-- ===== INDEX UPDATE MODAL ===== -->
 <div id="indexModal" class="modal-overlay">
   <div class="modal index-modal">
@@ -619,7 +608,6 @@
     </div>
   </div>
 </div>
-
     <!-- ===== VIEWER OVERLAY ===== -->
   <div id="viewerOverlay" class="viewer-overlay">
     <div class="viewer-content" id="viewerContent" onclick="handleViewerClick(event)">
@@ -674,7 +662,6 @@
     <div class="loader-text">데이터 불러오는 중...</div>
   </div>
 
-  <!-- ✨ 수정된 부분: ES Module로 통합 로드 -->
-  <script type="module" src="js/include.js?v=3.3.5"></script>
+  <script type="module" src="js/include.js?v=3.3.4"></script>
 </body>
 </html>
