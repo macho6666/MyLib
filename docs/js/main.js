@@ -1964,6 +1964,11 @@ async function loadFromDrive() {
     if (userData.seriesTags) seriesTags = userData.seriesTags;
     if (userData.calendar) calendarData = userData.calendar;
     if (userData.favorites) favorites = userData.favorites;
+        if (userData.bookmarks) {
+      Object.keys(userData.bookmarks).forEach(function(key) {
+        localStorage.setItem(key, JSON.stringify(userData.bookmarks[key]));
+      });
+    }
     
     if (userData.settings) {
       if (userData.settings.adultFilter !== undefined) {
