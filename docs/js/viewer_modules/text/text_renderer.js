@@ -73,7 +73,7 @@ export async function renderTxt(textContent, metadata) {
     setupScrollTracking(container, metadata);
         
     // 테마 적용
-    applyTheme();
+    // applyTheme();  // ← 주석 처리 (설정에서 적용됨)
     applyTypography();
     
     // 전역 함수 등록
