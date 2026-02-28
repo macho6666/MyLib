@@ -87,14 +87,12 @@ async function openTxtFile(textContent, metadata) {
     console.log('📌 Loaded bookmark:', bookmark);
     
     if (bookmark && bookmark.position > 0) {
-        setTimeout(() => {
-            const container = document.getElementById('textViewerContainer');
-            if (container) {
-                console.log('📌 Restoring position:', bookmark.position);
-                container.scrollTop = bookmark.position;
-                showToast('Bookmark restored');
-            }
-        }, 1000);
+        const container = document.getElementById('textViewerContainer');
+        if (container) {
+            container.scrollTop = bookmark.position;
+            console.log('📌 Restored position:', bookmark.position);
+            showToast('Bookmark restored');
+        }
     }
 }
 /**
