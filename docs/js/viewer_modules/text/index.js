@@ -72,6 +72,8 @@ export async function openTextViewer(result, metadata) {
  * @param {Object} metadata - 메타데이터
  */
 async function openTxtFile(textContent, metadata) {
+    console.log('📌 Opening with seriesId:', metadata.seriesId);
+    console.log('📌 Opening with bookId:', metadata.bookId);
     // 목차 생성
     const toc = generateTxtTOC(textContent);
     metadata.toc = toc;
