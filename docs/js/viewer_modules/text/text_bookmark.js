@@ -201,16 +201,16 @@ export async function syncToCalendar(seriesId, bookId, data) {
  * @param {number} interval - 저장 간격 (ms), 기본 10초
  */
 export function startAutoSave(seriesId, bookId, interval = 10000) {
-    // 기존 타이머 정리
     stopAutoSave();
     
     window._bookmarkAutoSaveTimer = setInterval(() => {
-        // 현재 위치 저장
+        // 스크롤 위치 직접 가져오기
+        const container = document.getElementById('textViewerContainer');
         const position = TextViewerState.renderType === 'epub' 
             ? TextViewerState.epub.currentCfi 
-            : TextViewerState.currentPage;
+            : (container ? container.scrollTop : 0);
         
-        if (position !== null && position !== undefined) {
+        if (position > 0) {
             saveBookmark(seriesId, bookId, position);
             updateProgress(seriesId, bookId);
         }
