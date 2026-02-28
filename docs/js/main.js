@@ -1920,6 +1920,14 @@ async function saveToDrive() {
   showToast("Drive에 저장 중...");
   
   try {
+          var bookmarkData = {};
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (key.startsWith('bookmark_') || key.startsWith('progress_')) {
+        bookmarkData[key] = JSON.parse(localStorage.getItem(key));
+      }
+    }
+    
     var userData = {
       version: VIEWER_VERSION,
       exportDate: new Date().toISOString(),
