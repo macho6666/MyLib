@@ -220,7 +220,6 @@ function createHeader(title) {
         </div>
     `;
     
-header.innerHTML = `
     document.body.appendChild(header);
 }
 
