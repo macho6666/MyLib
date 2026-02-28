@@ -5,7 +5,7 @@
 
 import { TextViewerState, resetViewerState } from './text_state.js';
 import { Events } from '../core/events.js';
-import { renderTxt } from './text_renderer.js';
+import { renderTxt, cleanupTextRenderer } from './text_renderer.js';
 import { renderEpub, cleanupEpubViewer } from './epub_renderer.js';
 import { loadCover, generateTxtTOC } from './text_toc.js';
 import { loadBookmark, saveOnClose, startAutoSave } from './text_bookmark.js';
@@ -123,7 +123,8 @@ export function closeTextViewer() {
     if (TextViewerState.renderType === 'epub') {
         cleanupEpubViewer();
     }
-    
+    cleanupTextRenderer();
+
     // DOM 정리
     const textContainer = document.getElementById('textViewerContainer');
     if (textContainer) textContainer.remove();
