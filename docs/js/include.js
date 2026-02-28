@@ -4,6 +4,8 @@
  */
 
 import './api_client.js';
+import './viewer_modules/core/utils.js';
+import './viewer_modules/actions.js';
 import './main.js';
 
 console.log('✅ Core modules loaded');
