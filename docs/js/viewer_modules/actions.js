@@ -1,20 +1,21 @@
 /**
  * viewer_modules/actions.js
- * 뷰어 열기/닫기 통합 (텍스트/이미지 분기)
+ * 뷰어 열기/닫기 (동적 로드)
  */
 
-import { GlobalState } from './core/state.js';
-import { openViewer as openUnifiedViewer, closeViewer as closeUnifiedViewer } from './index.js';
-import { fetchAndUnzip } from './fetcher.js';
 import { showToast } from './core/utils.js';
 
-// 현재 열린 책 목록 (에피소드)
+// 현재 열린 책 목록
 let currentBookList = [];
 let currentBookIndex = -1;
 
+// 로드된 모듈 캐시
+let textModule = null;
+let imageModule = null;
+let fetcherModule = null;
+
 /**
  * 에피소드 목록 업데이트
- * @param {Array} books - 책 목록
  */
 export function updateCurrentBookList(books) {
     currentBookList = books || [];
@@ -22,16 +23,64 @@ export function updateCurrentBookList(books) {
 
 /**
  * 현재 책 인덱스 업데이트
- * @param {number} index
  */
 export function updateCurrentBookIndex(index) {
     currentBookIndex = index;
 }
 
 /**
+ * Fetcher 모듈 로드
+ */
+async function loadFetcher() {
+    if (!fetcherModule) {
+        fetcherModule = await import('./fetcher.js');
+        console.log('📦 Fetcher module loaded');
+    }
+    return fetcherModule;
+}
+
+/**
+ * 텍스트 뷰어 모듈 로드
+ */
+async function loadTextViewer() {
+    if (!textModule) {
+        // 필요한 모듈들 순차 로드
+        await import('./core/state.js');
+        await import('./core/events.js');
+        await import('./text/text_state.js');
+        await import('./text/text_theme.js');
+        await import('./text/text_toc.js');
+        await import('./text/text_bookmark.js');
+        await import('./text/text_renderer.js');
+        await import('./text/epub_renderer.js');
+        await import('./text/text_navigation.js');
+        await import('./text/text_controls.js');
+        await import('./text/text_highlight.js');
+        textModule = await import('./text/index.js');
+        console.log('📖 Text Viewer module loaded');
+    }
+    return textModule;
+}
+
+/**
+ * 이미지 뷰어 모듈 로드
+ */
+async function loadImageViewer() {
+    if (!imageModule) {
+        await import('./core/state.js');
+        await import('./core/events.js');
+        await import('./image/image_state.js');
+        await import('./image/image_renderer.js');
+        await import('./image/image_navigation.js');
+        await import('./image/image_controls.js');
+        imageModule = await import('./image/index.js');
+        console.log('🖼️ Image Viewer module loaded');
+    }
+    return imageModule;
+}
+
+/**
  * 뷰어 열기 (통합)
- * @param {number} index - 책 목록에서의 인덱스
- * @param {boolean} isContinuous - 연속 보기 여부
  */
 export async function loadViewer(index, isContinuous = false) {
     const book = currentBookList[index];
@@ -41,20 +90,17 @@ export async function loadViewer(index, isContinuous = false) {
     }
     
     updateCurrentBookIndex(index);
-    
-    // 로딩 표시
     showLoadingOverlay(true);
     
     try {
         console.log('📂 Loading:', book.name);
         
-        // 파일 다운로드
-        const result = await fetchAndUnzip(
+        // Fetcher 로드 및 파일 다운로드
+        const fetcher = await loadFetcher();
+        const result = await fetcher.fetchAndUnzip(
             book.id,
             book.size || 0,
-            (progress) => {
-                updateLoadingProgress(progress);
-            },
+            (progress) => updateLoadingProgress(progress),
             book.name
         );
         
@@ -67,8 +113,23 @@ export async function loadViewer(index, isContinuous = false) {
             index: index
         };
         
-        // 통합 뷰어 열기
-        await openUnifiedViewer(result, metadata);
+        // 파일 타입에 따라 뷰어 선택
+        if (result.type === 'text' || result.type === 'txt' || result.type === 'epub') {
+            // 텍스트 뷰어 로드 및 열기
+            const textViewer = await loadTextViewer();
+            await textViewer.openTextViewer(result, metadata);
+            
+        } else if (result.type === 'images') {
+            // 이미지 뷰어 로드 및 열기
+            const imageViewer = await loadImageViewer();
+            await imageViewer.openImageViewer(result, metadata);
+            
+        } else if (result.type === 'external') {
+            console.log('📄 External file opened in new tab');
+            
+        } else {
+            throw new Error('Unknown file type: ' + result.type);
+        }
         
         showLoadingOverlay(false);
         
@@ -83,7 +144,15 @@ export async function loadViewer(index, isContinuous = false) {
  * 뷰어 닫기
  */
 export function closeViewer() {
-    closeUnifiedViewer();
+    // 텍스트 뷰어 닫기
+    if (textModule && textModule.closeTextViewer) {
+        textModule.closeTextViewer();
+    }
+    
+    // 이미지 뷰어 닫기
+    if (imageModule && imageModule.closeImageViewer) {
+        imageModule.closeImageViewer();
+    }
     
     // 뷰어 오버레이 숨김
     const viewer = document.getElementById('viewerOverlay');
@@ -95,7 +164,6 @@ export function closeViewer() {
 
 /**
  * 다음/이전 에피소드 이동
- * @param {number} direction - 1: 다음, -1: 이전
  */
 export function navigateEpisode(direction) {
     const newIndex = currentBookIndex + direction;
@@ -110,7 +178,6 @@ export function navigateEpisode(direction) {
         return;
     }
     
-    // 현재 뷰어 닫고 새로 열기
     closeViewer();
     setTimeout(() => {
         loadViewer(newIndex, true);
@@ -119,7 +186,6 @@ export function navigateEpisode(direction) {
 
 /**
  * 로딩 오버레이 표시/숨김
- * @param {boolean} show
  */
 function showLoadingOverlay(show) {
     let overlay = document.getElementById('viewerLoadingOverlay');
@@ -139,7 +205,7 @@ function showLoadingOverlay(show) {
                 z-index: 6000;
             `;
             overlay.innerHTML = `
-                <div class="spinner" style="
+                <div style="
                     width: 40px;
                     height: 40px;
                     border: 3px solid var(--border-color, #2a2a2a);
@@ -152,6 +218,11 @@ function showLoadingOverlay(show) {
                     font-size: 14px;
                     color: var(--text-secondary, #999);
                 ">로딩 중...</div>
+                <style>
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
             `;
             document.body.appendChild(overlay);
         }
@@ -165,7 +236,6 @@ function showLoadingOverlay(show) {
 
 /**
  * 로딩 진행률 업데이트
- * @param {string} progress - 진행률 메시지
  */
 function updateLoadingProgress(progress) {
     const progressEl = document.getElementById('loadingProgress');
@@ -179,8 +249,5 @@ window.loadViewer = loadViewer;
 window.closeViewer = closeViewer;
 window.updateCurrentBookList = updateCurrentBookList;
 window.navigateEpisode = navigateEpisode;
-
-// Export
-export { currentBookList, currentBookIndex };
 
 console.log('✅ Actions module loaded');
