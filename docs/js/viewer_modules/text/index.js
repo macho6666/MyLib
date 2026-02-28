@@ -74,6 +74,7 @@ export async function openTextViewer(result, metadata) {
 async function openTxtFile(textContent, metadata) {
     console.log('📌 Opening with seriesId:', metadata.seriesId);
     console.log('📌 Opening with bookId:', metadata.bookId);
+    
     // 목차 생성
     const toc = generateTxtTOC(textContent);
     metadata.toc = toc;
@@ -83,14 +84,17 @@ async function openTxtFile(textContent, metadata) {
     
     // 책갈피 불러오기 & 스크롤 복원
     const bookmark = loadBookmark(metadata.seriesId, metadata.bookId);
-    if (bookmark && bookmark.position) {
+    console.log('📌 Loaded bookmark:', bookmark);
+    
+    if (bookmark && bookmark.position > 0) {
         setTimeout(() => {
             const container = document.getElementById('textViewerContainer');
             if (container) {
+                console.log('📌 Restoring position:', bookmark.position);
                 container.scrollTop = bookmark.position;
                 showToast('Bookmark restored');
             }
-        }, 500);
+        }, 1000);
     }
 }
 /**
