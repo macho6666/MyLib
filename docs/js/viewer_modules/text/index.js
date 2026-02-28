@@ -79,18 +79,18 @@ async function openTxtFile(textContent, metadata) {
     // 렌더링
     await renderTxt(textContent, metadata);
     
-    // 책갈피 불러오기
+    // 책갈피 불러오기 & 스크롤 복원
     const bookmark = loadBookmark(metadata.seriesId, metadata.bookId);
     if (bookmark && bookmark.position) {
-        const page = parseInt(bookmark.position);
-        if (page > 0 && page < TextViewerState.totalPages) {
-            setTimeout(() => {
-                const { renderPage } = require('./text_renderer.js');
-                renderPage(page);
-                showToast(`📑 이어보기: ${page + 1}페이지`);
-            }, 500);
-        }
+        setTimeout(() => {
+            const container = document.getElementById('textViewerContainer');
+            if (container) {
+                container.scrollTop = bookmark.position;
+                showToast('Bookmark restored');
+            }
+        }, 500);
     }
+}
 }
 
 /**
