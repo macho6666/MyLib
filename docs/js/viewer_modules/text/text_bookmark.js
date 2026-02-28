@@ -236,14 +236,16 @@ export function stopAutoSave() {
  * @param {string} bookId - 책 ID
  */
 export function saveOnClose(seriesId, bookId) {
+    // 스크롤 위치 직접 가져오기
+    const container = document.getElementById('textViewerContainer');
     const position = TextViewerState.renderType === 'epub' 
         ? TextViewerState.epub.currentCfi 
-        : TextViewerState.currentPage;
+        : (container ? container.scrollTop : 0);
     
-    if (position !== null && position !== undefined) {
+    if (position > 0) {
         saveBookmark(seriesId, bookId, position);
         updateProgress(seriesId, bookId);
-        console.log('💾 Saved on close');
+        console.log('💾 Saved on close, position:', position);
     }
     
     stopAutoSave();
