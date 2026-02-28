@@ -170,48 +170,7 @@ function createHeader(title) {
         transition: transform 0.3s ease;
     `;
     
-    header.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
-            <button onclick="closeViewer()" style="
-                background: none;
-                border: none;
-                color: var(--text-primary, #fff);
-                font-size: 24px;
-                cursor: pointer;
-                padding: 8px;
-            ">←</button>
-            <span style="
-                font-size: 16px;
-                font-weight: 500;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            ">${escapeHtml(title || 'Text Viewer')}</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <span id="textProgressIndicator" style="
-                font-size: 13px;
-                color: var(--text-secondary, #999);
-            ">0%</span>
-            <button onclick="openTextSettings()" title="설정" style="
-                background: none;
-                border: none;
-                color: var(--text-primary, #fff);
-                font-size: 22px;
-                cursor: pointer;
-                padding: 8px;
-            ">⚙️</button>
-            <button onclick="toggleTextHeader()" title="닫기" style="
-                background: none;
-                border: none;
-                color: var(--text-primary, #fff);
-                font-size: 24px;
-                cursor: pointer;
-                padding: 8px;
-            ">×</button>
-        </div>
-    `;
-    
+header.innerHTML = `
     document.body.appendChild(header);
 }
 
