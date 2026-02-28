@@ -7,15 +7,12 @@
  * 토스트 메시지
  */
 export function showToast(msg, duration = 3000) {
-    // main.js의 showToast 사용 (있으면)
     if (window.showToast && window.showToast !== showToast) {
         window.showToast(msg, duration);
         return;
     }
     
-    // 없으면 직접 생성
     const toast = document.createElement('div');
-    toast.className = 'toast show';
     toast.innerText = msg;
     toast.style.cssText = `
         position: fixed;
@@ -34,6 +31,13 @@ export function showToast(msg, duration = 3000) {
     setTimeout(() => {
         toast.remove();
     }, duration);
+}
+
+/**
+ * 고유 ID 생성
+ */
+export function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
 
 /**
