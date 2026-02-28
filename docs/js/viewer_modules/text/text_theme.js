@@ -27,6 +27,7 @@ const ThemePresets = {
  * 테마 적용
  */
 export function applyTheme(mode = null) {
+    console.trace('applyTheme called from:');
     const currentMode = mode || TextViewerState.theme.mode || 'dark';
     const colors = ThemePresets[currentMode] || ThemePresets.dark;
     
