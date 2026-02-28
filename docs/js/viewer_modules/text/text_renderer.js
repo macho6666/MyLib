@@ -27,7 +27,7 @@ export async function renderTxt(textContent, metadata) {
     // 뷰어 오버레이 표시
     const viewer = document.getElementById('viewerOverlay');
     viewer.style.display = 'flex';
-    document.body.classList.add('no-scroll');
+    document.body.style.overflow = 'hidden';
     
     // 이미지 뷰어 요소 숨기기
     const imageContent = document.getElementById('viewerContent');
@@ -457,7 +457,7 @@ export function scrollToProgress(percent) {
  */
 export function cleanupTextRenderer() {
     headerVisible = false;
-    
+    document.body.style.overflow = '';
     // 토글 버튼 제거
     const toggleBtn = document.getElementById('textToggleBtn');
     if (toggleBtn) toggleBtn.remove();
