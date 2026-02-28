@@ -248,5 +248,24 @@ export function saveOnClose(seriesId, bookId) {
     
     stopAutoSave();
 }
+/**
+ * 북마크 저장 (버튼 클릭용)
+ */
+export function saveTextBookmark() {
+    const book = TextViewerState.currentBook;
+    if (!book) {
+        showToast('No book opened');
+        return;
+    }
+    
+    const position = TextViewerState.renderType === 'epub'
+        ? TextViewerState.epub.currentCfi
+        : TextViewerState.scrollPosition || TextViewerState.currentPage;
+    
+    saveBookmark(book.seriesId, book.bookId, position);
+    showToast('🔖 Bookmark saved');
+}
 
+// 전역 등록
+window.saveTextBookmark = saveTextBookmark;
 console.log('✅ Bookmark module loaded');
