@@ -50,76 +50,73 @@ function createSettingsPanel() {
         box-sizing: border-box;
     `;
     
-    panel.innerHTML = `
-        <div class="settings-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary, #e8e8e8);">설정</h3>
-            <button id="btnCloseSettings" style="background: none; border: none; font-size: 20px; color: var(--text-tertiary, #666); cursor: pointer;">×</button>
-        </div>
-        
-        <!-- 레이아웃 -->
-        <div class="setting-group" style="margin-bottom: 20px;">
-            <label style="display: block; font-size: 12px; color: var(--text-tertiary, #666); margin-bottom: 8px;">레이아웃</label>
-            <div style="display: flex; gap: 8px;">
-                <button id="btnLayout1Page" class="setting-btn" data-layout="1page">1페이지</button>
-                <button id="btnLayout2Page" class="setting-btn" data-layout="2page">2페이지</button>
-            </div>
-        </div>
-        
-        <!-- 입력 방식 (1페이지일 때만) -->
-        <div class="setting-group" id="inputMethodGroup" style="margin-bottom: 20px;">
-            <label style="display: block; font-size: 12px; color: var(--text-tertiary, #666); margin-bottom: 8px;">입력 방식</label>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary, #999); cursor: pointer;">
-                    <input type="checkbox" id="chkInputClick" style="width: 16px; height: 16px;">
-                    <span>클릭 넘김</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary, #999); cursor: pointer;">
-                    <input type="checkbox" id="chkInputWheel" style="width: 16px; height: 16px;">
-                    <span>휠 넘김</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary, #999); cursor: pointer;">
-                    <input type="checkbox" id="chkInputScroll" style="width: 16px; height: 16px;">
-                    <span>스크롤 모드</span>
-                </label>
-            </div>
-        </div>
-        
-        <!-- 테마 -->
-        <div class="setting-group" style="margin-bottom: 20px;">
-            <label style="display: block; font-size: 12px; color: var(--text-tertiary, #666); margin-bottom: 8px;">테마</label>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-                <button id="btnThemeLight" class="setting-btn" data-theme="light">라이트</button>
-                <button id="btnThemeDark" class="setting-btn" data-theme="dark">다크</button>
-                <button id="btnThemeSepia" class="setting-btn" data-theme="sepia">세피아</button>
-                <button id="btnThemeCustom" class="setting-btn" data-theme="custom">커스텀</button>
-            </div>
-            <div id="customColorGroup" style="display: none; gap: 12px;">
-                <div>
-                    <label style="display: block; font-size: 11px; color: var(--text-tertiary, #666); margin-bottom: 4px;">배경색</label>
-                    <input type="color" id="customBgColor" value="#1a1a1a" style="width: 100%; height: 36px; border: 1px solid var(--border-color, #2a2a2a); border-radius: 4px; cursor: pointer;">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 11px; color: var(--text-tertiary, #666); margin-bottom: 4px;">글자색</label>
-                    <input type="color" id="customTextColor" value="#e8e8e8" style="width: 100%; height: 36px; border: 1px solid var(--border-color, #2a2a2a); border-radius: 4px; cursor: pointer;">
-                </div>
-            </div>
-        </div>
-        
-        <!-- 글꼴 -->
-        <div class="setting-group" style="margin-bottom: 20px;">
-            <label style="display: block; font-size: 12px; color: var(--text-tertiary, #666); margin-bottom: 8px;">글꼴</label>
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                <button id="btnFontSizeMinus" style="background: var(--bg-input, #222); border: none; color: var(--text-primary, #e8e8e8); width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px;">-</button>
-                <span id="fontSizeValue" style="font-size: 14px; color: var(--text-primary, #e8e8e8); min-width: 40px; text-align: center;">18px</span>
-                <button id="btnFontSizePlus" style="background: var(--bg-input, #222); border: none; color: var(--text-primary, #e8e8e8); width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px;">+</button>
-            </div>
-            <div>
-                <label style="display: block; font-size: 11px; color: var(--text-tertiary, #666); margin-bottom: 4px;">줄간격: <span id="lineHeightValue">1.8</span></label>
-                <input type="range" id="lineHeightSlider" min="1.0" max="3.0" step="0.1" value="1.8" style="width: 100%;">
-            </div>
-        </div>
-    `;
+// createSettingsPanel() 함수 안의 panel.innerHTML 부분을 이걸로 교체:
+
+panel.innerHTML = `
+    <div class="settings-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary, #e8e8e8);">설정</h3>
+        <button id="btnCloseSettings" style="background: none; border: none; font-size: 24px; color: var(--text-tertiary, #666); cursor: pointer;">×</button>
+    </div>
     
+    <!-- 읽기 모드 -->
+    <div class="setting-group" style="margin-bottom: 24px;">
+        <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">읽기 모드</label>
+        <div style="display: flex; gap: 8px;">
+            <button id="btnModeScroll" class="setting-btn" onclick="setTextReadMode('scroll')">📜 스크롤</button>
+            <button id="btnModeClick" class="setting-btn" onclick="setTextReadMode('click')">👆 클릭</button>
+        </div>
+        <p style="font-size: 11px; color: var(--text-tertiary, #666); margin-top: 8px;">
+            스크롤: 자유롭게 스크롤<br>
+            클릭: 좌우 클릭으로 페이지 이동
+        </p>
+    </div>
+    
+    <!-- 테마 -->
+    <div class="setting-group" style="margin-bottom: 24px;">
+        <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">테마</label>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <button id="btnThemeDark" class="setting-btn" data-theme="dark">🌙 다크</button>
+            <button id="btnThemeLight" class="setting-btn" data-theme="light">☀️ 라이트</button>
+            <button id="btnThemeSepia" class="setting-btn" data-theme="sepia">📜 세피아</button>
+        </div>
+    </div>
+    
+    <!-- 글꼴 크기 -->
+    <div class="setting-group" style="margin-bottom: 24px;">
+        <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">글꼴 크기</label>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <button id="btnFontSizeMinus" style="
+                background: var(--bg-input, #222);
+                border: 1px solid var(--border-color, #333);
+                color: var(--text-primary, #e8e8e8);
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 20px;
+            ">−</button>
+            <span id="fontSizeValue" style="font-size: 16px; color: var(--text-primary, #e8e8e8); min-width: 50px; text-align: center;">18px</span>
+            <button id="btnFontSizePlus" style="
+                background: var(--bg-input, #222);
+                border: 1px solid var(--border-color, #333);
+                color: var(--text-primary, #e8e8e8);
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 20px;
+            ">+</button>
+        </div>
+    </div>
+    
+    <!-- 줄간격 -->
+    <div class="setting-group" style="margin-bottom: 24px;">
+        <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">
+            줄간격: <span id="lineHeightValue">1.8</span>
+        </label>
+        <input type="range" id="lineHeightSlider" min="1.2" max="2.5" step="0.1" value="1.8" style="width: 100%;">
+    </div>
+`;
     viewer.appendChild(panel);
     
     // 이벤트 등록
