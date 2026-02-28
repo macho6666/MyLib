@@ -141,12 +141,12 @@ function setupControlEvents() {
     }
     
     // 테마
-    document.querySelectorAll('[data-theme]').forEach(btn => {
-        btn.onclick = () => {
-            changeTheme(btn.dataset.theme);
-            updateThemeUI();
-        };
-    });
+document.querySelectorAll('button[data-theme]').forEach(btn => {
+    btn.onclick = () => {
+        changeTheme(btn.dataset.theme);
+        updateThemeUI();
+    };
+});
     
     // 폰트 크기
     const fontMinus = document.getElementById('btnFontSizeMinus');
