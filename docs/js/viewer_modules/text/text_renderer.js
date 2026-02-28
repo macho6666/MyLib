@@ -18,19 +18,38 @@ export async function renderTxt(textContent, metadata) {
     TextViewerState.renderType = 'txt';
     TextViewerState.currentBook = metadata;
     
-    // 컨테이너 준비
+    // 뷰어 오버레이 표시
     const viewer = document.getElementById('viewerOverlay');
     viewer.style.display = 'flex';
     document.body.classList.add('no-scroll');
     
-    // 기존 내용 정리
+    // 이미지 뷰어 요소 숨기기
+    const imageContent = document.getElementById('viewerContent');
+    if (imageContent) {
+        imageContent.style.display = 'none';
+    }
+    
+    // 텍스트 뷰어 컨테이너 생성
     let container = document.getElementById('textViewerContainer');
     if (!container) {
         container = document.createElement('div');
         container.id = 'textViewerContainer';
         container.className = 'text-viewer-container';
-        document.getElementById('viewerContent').appendChild(container);
+        viewer.insertBefore(container, document.getElementById('viewerControls'));
     }
+    
+    // 컨테이너 스타일
+    container.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 90px;
+        background: var(--bg-primary, #0d0d0d);
+        color: var(--text-primary, #e8e8e8);
+        overflow-y: auto;
+        z-index: 1;
+    `;
     
     container.innerHTML = '<div style="color:white; text-align:center; padding:40px;">페이지 계산 중...</div>';
     
@@ -68,10 +87,39 @@ export async function renderTxt(textContent, metadata) {
     // 첫 페이지 렌더링
     renderPage(0);
     
+    // 컨트롤 표시
+    showTextViewerControls();
+    
     // 이벤트 발생
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
     
     console.log(`📖 TXT Viewer: ${pages.length} pages`);
+}
+
+/**
+ * 텍스트 뷰어 컨트롤 표시/설정
+ */
+function showTextViewerControls() {
+    const controls = document.getElementById('viewerControls');
+    if (controls) {
+        controls.style.display = 'block';
+    }
+    
+    // 뷰어 제목 업데이트
+    const titleEl = document.getElementById('viewerTitle');
+    if (titleEl && TextViewerState.currentBook) {
+        titleEl.textContent = TextViewerState.currentBook.name || 'Text Viewer';
+    }
+    
+    // 이미지 전용 버튼 숨기기
+    document.querySelectorAll('.image-only').forEach(btn => {
+        btn.style.display = 'none';
+    });
+    
+    // EPUB 전용 버튼 숨기기 (TXT는 필요 없음)
+    document.querySelectorAll('.epub-only').forEach(btn => {
+        btn.style.display = 'none';
+    });
 }
 
 /**
@@ -90,10 +138,8 @@ async function createTextPages(textContent) {
         .map(p => `<p>${escapeHtml(p.trim())}</p>`);
     
     if (layout === '1page') {
-        // 1페이지 모드: 세로로 긴 페이지
         pages.push(...create1PageLayout(paragraphs));
     } else {
-        // 2페이지 모드: 양쪽 펼침
         pages.push(...create2PageLayout(paragraphs));
     }
     
@@ -102,12 +148,10 @@ async function createTextPages(textContent) {
 
 /**
  * 1페이지 레이아웃 생성
- * @param {Array} paragraphs - 문단 배열
- * @returns {Array} 페이지 배열
  */
 function create1PageLayout(paragraphs) {
     const pages = [];
-    const CHARS_PER_PAGE = 1500; // 기준 글자 수
+    const CHARS_PER_PAGE = 1500;
     
     let currentPage = '';
     let charCount = 0;
@@ -116,7 +160,6 @@ function create1PageLayout(paragraphs) {
         const pLength = p.replace(/<[^>]*>/g, '').length;
         
         if (charCount + pLength > CHARS_PER_PAGE && currentPage) {
-            // 페이지 완성
             pages.push({
                 type: 'content',
                 html: wrapContent(currentPage)
@@ -129,7 +172,6 @@ function create1PageLayout(paragraphs) {
         }
     });
     
-    // 마지막 페이지
     if (currentPage) {
         pages.push({
             type: 'content',
@@ -142,12 +184,10 @@ function create1PageLayout(paragraphs) {
 
 /**
  * 2페이지 레이아웃 생성
- * @param {Array} paragraphs - 문단 배열
- * @returns {Array} 페이지 배열
  */
 function create2PageLayout(paragraphs) {
     const pages = [];
-    const CHARS_PER_PAGE = 1000; // 2페이지는 공간이 좁으므로 적게
+    const CHARS_PER_PAGE = 1000;
     
     let leftPage = '';
     let rightPage = '';
@@ -160,7 +200,6 @@ function create2PageLayout(paragraphs) {
         
         if (isLeft) {
             if (leftCharCount + pLength > CHARS_PER_PAGE && leftPage) {
-                // 왼쪽 완성, 오른쪽으로
                 isLeft = false;
                 rightPage = p;
                 rightCharCount = pLength;
@@ -170,7 +209,6 @@ function create2PageLayout(paragraphs) {
             }
         } else {
             if (rightCharCount + pLength > CHARS_PER_PAGE && rightPage) {
-                // 양쪽 완성, 페이지 저장
                 pages.push({
                     type: 'content',
                     html: wrap2Pages(leftPage, rightPage)
@@ -187,7 +225,6 @@ function create2PageLayout(paragraphs) {
         }
     });
     
-    // 마지막 페이지
     if (leftPage || rightPage) {
         pages.push({
             type: 'content',
@@ -200,18 +237,18 @@ function create2PageLayout(paragraphs) {
 
 /**
  * 1페이지 콘텐츠 래핑
- * @param {string} content - HTML 내용
- * @returns {string} 래핑된 HTML
  */
 function wrapContent(content) {
     return `
         <div class="text-page text-page-single" style="
             max-width: 800px;
             margin: 0 auto;
-            padding: 40px 60px;
-            height: calc(100vh - 90px);
-            overflow-y: auto;
+            padding: 40px 20px;
+            min-height: 100%;
             box-sizing: border-box;
+            font-size: 18px;
+            line-height: 1.8;
+            word-break: keep-all;
         ">
             ${content}
         </div>
@@ -220,9 +257,6 @@ function wrapContent(content) {
 
 /**
  * 2페이지 콘텐츠 래핑
- * @param {string} leftContent - 왼쪽 페이지
- * @param {string} rightContent - 오른쪽 페이지
- * @returns {string} 래핑된 HTML
  */
 function wrap2Pages(leftContent, rightContent) {
     return `
@@ -230,21 +264,25 @@ function wrap2Pages(leftContent, rightContent) {
             display: flex;
             max-width: 1400px;
             margin: 0 auto;
-            height: calc(100vh - 90px);
+            min-height: 100%;
             gap: 40px;
+            padding: 20px;
+            box-sizing: border-box;
         ">
             <div class="text-page-left" style="
                 flex: 1;
-                padding: 40px 30px;
-                border-right: 1px solid var(--text-border, #2a2a2a);
-                overflow-y: auto;
+                padding: 20px;
+                border-right: 1px solid var(--border-color, #2a2a2a);
+                font-size: 16px;
+                line-height: 1.8;
             ">
                 ${leftContent}
             </div>
             <div class="text-page-right" style="
                 flex: 1;
-                padding: 40px 30px;
-                overflow-y: auto;
+                padding: 20px;
+                font-size: 16px;
+                line-height: 1.8;
             ">
                 ${rightContent || '<div style="color:var(--text-secondary, #999); text-align:center; padding-top:50%;">빈 페이지</div>'}
             </div>
@@ -254,7 +292,6 @@ function wrap2Pages(leftContent, rightContent) {
 
 /**
  * 현재 페이지 렌더링
- * @param {number} pageIndex - 페이지 번호 (0-based)
  */
 export function renderPage(pageIndex) {
     const page = TextViewerState.pages[pageIndex];
@@ -265,6 +302,7 @@ export function renderPage(pageIndex) {
     
     // 페이지 표시
     container.innerHTML = page.html;
+    container.scrollTop = 0;
     
     // 상태 업데이트
     setCurrentPage(pageIndex);
@@ -301,19 +339,18 @@ export function renderPage(pageIndex) {
 }
 
 /**
- * 페이지 UI 업데이트 (슬라이더, 진행바 등)
+ * 페이지 UI 업데이트
  */
 function updatePageUI() {
-    const currentPage = TextViewerState.currentPage + 1; // 1-based
+    const currentPage = TextViewerState.currentPage + 1;
     const totalPages = TextViewerState.totalPages;
     
-    // 페이지 카운터
     const counter = document.getElementById('pageCounter');
     if (counter) {
         counter.innerText = `${currentPage} / ${totalPages}`;
+        counter.style.display = 'block';
     }
     
-    // 슬라이더
     const slider = document.getElementById('pageSlider');
     if (slider) {
         slider.min = 1;
@@ -330,13 +367,6 @@ function updatePageUI() {
     if (sliderTotal) {
         sliderTotal.innerText = totalPages;
     }
-    
-    // 진행바
-    const progressBar = document.querySelector('.index-progress-bar-fill');
-    if (progressBar) {
-        const percent = Math.round((currentPage / totalPages) * 100);
-        progressBar.style.width = `${percent}%`;
-    }
 }
 
 /**
@@ -346,6 +376,22 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * 텍스트 뷰어 닫을 때 정리
+ */
+export function cleanupTextRenderer() {
+    // 이미지 뷰어 요소 다시 표시
+    const imageContent = document.getElementById('viewerContent');
+    if (imageContent) {
+        imageContent.style.display = '';
+    }
+    
+    // 이미지 전용 버튼 다시 표시
+    document.querySelectorAll('.image-only').forEach(btn => {
+        btn.style.display = '';
+    });
 }
 
 console.log('✅ TXT Renderer loaded');
