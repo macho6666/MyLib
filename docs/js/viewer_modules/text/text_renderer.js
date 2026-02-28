@@ -1,6 +1,6 @@
 /**
  * viewer_modules/text/text_renderer.js
- * TXT 렌더링 (스크롤 모드 + 터치/클릭 네비게이션)
+ * TXT 렌더링 (스크롤/클릭 모드)
  */
 
 import { TextViewerState, setCurrentPage } from './text_state.js';
@@ -11,7 +11,7 @@ import { updateProgress } from './text_bookmark.js';
 import { initControls, openSettings } from './text_controls.js';
 
 let headerVisible = false;
-let readMode = 'scroll'; // 'scroll' | 'touch'
+let readMode = 'scroll'; // 'scroll' | 'click'
 
 /**
  * TXT 뷰어 초기화 및 렌더링
@@ -49,21 +49,25 @@ export async function renderTxt(textContent, metadata) {
         viewer.appendChild(container);
     }
     
-    // 컨테이너 스타일 (읽기 모드에 따라)
+    // 컨테이너 스타일
     applyContainerStyle(container);
     
+    // 토글 버튼 생성 (항상 보임)
+    createToggleButton();
+    
     // 헤더 생성 (숨김 상태)
-    const header = createHeader(metadata.name);
+    createHeader(metadata.name);
     
     // 본문 콘텐츠 생성
     const content = createContent(textContent, metadata);
     
     container.innerHTML = '';
-    container.appendChild(header);
     container.appendChild(content);
     
-    // 터치 영역 생성 (터치 모드일 때만 활성화)
-    createTouchZones(container);
+    // 클릭 모드일 때 터치 영역 설정
+    if (readMode === 'click') {
+        setupClickZones(container);
+    }
     
     // 스크롤 진행률 추적
     setupScrollTracking(container, metadata);
@@ -79,6 +83,7 @@ export async function renderTxt(textContent, metadata) {
     window.openTextSettings = openSettings;
     window.toggleTextHeader = toggleHeader;
     window.setTextReadMode = setReadMode;
+    window.getTextReadMode = () => readMode;
     
     // 이벤트 발생
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
@@ -90,8 +95,6 @@ export async function renderTxt(textContent, metadata) {
  * 컨테이너 스타일 적용
  */
 function applyContainerStyle(container) {
-    const isScrollMode = readMode === 'scroll';
-    
     container.style.cssText = `
         position: fixed;
         top: 0;
@@ -100,7 +103,7 @@ function applyContainerStyle(container) {
         bottom: 0;
         background: var(--bg-primary, #0d0d0d);
         color: var(--text-primary, #e8e8e8);
-        overflow-y: ${isScrollMode ? 'auto' : 'hidden'};
+        overflow-y: ${readMode === 'scroll' ? 'auto' : 'hidden'};
         overflow-x: hidden;
         z-index: 5001;
         -webkit-overflow-scrolling: touch;
@@ -108,9 +111,48 @@ function applyContainerStyle(container) {
 }
 
 /**
+ * 토글 버튼 생성 (항상 보임)
+ */
+function createToggleButton() {
+    // 기존 버튼 제거
+    const existing = document.getElementById('textToggleBtn');
+    if (existing) existing.remove();
+    
+    const btn = document.createElement('button');
+    btn.id = 'textToggleBtn';
+    btn.innerHTML = '☰';
+    btn.onclick = toggleHeader;
+    btn.style.cssText = `
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        width: 40px;
+        height: 40px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 5200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+        transition: opacity 0.3s;
+    `;
+    
+    document.body.appendChild(btn);
+}
+
+/**
  * 헤더 생성 (숨김 상태로 시작)
  */
 function createHeader(title) {
+    // 기존 헤더 제거
+    const existing = document.getElementById('textViewerHeader');
+    if (existing) existing.remove();
+    
     const header = document.createElement('div');
     header.id = 'textViewerHeader';
     header.style.cssText = `
@@ -118,145 +160,135 @@ function createHeader(title) {
         top: 0;
         left: 0;
         right: 0;
-        height: 50px;
-        background: rgba(26, 26, 26, 0.95);
+        height: 56px;
+        background: rgba(20, 20, 20, 0.95);
         border-bottom: 1px solid var(--border-color, #2a2a2a);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 12px;
-        z-index: 5100;
+        padding: 0 16px;
+        z-index: 5150;
         backdrop-filter: blur(10px);
         transform: translateY(-100%);
         transition: transform 0.3s ease;
     `;
     
     header.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
             <button onclick="closeViewer()" style="
                 background: none;
                 border: none;
                 color: var(--text-primary, #fff);
                 font-size: 24px;
                 cursor: pointer;
-                padding: 4px 8px;
+                padding: 8px;
             ">←</button>
             <span style="
-                font-size: 15px;
+                font-size: 16px;
                 font-weight: 500;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             ">${escapeHtml(title || 'Text Viewer')}</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
             <span id="textProgressIndicator" style="
-                font-size: 12px;
+                font-size: 13px;
                 color: var(--text-secondary, #999);
-                margin-right: 4px;
             ">0%</span>
-            <button onclick="setTextReadMode()" title="읽기 모드" style="
-                background: none;
-                border: none;
-                color: var(--text-primary, #fff);
-                font-size: 18px;
-                cursor: pointer;
-                padding: 4px 8px;
-            " id="readModeBtn">📖</button>
             <button onclick="openTextSettings()" title="설정" style="
                 background: none;
                 border: none;
                 color: var(--text-primary, #fff);
-                font-size: 18px;
+                font-size: 22px;
                 cursor: pointer;
-                padding: 4px 8px;
+                padding: 8px;
             ">⚙️</button>
+            <button onclick="toggleTextHeader()" title="닫기" style="
+                background: none;
+                border: none;
+                color: var(--text-primary, #fff);
+                font-size: 24px;
+                cursor: pointer;
+                padding: 8px;
+            ">×</button>
         </div>
     `;
     
-    return header;
+    document.body.appendChild(header);
 }
 
 /**
- * 터치 영역 생성
+ * 헤더 토글
  */
-function createTouchZones(scrollContainer) {
-    // 기존 터치 영역 제거
-    const existing = document.getElementById('textTouchZones');
-    if (existing) existing.remove();
+function toggleHeader() {
+    const header = document.getElementById('textViewerHeader');
+    const toggleBtn = document.getElementById('textToggleBtn');
     
-    const zones = document.createElement('div');
-    zones.id = 'textTouchZones';
-    zones.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 5050;
-        pointer-events: none;
-    `;
+    if (!header) return;
     
-    // 왼쪽 영역 (이전)
-    const leftZone = document.createElement('div');
-    leftZone.id = 'textZoneLeft';
-    leftZone.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 25%;
-        height: 100%;
-        pointer-events: ${readMode === 'touch' ? 'auto' : 'none'};
-        cursor: pointer;
-    `;
-    leftZone.onclick = () => scrollPage(-1);
+    headerVisible = !headerVisible;
     
-    // 가운데 영역 (헤더 토글) - 항상 활성화
-    const centerZone = document.createElement('div');
-    centerZone.id = 'textZoneCenter';
-    centerZone.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 25%;
-        width: 50%;
-        height: 80px;
-        pointer-events: auto;
-        cursor: pointer;
-    `;
-    centerZone.onclick = () => toggleHeader();
-    
-    // 오른쪽 영역 (다음)
-    const rightZone = document.createElement('div');
-    rightZone.id = 'textZoneRight';
-    rightZone.style.cssText = `
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 25%;
-        height: 100%;
-        pointer-events: ${readMode === 'touch' ? 'auto' : 'none'};
-        cursor: pointer;
-    `;
-    rightZone.onclick = () => scrollPage(1);
-    
-    zones.appendChild(leftZone);
-    zones.appendChild(centerZone);
-    zones.appendChild(rightZone);
-    
-    document.body.appendChild(zones);
-    
-    updateReadModeBtn();
+    if (headerVisible) {
+        header.style.transform = 'translateY(0)';
+        if (toggleBtn) toggleBtn.style.opacity = '0';
+    } else {
+        header.style.transform = 'translateY(-100%)';
+        if (toggleBtn) toggleBtn.style.opacity = '1';
+    }
 }
 
 /**
- * 읽기 모드 전환
+ * 클릭 영역 설정 (클릭 모드)
+ */
+function setupClickZones(container) {
+    container.onclick = (e) => {
+        // 버튼/링크 클릭 제외
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+        
+        const rect = container.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        
+        // 좌측 30% → 이전 페이지
+        if (clickX < width * 0.3) {
+            scrollPageAmount(-1);
+        }
+        // 우측 30% → 다음 페이지
+        else if (clickX > width * 0.7) {
+            scrollPageAmount(1);
+        }
+        // 중앙 → 헤더 토글
+        else {
+            toggleHeader();
+        }
+    };
+}
+
+/**
+ * 한 화면 분량 스크롤
+ */
+function scrollPageAmount(direction) {
+    const container = document.getElementById('textViewerContainer');
+    if (!container) return;
+    
+    const scrollAmount = container.clientHeight * 0.9;
+    
+    container.scrollBy({
+        top: direction * scrollAmount,
+        behavior: 'smooth'
+    });
+}
+
+/**
+ * 읽기 모드 변경
  */
 function setReadMode(mode) {
     if (mode) {
         readMode = mode;
     } else {
         // 토글
-        readMode = readMode === 'scroll' ? 'touch' : 'scroll';
+        readMode = readMode === 'scroll' ? 'click' : 'scroll';
     }
     
     localStorage.setItem('mylib_text_readmode', readMode);
@@ -265,69 +297,35 @@ function setReadMode(mode) {
     const container = document.getElementById('textViewerContainer');
     if (container) {
         applyContainerStyle(container);
+        
+        // 클릭 모드면 클릭 영역 설정
+        if (readMode === 'click') {
+            setupClickZones(container);
+        } else {
+            container.onclick = null;
+        }
     }
     
-    // 터치 영역 업데이트
-    const leftZone = document.getElementById('textZoneLeft');
-    const rightZone = document.getElementById('textZoneRight');
+    // 설정 UI 업데이트
+    updateReadModeUI();
     
-    if (leftZone) {
-        leftZone.style.pointerEvents = readMode === 'touch' ? 'auto' : 'none';
-    }
-    if (rightZone) {
-        rightZone.style.pointerEvents = readMode === 'touch' ? 'auto' : 'none';
-    }
-    
-    updateReadModeBtn();
-    
-    const modeText = readMode === 'scroll' ? '스크롤 모드' : '터치 모드';
-    showToast(modeText);
+    const modeText = readMode === 'scroll' ? '스크롤 모드' : '클릭 모드';
+    if (window.showToast) window.showToast(modeText);
 }
 
 /**
- * 읽기 모드 버튼 업데이트
+ * 읽기 모드 UI 업데이트
  */
-function updateReadModeBtn() {
-    const btn = document.getElementById('readModeBtn');
-    if (btn) {
-        btn.textContent = readMode === 'scroll' ? '📜' : '👆';
-        btn.title = readMode === 'scroll' ? '터치 모드로 전환' : '스크롤 모드로 전환';
+function updateReadModeUI() {
+    const scrollBtn = document.getElementById('btnModeScroll');
+    const clickBtn = document.getElementById('btnModeClick');
+    
+    if (scrollBtn) {
+        scrollBtn.classList.toggle('active', readMode === 'scroll');
     }
-}
-
-/**
- * 헤더 토글
- */
-function toggleHeader() {
-    const header = document.getElementById('textViewerHeader');
-    if (!header) return;
-    
-    headerVisible = !headerVisible;
-    header.style.transform = headerVisible ? 'translateY(0)' : 'translateY(-100%)';
-}
-
-/**
- * 페이지 스크롤 (한 화면 분량)
- */
-function scrollPage(direction) {
-    const container = document.getElementById('textViewerContainer');
-    if (!container) return;
-    
-    const scrollAmount = container.clientHeight * 0.9;
-    const currentScroll = container.scrollTop;
-    const maxScroll = container.scrollHeight - container.clientHeight;
-    
-    let newScroll;
-    if (direction > 0) {
-        newScroll = Math.min(currentScroll + scrollAmount, maxScroll);
-    } else {
-        newScroll = Math.max(currentScroll - scrollAmount, 0);
+    if (clickBtn) {
+        clickBtn.classList.toggle('active', readMode === 'click');
     }
-    
-    container.scrollTo({
-        top: newScroll,
-        behavior: 'smooth'
-    });
 }
 
 /**
@@ -337,17 +335,14 @@ function createContent(textContent, metadata) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     
-    // 반응형 패딩 (모바일 여백 최소화)
     content.style.cssText = `
         max-width: 800px;
         margin: 0 auto;
-        padding: 16px 12px 100px 12px;
+        padding: 16px 16px 100px 16px;
         font-size: 18px;
         line-height: 1.9;
         word-break: keep-all;
         letter-spacing: 0.3px;
-        position: relative;
-        z-index: 1;
     `;
     
     // 표지 (있으면)
@@ -356,7 +351,7 @@ function createContent(textContent, metadata) {
             <div style="
                 text-align: center;
                 margin-bottom: 32px;
-                padding-top: 16px;
+                padding-top: 20px;
             ">
                 <img src="${metadata.coverUrl}" alt="cover" style="
                     max-width: 180px;
@@ -368,7 +363,6 @@ function createContent(textContent, metadata) {
                     margin-top: 16px;
                     font-size: 20px;
                     font-weight: 600;
-                    padding: 0 8px;
                 ">${escapeHtml(metadata.name || '')}</h1>
             </div>
             <hr style="
@@ -395,7 +389,7 @@ function createContent(textContent, metadata) {
     content.innerHTML += `
         <div style="
             text-align: center;
-            padding: 50px 0;
+            padding: 60px 0;
             color: var(--text-tertiary, #666);
             font-size: 14px;
         ">
@@ -467,9 +461,13 @@ export function scrollToProgress(percent) {
 export function cleanupTextRenderer() {
     headerVisible = false;
     
-    // 터치 영역 제거
-    const touchZones = document.getElementById('textTouchZones');
-    if (touchZones) touchZones.remove();
+    // 토글 버튼 제거
+    const toggleBtn = document.getElementById('textToggleBtn');
+    if (toggleBtn) toggleBtn.remove();
+    
+    // 헤더 제거
+    const header = document.getElementById('textViewerHeader');
+    if (header) header.remove();
     
     // 이미지 뷰어 요소 다시 표시
     const imageContent = document.getElementById('viewerContent');
@@ -487,6 +485,7 @@ export function cleanupTextRenderer() {
     delete window.openTextSettings;
     delete window.toggleTextHeader;
     delete window.setTextReadMode;
+    delete window.getTextReadMode;
 }
 
 /**
@@ -499,20 +498,9 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-/**
- * 토스트 (간단한 알림)
- */
-function showToast(msg) {
-    if (window.showToast) {
-        window.showToast(msg);
-    } else {
-        console.log('Toast:', msg);
-    }
-}
-
-// 페이지 모드용 (호환성 유지)
+// 호환성 유지
 export function renderPage(pageIndex) {
     console.log('renderPage called but using scroll mode');
 }
 
-console.log('✅ TXT Renderer loaded (scroll + touch mode)');
+console.log('✅ TXT Renderer loaded');
