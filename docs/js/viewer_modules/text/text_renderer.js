@@ -8,7 +8,7 @@ import { Events } from '../core/events.js';
 import { applyTheme, applyTypography } from './text_theme.js';
 import { createCoverPage, createTOCPage } from './text_toc.js';
 import { updateProgress } from './text_bookmark.js';
-import { initControls, openSettings } from './text_controls.js';
+import { openSettings } from './text_controls.js';
 
 let headerVisible = false;
 let readMode = 'scroll'; // 'scroll' | 'click'
@@ -71,10 +71,7 @@ export async function renderTxt(textContent, metadata) {
     
     // 스크롤 진행률 추적
     setupScrollTracking(container, metadata);
-    
-    // 설정 패널 초기화
-    initControls();
-    
+        
     // 테마 적용
     applyTheme();
     applyTypography();
