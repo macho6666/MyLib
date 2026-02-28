@@ -91,8 +91,6 @@ async function openTxtFile(textContent, metadata) {
         }, 500);
     }
 }
-}
-
 /**
  * EPUB 파일 열기
  * @param {Blob} epubBlob - EPUB Blob
