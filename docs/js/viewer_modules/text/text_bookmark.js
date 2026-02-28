@@ -251,6 +251,9 @@ export function saveOnClose(seriesId, bookId) {
 /**
  * 북마크 저장 (버튼 클릭용)
  */
+/**
+ * 북마크 저장 (버튼 클릭용)
+ */
 export function saveTextBookmark() {
     const book = TextViewerState.currentBook;
     if (!book) {
@@ -258,14 +261,15 @@ export function saveTextBookmark() {
         return;
     }
     
-    const position = TextViewerState.renderType === 'epub'
-        ? TextViewerState.epub.currentCfi
-        : TextViewerState.scrollPosition || TextViewerState.currentPage;
+    // 현재 스크롤 위치 직접 가져오기
+    const container = document.getElementById('textViewerContainer');
+    const position = container ? container.scrollTop : 0;
+    
+    console.log('💾 Saving bookmark, position:', position);
     
     saveBookmark(book.seriesId, book.bookId, position);
-    showToast('🔖 Bookmark saved');
+    showToast('Bookmark saved: ' + position + 'px');
 }
-
 // 전역 등록
 window.saveTextBookmark = saveTextBookmark;
 console.log('✅ Bookmark module loaded');
