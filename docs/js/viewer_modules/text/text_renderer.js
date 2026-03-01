@@ -368,7 +368,7 @@ function create2PageContent(container, textContent, metadata) {
         max-width: 1400px;
         height: calc(100vh - 80px);
         background: var(--bg-primary, #1c1c1c);
-        border-radius: 4px 16px 16px 4px;
+        border-radius: 8px;
         box-shadow: 
             0 0 40px rgba(0,0,0,0.5),
             0 0 100px rgba(0,0,0,0.3),
@@ -379,17 +379,16 @@ function create2PageContent(container, textContent, metadata) {
     
 JavaScript
 
-// 책 중앙 접힌 부분 (바인딩)
+// 책 중앙 선
 const binding = document.createElement('div');
 binding.style.cssText = `
     position: absolute;
     left: 50%;
-    top: 0;
-    bottom: 0;
-    width: 2px;
+    top: 20px;
+    bottom: 20px;
+    width: 1px;
     transform: translateX(-50%);
-    background: rgba(255,255,255,0.1);
-    box-shadow: -3px 0 8px rgba(0,0,0,0.3), 3px 0 8px rgba(0,0,0,0.3);
+    background: rgba(255,255,255,0.08);
     z-index: 10;
     pointer-events: none;
 `;
@@ -399,7 +398,7 @@ binding.style.cssText = `
     leftPage.style.cssText = `
         flex: 1;
         height: 100%;
-        padding: 40px 50px 40px 40px;
+        padding: 40px 50px 60px 40px;
         overflow: hidden;
         background: var(--bg-primary, #1c1c1c);
         color: var(--text-primary, #e8e8e8);
@@ -418,7 +417,7 @@ binding.style.cssText = `
     rightPage.style.cssText = `
         flex: 1;
         height: 100%;
-        padding: 40px 40px 40px 50px;
+        padding: 40px 40px 60px 50px;
         overflow: hidden;
         background: var(--bg-primary, #1c1c1c);
         color: var(--text-primary, #e8e8e8);
@@ -433,12 +432,9 @@ binding.style.cssText = `
 // 페이지 번호 스타일
 const pageNumStyle = `
     position: absolute;
-    bottom: 0;
-    padding: 12px 0;
+    bottom: 20px;
     font-size: 12px;
     color: var(--text-tertiary, #666);
-    background: linear-gradient(to top, var(--bg-primary, #1c1c1c) 60%, transparent 100%);
-    width: 100px;
 `;
     
     // 왼쪽 페이지 번호
@@ -567,7 +563,7 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
     }
     
 const contentDiv = document.createElement('div');
-contentDiv.style.cssText = 'height: 100%; overflow: hidden; padding-bottom: 40px; box-sizing: border-box;';
+contentDiv.style.cssText = 'height: calc(100% - 30px); overflow: hidden;';
     
     switch (pageData.type) {
         case 'cover':
