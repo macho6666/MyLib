@@ -113,8 +113,9 @@ function renderContent() {
  * 2페이지 모드 테마 강제 적용
  */
 function apply2PageTheme() {
-    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim() || '#1c1c1c';
-    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() || '#e8e8e8';
+    const container = document.getElementById('textViewerContainer');
+    const bgColor = container ? getComputedStyle(container).backgroundColor : '#1c1c1c';
+    const textColor = container ? getComputedStyle(container).color : '#e8e8e8';
     
     const book = document.getElementById('textBook');
     const leftPage = document.getElementById('textLeftPage');
@@ -898,15 +899,21 @@ function setTextLayout(layout) {
     
     renderContent();
     
-    setTimeout(() => {
+    // 1페이지 모드는 DOM 렌더 후 스크롤 필요
+    if (layout === '1page') {
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                scrollToProgress(currentProgress);
+            }, 50);
+        });
+    } else {
         scrollToProgress(currentProgress);
-    }, 100);
+    }
     
     if (window.showToast) {
         window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
     }
 }
-
 /**
  * 레이아웃 가져오기
  */
