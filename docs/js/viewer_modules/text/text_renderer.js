@@ -88,6 +88,8 @@ if (window.innerWidth >= 1024) {
     window.toggleTextHeader = toggleHeader;
     window.setTextReadMode = setReadMode;
     window.getTextReadMode = () => readMode;
+    window.setTextLayout = setTextLayout;
+    window.getTextLayout = getTextLayout;
     
     // 이벤트 발생
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
