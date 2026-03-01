@@ -320,7 +320,42 @@ function setReadMode(mode) {
     const modeText = readMode === 'scroll' ? 'Scroll Mode' : 'Click Mode';
     if (window.showToast) window.showToast(modeText);
 }
+/**
+ * 레이아웃 변경
+ */
+function setTextLayout(layout) {
+    pageLayout = layout;
+    localStorage.setItem('text_layout', layout);
+    
+    // 콘텐츠 다시 렌더링
+    const container = document.getElementById('textViewerContainer');
+    const content = document.getElementById('textViewerContent');
+    
+    if (content && pageLayout === '2page') {
+        content.style.columnCount = '2';
+        content.style.columnGap = '40px';
+        content.style.maxWidth = '1400px';
+        content.style.height = 'calc(100vh - 32px)';
+        content.style.overflow = 'hidden';
+    } else if (content) {
+        content.style.columnCount = '';
+        content.style.columnGap = '';
+        content.style.maxWidth = '800px';
+        content.style.height = '';
+        content.style.overflow = '';
+    }
+    
+    if (window.showToast) {
+        window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
+    }
+}
 
+/**
+ * 레이아웃 가져오기
+ */
+function getTextLayout() {
+    return pageLayout;
+}
 /**
  * 읽기 모드 UI 업데이트
  */
