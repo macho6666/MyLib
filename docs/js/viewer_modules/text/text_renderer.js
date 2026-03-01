@@ -101,6 +101,8 @@ if (window.innerWidth >= 1024) {
  * 컨테이너 스타일 적용
  */
 function applyContainerStyle(container) {
+    const is2Page = pageLayout === '2page';
+    
     container.style.cssText = `
         position: fixed;
         top: 0;
@@ -109,10 +111,11 @@ function applyContainerStyle(container) {
         bottom: 0;
         background: var(--bg-primary, #0d0d0d);
         color: var(--text-primary, #e8e8e8);
-        overflow-y: ${readMode === 'scroll' ? 'auto' : 'hidden'};
+        overflow-y: ${readMode === 'scroll' || is2Page ? 'auto' : 'hidden'};
         overflow-x: hidden;
         z-index: 5001;
         -webkit-overflow-scrolling: touch;
+        padding-bottom: 0;
     `;
 }
 
@@ -327,29 +330,39 @@ function setTextLayout(layout) {
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
     
-    // 콘텐츠 다시 렌더링
     const container = document.getElementById('textViewerContainer');
     const content = document.getElementById('textViewerContent');
     
     if (content && pageLayout === '2page') {
         content.style.columnCount = '2';
         content.style.columnGap = '40px';
+        content.style.columnFill = 'auto';
         content.style.maxWidth = '1400px';
-        content.style.height = 'calc(100vh - 32px)';
-        content.style.overflow = 'hidden';
+        content.style.padding = '16px 24px';
+        content.style.height = '';
+        content.style.overflow = '';
     } else if (content) {
         content.style.columnCount = '';
         content.style.columnGap = '';
+        content.style.columnFill = '';
         content.style.maxWidth = '800px';
-        content.style.height = '';
-        content.style.overflow = '';
+        content.style.padding = '16px 16px 100px 16px';
+    }
+    
+    // 컨테이너 스타일도 업데이트
+    if (container) {
+        applyContainerStyle(container);
+        
+        // 클릭 모드면 클릭 영역 재설정
+        if (readMode === 'click') {
+            setupClickZones(container);
+        }
     }
     
     if (window.showToast) {
         window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
     }
 }
-
 /**
  * 레이아웃 가져오기
  */
