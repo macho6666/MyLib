@@ -14,8 +14,10 @@ let headerVisible = false;
 let readMode = 'scroll'; // 'scroll' | 'click'
 let pageLayout = '1page'; // '1page' | '2page'
 let headerAutoCloseTimer = null;
-let currentSpreadIndex = 0; // 2페이지 모드용 스프레드 인덱스
+let currentSpreadIndex = 0;
 let totalSpreads = 0;
+let currentTextContent = ''; // 원본 텍스트 저장
+let currentMetadata = null;  // 메타데이터 저장
 
 /**
  * TXT 뷰어 초기화 및 렌더링
@@ -25,6 +27,8 @@ export async function renderTxt(textContent, metadata) {
     TextViewerState.currentBook = metadata;
     headerVisible = false;
     currentSpreadIndex = 0;
+    currentTextContent = textContent;  // 저장
+    currentMetadata = metadata;         // 저장
     
     // 저장된 읽기 모드 불러오기
     readMode = localStorage.getItem('mylib_text_readmode') || 'scroll';
@@ -61,8 +65,8 @@ export async function renderTxt(textContent, metadata) {
         viewer.appendChild(container);
     }
     
-    // 컨테이너 스타일
-    applyContainerStyle(container);
+    // 렌더링
+    renderContent();
     
     // 토글 버튼 생성
     createToggleButton();
@@ -70,20 +74,8 @@ export async function renderTxt(textContent, metadata) {
     // 헤더 생성
     createHeader(metadata.name);
     
-    // 본문 콘텐츠 생성
-    createContent(container, textContent, metadata);
-    
-    // 모드별 설정
-    setupInteraction(container);
-    
-    // 스크롤 진행률 추적 (1페이지 모드용)
-    if (pageLayout === '1page') {
-        setupScrollTracking(container, metadata);
-    }
-    
-    // 테마 적용
-    applyTheme();
-    applyTypography();
+    // 키보드 이벤트
+    setupKeyboardNavigation();
     
     // 전역 함수 등록
     window.openTextSettings = openSettings;
@@ -93,12 +85,41 @@ export async function renderTxt(textContent, metadata) {
     window.setTextLayout = setTextLayout;
     window.getTextLayout = getTextLayout;
     
-    // 키보드 이벤트
-    setupKeyboardNavigation();
-    
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
     
     console.log(`📖 TXT Viewer opened (mode: ${readMode}, layout: ${pageLayout})`);
+}
+
+/**
+ * 콘텐츠 렌더링 (레이아웃 변경 시 재사용)
+ */
+function renderContent() {
+    const container = document.getElementById('textViewerContainer');
+    if (!container) return;
+    
+    // 컨테이너 스타일
+    applyContainerStyle(container);
+    
+    // 본문 콘텐츠 생성
+    container.innerHTML = '';
+    
+    if (pageLayout === '2page') {
+        create2PageContent(container, currentTextContent, currentMetadata);
+    } else {
+        create1PageContent(container, currentTextContent, currentMetadata);
+    }
+    
+    // 모드별 설정
+    setupInteraction(container);
+    
+    // 스크롤 진행률 추적 (1페이지 모드용)
+    if (pageLayout === '1page') {
+        setupScrollTracking(container, currentMetadata);
+    }
+    
+    // 테마 적용
+    applyTheme();
+    applyTypography();
 }
 
 /**
@@ -113,7 +134,7 @@ function applyContainerStyle(container) {
         left: 0;
         right: 0;
         bottom: 0;
-        background: ${is2Page ? '#1a1a1a' : 'var(--bg-primary, #0d0d0d)'};
+        background: var(--bg-primary, #0d0d0d);
         color: var(--text-primary, #e8e8e8);
         overflow: ${is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')};
         z-index: 5001;
@@ -271,23 +292,6 @@ function toggleHeader() {
 }
 
 /**
- * 본문 콘텐츠 생성
- */
-function createContent(container, textContent, metadata) {
-    container.innerHTML = '';
-    
-    const is2Page = pageLayout === '2page';
-    
-    if (is2Page) {
-        // 2페이지 모드: 책 스타일
-        create2PageContent(container, textContent, metadata);
-    } else {
-        // 1페이지 모드: 기존 스크롤
-        create1PageContent(container, textContent, metadata);
-    }
-}
-
-/**
  * 1페이지 콘텐츠 생성
  */
 function create1PageContent(container, textContent, metadata) {
@@ -376,19 +380,21 @@ function create2PageContent(container, textContent, metadata) {
         overflow: hidden;
         position: relative;
     `;
-// 책 중앙 선
-const binding = document.createElement('div');
-binding.style.cssText = `
-    position: absolute;
-    left: 50%;
-    top: 20px;
-    bottom: 20px;
-    width: 1px;
-    transform: translateX(-50%);
-    background: rgba(255,255,255,0.08);
-    z-index: 10;
-    pointer-events: none;
-`;
+    
+    // 책 중앙 선
+    const binding = document.createElement('div');
+    binding.style.cssText = `
+        position: absolute;
+        left: 50%;
+        top: 20px;
+        bottom: 20px;
+        width: 1px;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.08);
+        z-index: 10;
+        pointer-events: none;
+    `;
+    
     // 왼쪽 페이지
     const leftPage = document.createElement('div');
     leftPage.id = 'textLeftPage';
@@ -426,13 +432,14 @@ binding.style.cssText = `
         position: relative;
     `;
     
-// 페이지 번호 스타일
-const pageNumStyle = `
-    position: absolute;
-    bottom: 20px;
-    font-size: 12px;
-    color: var(--text-tertiary, #666);
-`;
+    // 페이지 번호 (본문 아래로, z-index 낮게)
+    const pageNumStyle = `
+        position: absolute;
+        bottom: 20px;
+        font-size: 12px;
+        color: var(--text-tertiary, #666);
+        z-index: 1;
+    `;
     
     // 왼쪽 페이지 번호
     const leftPageNum = document.createElement('div');
@@ -473,13 +480,12 @@ function splitTextToPages(textContent, metadata) {
             coverUrl: metadata.coverUrl,
             title: metadata.name
         });
-        pages.push({ type: 'empty' }); // 표지 뒷면 (빈 페이지)
+        pages.push({ type: 'empty' });
     }
     
     // 본문을 문단으로 분할
     const paragraphs = textContent.split(/\n/).filter(line => line.trim());
     
-    // 대략적인 페이지당 문자 수 (화면 크기에 따라 조정 필요)
     const charsPerPage = 800;
     let currentPageText = '';
     
@@ -497,15 +503,12 @@ function splitTextToPages(textContent, metadata) {
         }
     });
     
-    // 마지막 페이지
     if (currentPageText) {
         pages.push({ type: 'text', content: currentPageText });
     }
     
-    // 끝 페이지
     pages.push({ type: 'end' });
     
-    // 짝수로 맞추기
     if (pages.length % 2 !== 0) {
         pages.push({ type: 'empty' });
     }
@@ -529,15 +532,11 @@ function renderSpread(spreadIndex) {
     const leftIdx = spreadIndex * 2;
     const rightIdx = spreadIndex * 2 + 1;
     
-    // 왼쪽 페이지 렌더링
     renderSinglePage(leftPage, pages[leftIdx], leftPageNum, leftIdx + 1);
-    
-    // 오른쪽 페이지 렌더링
     renderSinglePage(rightPage, pages[rightIdx], rightPageNum, rightIdx + 1);
     
     currentSpreadIndex = spreadIndex;
     
-    // 진행률 업데이트
     const progress = totalSpreads > 1 ? Math.round((spreadIndex / (totalSpreads - 1)) * 100) : 100;
     updateProgressIndicator(progress);
 }
@@ -546,7 +545,6 @@ function renderSpread(spreadIndex) {
  * 단일 페이지 렌더링
  */
 function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
-    // 페이지 번호 제외한 내용 초기화
     const children = Array.from(pageEl.children);
     children.forEach(child => {
         if (child !== pageNumEl) {
@@ -559,8 +557,8 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
         return;
     }
     
-const contentDiv = document.createElement('div');
-contentDiv.style.cssText = 'height: calc(100% - 30px); overflow: hidden;';
+    const contentDiv = document.createElement('div');
+    contentDiv.style.cssText = 'height: calc(100% - 30px); overflow: hidden; position: relative; z-index: 2;';
     
     switch (pageData.type) {
         case 'cover':
@@ -657,60 +655,57 @@ function setupInteraction(container) {
  * 2페이지 인터랙션 설정
  */
 function setup2PageInteraction(container) {
-    // 휠 이벤트
-    container.onwheel = (e) => {
-        e.preventDefault();
-        if (e.deltaY > 0 || e.deltaX > 0) {
-            navigate2Page(1);
-        } else if (e.deltaY < 0 || e.deltaX < 0) {
-            navigate2Page(-1);
-        }
-    };
-    
-    // 터치 이벤트
-    let touchStartX = 0;
-    let touchStartY = 0;
-    
-    container.ontouchstart = (e) => {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-    };
-    
-    container.ontouchend = (e) => {
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-        const diffX = touchStartX - touchEndX;
-        const diffY = touchStartY - touchEndY;
-        
-        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
-            if (diffX > 0) {
+    // 스크롤 모드: 휠/터치
+    if (readMode === 'scroll') {
+        // 휠 이벤트
+        container.onwheel = (e) => {
+            e.preventDefault();
+            if (e.deltaY > 0 || e.deltaX > 0) {
                 navigate2Page(1);
-            } else {
+            } else if (e.deltaY < 0 || e.deltaX < 0) {
                 navigate2Page(-1);
             }
-        } else if (Math.abs(diffY) > 50) {
-            if (diffY > 0) {
-                navigate2Page(1);
-            } else {
-                navigate2Page(-1);
+        };
+        
+        // 터치 이벤트
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        container.ontouchstart = (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        };
+        
+        container.ontouchend = (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+            
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                navigate2Page(diffX > 0 ? 1 : -1);
+            } else if (Math.abs(diffY) > 50) {
+                navigate2Page(diffY > 0 ? 1 : -1);
             }
-        }
-    };
+        };
+    }
     
-    // 클릭 이벤트
-    container.onclick = (e) => {
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-        
-        const rect = container.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const width = rect.width;
-        
-        if (clickX < width * 0.2) {
-            navigate2Page(-1);
-        } else if (clickX > width * 0.8) {
-            navigate2Page(1);
-        }
-    };
+    // 클릭 모드: 클릭
+    if (readMode === 'click') {
+        container.onclick = (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+            
+            const rect = container.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            
+            if (clickX < width * 0.2) {
+                navigate2Page(-1);
+            } else if (clickX > width * 0.8) {
+                navigate2Page(1);
+            }
+        };
+    }
 }
 
 /**
@@ -761,7 +756,7 @@ function scrollPageAmount(direction) {
 }
 
 /**
- * 키보드 네비게이션
+ * 키보드 네비게이션 (양쪽 모드 공통)
  */
 function setupKeyboardNavigation() {
     if (window._textKeyHandler) {
@@ -913,25 +908,12 @@ function setTextLayout(layout) {
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
     
-    // 현재 진행률 저장
-    const currentProgress = TextViewerState.scrollProgress || 0;
+    // 콘텐츠 다시 렌더링
+    renderContent();
     
-    // 다시 렌더링 필요 - 현재 책 정보로 재렌더
-    const container = document.getElementById('textViewerContainer');
-    const metadata = TextViewerState.currentBook;
-    
-    if (container && metadata) {
-        applyContainerStyle(container);
-        
-        // 콘텐츠 다시 생성하려면 원본 텍스트 필요
-        // 여기서는 간단히 토스트만 표시
-        if (window.showToast) {
-            window.showToast(layout === '2page' ? '2 Page Mode (새로고침 필요)' : '1 Page Mode (새로고침 필요)');
-        }
+    if (window.showToast) {
+        window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
     }
-    
-    applyTheme();
-    applyTypography();
 }
 
 /**
@@ -963,7 +945,6 @@ export function scrollToPosition(position) {
     const container = document.getElementById('textViewerContainer');
     if (container && position) {
         if (pageLayout === '2page') {
-            // 스프레드 인덱스로 변환
             const spreadIndex = Math.floor(position);
             if (spreadIndex < totalSpreads) {
                 renderSpread(spreadIndex);
@@ -997,6 +978,8 @@ export function cleanupTextRenderer() {
     headerVisible = false;
     currentSpreadIndex = 0;
     totalSpreads = 0;
+    currentTextContent = '';
+    currentMetadata = null;
     
     if (headerAutoCloseTimer) {
         clearTimeout(headerAutoCloseTimer);
