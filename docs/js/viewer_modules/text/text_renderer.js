@@ -285,6 +285,8 @@ function scrollPageAmount(direction) {
  * 읽기 모드 변경
  */
 function setReadMode(mode) {
+    console.log('🔄 setReadMode called:', mode);
+    console.trace();  // 어디서 호출되는지 추적
     if (mode) {
         readMode = mode;
     } else {
