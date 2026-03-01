@@ -401,7 +401,7 @@ function create2PageContent(container, textContent, metadata) {
     leftPage.style.cssText = `
         flex: 1;
         height: 100%;
-        padding: 40px 50px 60px 40px;
+        padding: 40px 50px 50px 40px;
         overflow: hidden;
         background: var(--bg-primary, #1c1c1c);
         color: var(--text-primary, #e8e8e8);
@@ -420,7 +420,7 @@ function create2PageContent(container, textContent, metadata) {
     rightPage.style.cssText = `
         flex: 1;
         height: 100%;
-        padding: 40px 40px 60px 50px;
+        padding: 40px 40px 50px 50px;
         overflow: hidden;
         background: var(--bg-primary, #1c1c1c);
         color: var(--text-primary, #e8e8e8);
@@ -557,8 +557,8 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
         return;
     }
     
-    const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'height: calc(100% - 30px); overflow: hidden; position: relative; z-index: 2;';
+const contentDiv = document.createElement('div');
+contentDiv.style.cssText = 'height: 100%; padding-bottom: 50px; overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
     
     switch (pageData.type) {
         case 'cover':
