@@ -244,7 +244,7 @@ function toggleHeader() {
 }
 
 /**
- * 클릭 영역 설정 (클릭 모드)
+ * 클릭 영역 설정 (클릭 모드) - 좌우만
  */
 function setupClickZones(container) {
     container.onclick = (e) => {
@@ -255,21 +255,17 @@ function setupClickZones(container) {
         const clickX = e.clientX - rect.left;
         const width = rect.width;
         
-        // 좌측 30% → 이전 페이지
-        if (clickX < width * 0.3) {
+        // 좌측 40% → 이전 페이지
+        if (clickX < width * 0.4) {
             scrollPageAmount(-1);
         }
-        // 우측 30% → 다음 페이지
-        else if (clickX > width * 0.7) {
+        // 우측 40% → 다음 페이지
+        else if (clickX > width * 0.6) {
             scrollPageAmount(1);
         }
-        // 중앙 → 헤더 토글
-        else {
-            toggleHeader();
-        }
+        // 중앙 20% → 아무것도 안 함 (토글 버튼으로만 헤더 열기)
     };
 }
-
 /**
  * 한 화면 분량 스크롤
  */
@@ -292,7 +288,6 @@ function setReadMode(mode) {
     if (mode) {
         readMode = mode;
     } else {
-        // 토글
         readMode = readMode === 'scroll' ? 'click' : 'scroll';
     }
     
@@ -301,9 +296,10 @@ function setReadMode(mode) {
     // 컨테이너 스타일 업데이트
     const container = document.getElementById('textViewerContainer');
     if (container) {
-        applyContainerStyle(container);
+        // overflow만 변경 (전체 스타일 재적용 안 함)
+        container.style.overflowY = readMode === 'scroll' ? 'auto' : 'hidden';
         
-        // 클릭 모드면 클릭 영역 설정
+        // 클릭 이벤트 설정
         if (readMode === 'click') {
             setupClickZones(container);
         } else {
@@ -314,7 +310,7 @@ function setReadMode(mode) {
     // 설정 UI 업데이트
     updateReadModeUI();
     
-    const modeText = readMode === 'scroll' ? '스크롤 모드' : '클릭 모드';
+    const modeText = readMode === 'scroll' ? 'Scroll Mode' : 'Click Mode';
     if (window.showToast) window.showToast(modeText);
 }
 
