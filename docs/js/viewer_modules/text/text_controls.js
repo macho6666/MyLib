@@ -41,71 +41,95 @@ function createSettingsPanel() {
         box-sizing: border-box;
     `;
     
- panel.innerHTML = `
-    <div class="settings-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary, #e8e8e8);">Settings</h3>
-        <button id="btnCloseSettings" style="background: none; border: none; font-size: 24px; color: var(--text-tertiary, #666); cursor: pointer;">×</button>
-    </div>
-    
-    <!-- 읽기 모드 -->
-    <div class="setting-group" style="margin-bottom: 24px;">
-        <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Mode</label>
-        <div style="display: flex; gap: 8px;">
-            <button id="btnModeScroll" class="setting-btn">Scroll</button>
-            <button id="btnModeClick" class="setting-btn">Click</button>
+    panel.innerHTML = `
+        <div class="settings-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary, #e8e8e8);">Settings</h3>
+            <button id="btnCloseSettings" style="background: none; border: none; font-size: 24px; color: var(--text-tertiary, #666); cursor: pointer;">×</button>
         </div>
-        <p style="font-size: 11px; color: var(--text-tertiary, #666); margin-top: 8px; line-height: 1.5;">
-            Scroll: Free scrolling<br>
-            Click: Tap left/right to turn pages
-        </p>
-    </div>
-    
-    <!-- 테마 -->
-    <div class="setting-group" style="margin-bottom: 24px;">
-        <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Theme</label>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            <button id="btnThemeDark" class="setting-btn" data-theme="dark">Dark</button>
-            <button id="btnThemeLight" class="setting-btn" data-theme="light">Light</button>
-            <button id="btnThemeSepia" class="setting-btn" data-theme="sepia">Sepia</button>
+        
+        <!-- 읽기 모드 -->
+        <div class="setting-group" style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Mode</label>
+            <div style="display: flex; gap: 8px;">
+                <button id="btnModeScroll" class="setting-btn">Scroll</button>
+                <button id="btnModeClick" class="setting-btn">Click</button>
+            </div>
+            <p style="font-size: 11px; color: var(--text-tertiary, #666); margin-top: 8px; line-height: 1.5;">
+                Scroll: Free scrolling<br>
+                Click: Tap left/right to turn pages
+            </p>
         </div>
-    </div>
-    
-    <!-- 글꼴 크기 -->
-    <div class="setting-group" style="margin-bottom: 24px;">
-        <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Font Size</label>
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <button id="btnFontSizeMinus" style="
+        
+        <!-- 레이아웃 (PC 전용) -->
+        <div class="setting-group" id="layoutGroup" style="margin-bottom: 24px; display: none;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Layout (PC only)</label>
+            <div style="display: flex; gap: 8px;">
+                <button id="btnLayout1Page" class="setting-btn">1 Page</button>
+                <button id="btnLayout2Page" class="setting-btn">2 Page</button>
+            </div>
+        </div>
+        
+        <!-- 테마 -->
+        <div class="setting-group" style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Theme</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <button id="btnThemeDark" class="setting-btn" data-theme="dark">Dark</button>
+                <button id="btnThemeLight" class="setting-btn" data-theme="light">Light</button>
+                <button id="btnThemeSepia" class="setting-btn" data-theme="sepia">Sepia</button>
+            </div>
+        </div>
+        
+        <!-- 글꼴 크기 -->
+        <div class="setting-group" style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Font Size</label>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button id="btnFontSizeMinus" style="
+                    background: var(--bg-input, #222);
+                    border: 1px solid var(--border-color, #333);
+                    color: var(--text-primary, #e8e8e8);
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">−</button>
+                <span id="fontSizeValue" style="font-size: 14px; color: var(--text-primary, #e8e8e8); min-width: 45px; text-align: center;">18px</span>
+                <button id="btnFontSizePlus" style="
+                    background: var(--bg-input, #222);
+                    border: 1px solid var(--border-color, #333);
+                    color: var(--text-primary, #e8e8e8);
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">+</button>
+            </div>
+        </div>
+        
+        <!-- 줄간격 -->
+        <div class="setting-group" style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">
+                Line Height: <span id="lineHeightValue">1.8</span>
+            </label>
+            <input type="range" id="lineHeightSlider" min="1.2" max="2.5" step="0.1" value="1.8" style="width: 100%; cursor: pointer;">
+        </div>
+        
+        <!-- 북마크 초기화 -->
+        <div class="setting-group" style="margin-bottom: 24px;">
+            <button id="btnResetBookmark" style="
+                width: 100%;
+                padding: 12px;
                 background: var(--bg-input, #222);
                 border: 1px solid var(--border-color, #333);
-                color: var(--text-primary, #e8e8e8);
-                width: 32px;
-                height: 32px;
-                border-radius: 6px;
+                color: var(--text-secondary, #999);
+                border-radius: 8px;
                 cursor: pointer;
-                font-size: 14px;
-            ">−</button>
-            <span id="fontSizeValue" style="font-size: 14px; color: var(--text-primary, #e8e8e8); min-width: 45px; text-align: center;">18px</span>
-            <button id="btnFontSizePlus" style="
-                background: var(--bg-input, #222);
-                border: 1px solid var(--border-color, #333);
-                color: var(--text-primary, #e8e8e8);
-                width: 32px;
-                height: 32px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 14px;
-            ">+</button>
+                font-size: 13px;
+            ">Reset Bookmark</button>
         </div>
-    </div>
+    `;
     
-    <!-- 줄간격 -->
-    <div class="setting-group" style="margin-bottom: 24px;">
-        <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">
-            Line Height: <span id="lineHeightValue">1.8</span>
-        </label>
-        <input type="range" id="lineHeightSlider" min="1.2" max="2.5" step="0.1" value="1.8" style="width: 100%; cursor: pointer;">
-    </div>
-`;
     document.body.appendChild(panel);
     
     // 이벤트 등록
@@ -139,13 +163,36 @@ function setupControlEvents() {
         };
     }
     
+    // 레이아웃 (PC 전용)
+    const layout1Btn = document.getElementById('btnLayout1Page');
+    const layout2Btn = document.getElementById('btnLayout2Page');
+    
+    if (layout1Btn) {
+        layout1Btn.onclick = () => {
+            if (window.setTextLayout) window.setTextLayout('1page');
+            updateLayoutUI();
+        };
+    }
+    if (layout2Btn) {
+        layout2Btn.onclick = () => {
+            if (window.setTextLayout) window.setTextLayout('2page');
+            updateLayoutUI();
+        };
+    }
+    
+    // PC인지 확인 후 레이아웃 그룹 표시
+    const layoutGroup = document.getElementById('layoutGroup');
+    if (layoutGroup && window.innerWidth >= 1024) {
+        layoutGroup.style.display = 'block';
+    }
+    
     // 테마
-document.querySelectorAll('button[data-theme]').forEach(btn => {
-    btn.onclick = () => {
-        changeTheme(btn.dataset.theme);
-        updateThemeUI();
-    };
-});
+    document.querySelectorAll('button[data-theme]').forEach(btn => {
+        btn.onclick = () => {
+            changeTheme(btn.dataset.theme);
+            updateThemeUI();
+        };
+    });
     
     // 폰트 크기
     const fontMinus = document.getElementById('btnFontSizeMinus');
@@ -169,8 +216,15 @@ document.querySelectorAll('button[data-theme]').forEach(btn => {
         };
     }
     
+    // 북마크 초기화
+    const resetBtn = document.getElementById('btnResetBookmark');
+    if (resetBtn) {
+        resetBtn.onclick = resetCurrentBookmark;
+    }
+    
     // 초기 상태 업데이트
     updateReadModeUI();
+    updateLayoutUI();
     updateThemeUI();
     updateFontUI();
 }
@@ -192,12 +246,24 @@ function updateReadModeUI() {
 }
 
 /**
+ * 레이아웃 UI 업데이트
+ */
+function updateLayoutUI() {
+    const currentLayout = window.getTextLayout ? window.getTextLayout() : '1page';
+    const btn1 = document.getElementById('btnLayout1Page');
+    const btn2 = document.getElementById('btnLayout2Page');
+    
+    if (btn1) btn1.classList.toggle('active', currentLayout === '1page');
+    if (btn2) btn2.classList.toggle('active', currentLayout === '2page');
+}
+
+/**
  * 테마 UI 업데이트
  */
 function updateThemeUI() {
     const currentTheme = TextViewerState.theme?.mode || 'dark';
     
-    document.querySelectorAll('[data-theme]').forEach(btn => {
+    document.querySelectorAll('button[data-theme]').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.theme === currentTheme);
     });
 }
@@ -232,8 +298,8 @@ function changeTheme(mode) {
     applyTheme(mode);
     
     if (window.showToast) {
-        const names = { dark: '다크', light: '라이트', sepia: '세피아' };
-        window.showToast(names[mode] + ' 테마 적용');
+        const names = { dark: 'Dark', light: 'Light', sepia: 'Sepia' };
+        window.showToast(names[mode] + ' theme applied');
     }
 }
 
@@ -254,6 +320,30 @@ function changeFontSize(delta) {
 }
 
 /**
+ * 북마크 초기화
+ */
+function resetCurrentBookmark() {
+    const book = TextViewerState.currentBook;
+    if (!book) {
+        if (window.showToast) window.showToast('No book opened');
+        return;
+    }
+    
+    if (!confirm('Reset bookmark for this book?')) return;
+    
+    const key = `bookmark_${book.seriesId}`;
+    const bookmarks = JSON.parse(localStorage.getItem(key) || '{}');
+    
+    if (bookmarks[book.bookId]) {
+        delete bookmarks[book.bookId];
+        localStorage.setItem(key, JSON.stringify(bookmarks));
+        if (window.showToast) window.showToast('Bookmark reset');
+    } else {
+        if (window.showToast) window.showToast('No bookmark found');
+    }
+}
+
+/**
  * 설정 패널 열기
  */
 export function openSettings() {
@@ -265,6 +355,7 @@ export function openSettings() {
         
         // 현재 상태 반영
         updateReadModeUI();
+        updateLayoutUI();
         updateThemeUI();
         updateFontUI();
     }
