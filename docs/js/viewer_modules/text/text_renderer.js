@@ -254,18 +254,17 @@ function toggleHeader() {
  */
 function setupClickZones(container) {
     container.onclick = (e) => {
-        // 버튼/링크 클릭 제외
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
         
         const rect = container.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const width = rect.width;
         
-        // 좌측 20% → 이전 페이지
+        // 좌측 20% → 이전
         if (clickX < width * 0.2) {
             scrollPageAmount(-1);
         }
-        // 우측 20% → 다음 페이지
+        // 우측 20% → 다음
         else if (clickX > width * 0.8) {
             scrollPageAmount(1);
         }
