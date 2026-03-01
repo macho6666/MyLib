@@ -16,8 +16,8 @@ let pageLayout = '1page'; // '1page' | '2page'
 let headerAutoCloseTimer = null;
 let currentSpreadIndex = 0;
 let totalSpreads = 0;
-let currentTextContent = ''; // 원본 텍스트 저장
-let currentMetadata = null;  // 메타데이터 저장
+let currentTextContent = '';
+let currentMetadata = null;
 
 /**
  * TXT 뷰어 초기화 및 렌더링
@@ -27,37 +27,31 @@ export async function renderTxt(textContent, metadata) {
     TextViewerState.currentBook = metadata;
     headerVisible = false;
     currentSpreadIndex = 0;
-    currentTextContent = textContent;  // 저장
-    currentMetadata = metadata;         // 저장
+    currentTextContent = textContent;
+    currentMetadata = metadata;
     
-    // 저장된 읽기 모드 불러오기
     readMode = localStorage.getItem('mylib_text_readmode') || 'scroll';
     
-    // 저장된 레이아웃 불러오기 (PC만)
     if (window.innerWidth >= 1024) {
         pageLayout = localStorage.getItem('text_layout') || '1page';
     } else {
         pageLayout = '1page';
     }
     
-    // 뷰어 오버레이 표시
     const viewer = document.getElementById('viewerOverlay');
     viewer.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     
-    // 이미지 뷰어 요소 숨기기
     const imageContent = document.getElementById('viewerContent');
     if (imageContent) {
         imageContent.style.display = 'none';
     }
     
-    // 하단 컨트롤 숨기기
     const controls = document.getElementById('viewerControls');
     if (controls) {
         controls.style.display = 'none';
     }
     
-    // 텍스트 뷰어 컨테이너 생성
     let container = document.getElementById('textViewerContainer');
     if (!container) {
         container = document.createElement('div');
@@ -65,19 +59,12 @@ export async function renderTxt(textContent, metadata) {
         viewer.appendChild(container);
     }
     
-    // 렌더링
     renderContent();
     
-    // 토글 버튼 생성
     createToggleButton();
-    
-    // 헤더 생성
     createHeader(metadata.name);
-    
-    // 키보드 이벤트
     setupKeyboardNavigation();
     
-    // 전역 함수 등록
     window.openTextSettings = openSettings;
     window.toggleTextHeader = toggleHeader;
     window.setTextReadMode = setReadMode;
@@ -91,16 +78,14 @@ export async function renderTxt(textContent, metadata) {
 }
 
 /**
- * 콘텐츠 렌더링 (레이아웃 변경 시 재사용)
+ * 콘텐츠 렌더링
  */
 function renderContent() {
     const container = document.getElementById('textViewerContainer');
     if (!container) return;
     
-    // 컨테이너 스타일
     applyContainerStyle(container);
     
-    // 본문 콘텐츠 생성
     container.innerHTML = '';
     
     if (pageLayout === '2page') {
@@ -109,17 +94,41 @@ function renderContent() {
         create1PageContent(container, currentTextContent, currentMetadata);
     }
     
-    // 모드별 설정
     setupInteraction(container);
     
-    // 스크롤 진행률 추적 (1페이지 모드용)
     if (pageLayout === '1page') {
         setupScrollTracking(container, currentMetadata);
     }
     
-    // 테마 적용
     applyTheme();
     applyTypography();
+    
+    // 2페이지 모드 테마 강제 적용
+    if (pageLayout === '2page') {
+        apply2PageTheme();
+    }
+}
+
+/**
+ * 2페이지 모드 테마 강제 적용
+ */
+function apply2PageTheme() {
+    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim() || '#1c1c1c';
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() || '#e8e8e8';
+    
+    const book = document.getElementById('textBook');
+    const leftPage = document.getElementById('textLeftPage');
+    const rightPage = document.getElementById('textRightPage');
+    
+    if (book) book.style.background = bgColor;
+    if (leftPage) {
+        leftPage.style.background = bgColor;
+        leftPage.style.color = textColor;
+    }
+    if (rightPage) {
+        rightPage.style.background = bgColor;
+        rightPage.style.color = textColor;
+    }
 }
 
 /**
@@ -307,11 +316,8 @@ function create1PageContent(container, textContent, metadata) {
         word-break: keep-all;
         letter-spacing: 0.3px;
         box-sizing: border-box;
-        background: var(--bg-primary, #0d0d0d);
-        color: var(--text-primary, #e8e8e8);
     `;
     
-    // 표지
     if (metadata.coverUrl) {
         content.innerHTML += `
             <div style="text-align: center; margin-bottom: 32px;">
@@ -329,10 +335,8 @@ function create1PageContent(container, textContent, metadata) {
         `;
     }
     
-    // 본문
     content.innerHTML += formatText(textContent);
     
-    // 끝 표시
     content.innerHTML += `
         <div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">
             — 끝 —
@@ -343,14 +347,12 @@ function create1PageContent(container, textContent, metadata) {
 }
 
 /**
- * 2페이지 콘텐츠 생성 (책 스타일)
+ * 2페이지 콘텐츠 생성
  */
 function create2PageContent(container, textContent, metadata) {
-    // 텍스트를 페이지로 분할
     const pages = splitTextToPages(textContent, metadata);
     totalSpreads = Math.ceil(pages.length / 2);
     
-    // 책 래퍼
     const bookWrapper = document.createElement('div');
     bookWrapper.id = 'textBookWrapper';
     bookWrapper.style.cssText = `
@@ -363,7 +365,6 @@ function create2PageContent(container, textContent, metadata) {
         box-sizing: border-box;
     `;
     
-    // 책 컨테이너 (그림자, 테두리)
     const book = document.createElement('div');
     book.id = 'textBook';
     book.style.cssText = `
@@ -371,7 +372,6 @@ function create2PageContent(container, textContent, metadata) {
         width: calc(100% - 80px);
         max-width: 1400px;
         height: calc(100vh - 80px);
-        background: var(--bg-primary, #1c1c1c);
         border-radius: 8px;
         box-shadow: 
             0 0 40px rgba(0,0,0,0.5),
@@ -381,7 +381,6 @@ function create2PageContent(container, textContent, metadata) {
         position: relative;
     `;
     
-    // 책 중앙 선
     const binding = document.createElement('div');
     binding.style.cssText = `
         position: absolute;
@@ -395,7 +394,6 @@ function create2PageContent(container, textContent, metadata) {
         pointer-events: none;
     `;
     
-    // 왼쪽 페이지
     const leftPage = document.createElement('div');
     leftPage.id = 'textLeftPage';
     leftPage.style.cssText = `
@@ -403,8 +401,6 @@ function create2PageContent(container, textContent, metadata) {
         height: 100%;
         padding: 40px 50px 50px 40px;
         overflow: hidden;
-        background: var(--bg-primary, #1c1c1c);
-        color: var(--text-primary, #e8e8e8);
         font-size: 17px;
         line-height: 1.85;
         word-break: keep-all;
@@ -414,7 +410,6 @@ function create2PageContent(container, textContent, metadata) {
         position: relative;
     `;
     
-    // 오른쪽 페이지
     const rightPage = document.createElement('div');
     rightPage.id = 'textRightPage';
     rightPage.style.cssText = `
@@ -422,8 +417,6 @@ function create2PageContent(container, textContent, metadata) {
         height: 100%;
         padding: 40px 40px 50px 50px;
         overflow: hidden;
-        background: var(--bg-primary, #1c1c1c);
-        color: var(--text-primary, #e8e8e8);
         font-size: 17px;
         line-height: 1.85;
         word-break: keep-all;
@@ -432,7 +425,6 @@ function create2PageContent(container, textContent, metadata) {
         position: relative;
     `;
     
-    // 페이지 번호 (본문 아래로, z-index 낮게)
     const pageNumStyle = `
         position: absolute;
         bottom: 20px;
@@ -441,12 +433,10 @@ function create2PageContent(container, textContent, metadata) {
         z-index: 1;
     `;
     
-    // 왼쪽 페이지 번호
     const leftPageNum = document.createElement('div');
     leftPageNum.id = 'textLeftPageNum';
     leftPageNum.style.cssText = pageNumStyle + 'left: 40px;';
     
-    // 오른쪽 페이지 번호
     const rightPageNum = document.createElement('div');
     rightPageNum.id = 'textRightPageNum';
     rightPageNum.style.cssText = pageNumStyle + 'right: 40px;';
@@ -460,10 +450,8 @@ function create2PageContent(container, textContent, metadata) {
     bookWrapper.appendChild(book);
     container.appendChild(bookWrapper);
     
-    // 페이지 데이터 저장
     container._pages = pages;
     
-    // 첫 스프레드 렌더링
     renderSpread(0);
 }
 
@@ -473,7 +461,6 @@ function create2PageContent(container, textContent, metadata) {
 function splitTextToPages(textContent, metadata) {
     const pages = [];
     
-    // 표지 페이지 (있으면)
     if (metadata.coverUrl) {
         pages.push({
             type: 'cover',
@@ -483,7 +470,6 @@ function splitTextToPages(textContent, metadata) {
         pages.push({ type: 'empty' });
     }
     
-    // 본문을 문단으로 분할
     const paragraphs = textContent.split(/\n/).filter(line => line.trim());
     
     const charsPerPage = 800;
@@ -517,7 +503,7 @@ function splitTextToPages(textContent, metadata) {
 }
 
 /**
- * 스프레드 렌더링 (2페이지)
+ * 스프레드 렌더링
  */
 function renderSpread(spreadIndex) {
     const container = document.getElementById('textViewerContainer');
@@ -557,8 +543,8 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
         return;
     }
     
-const contentDiv = document.createElement('div');
-contentDiv.style.cssText = 'height: 100%; padding-bottom: 50px; overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
+    const contentDiv = document.createElement('div');
+    contentDiv.style.cssText = 'height: 100%; padding-bottom: 50px; overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
     
     switch (pageData.type) {
         case 'cover':
@@ -655,9 +641,7 @@ function setupInteraction(container) {
  * 2페이지 인터랙션 설정
  */
 function setup2PageInteraction(container) {
-    // 스크롤 모드: 휠/터치
     if (readMode === 'scroll') {
-        // 휠 이벤트
         container.onwheel = (e) => {
             e.preventDefault();
             if (e.deltaY > 0 || e.deltaX > 0) {
@@ -667,7 +651,6 @@ function setup2PageInteraction(container) {
             }
         };
         
-        // 터치 이벤트
         let touchStartX = 0;
         let touchStartY = 0;
         
@@ -690,7 +673,6 @@ function setup2PageInteraction(container) {
         };
     }
     
-    // 클릭 모드: 클릭
     if (readMode === 'click') {
         container.onclick = (e) => {
             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
@@ -756,7 +738,7 @@ function scrollPageAmount(direction) {
 }
 
 /**
- * 키보드 네비게이션 (양쪽 모드 공통)
+ * 키보드 네비게이션
  */
 function setupKeyboardNavigation() {
     if (window._textKeyHandler) {
@@ -845,7 +827,7 @@ function updateProgressIndicator(progress) {
 }
 
 /**
- * 스크롤 진행률 추적 (1페이지 모드용)
+ * 스크롤 진행률 추적
  */
 function setupScrollTracking(container, metadata) {
     let ticking = false;
@@ -895,6 +877,10 @@ function setReadMode(mode) {
     applyTheme();
     applyTypography();
     
+    if (pageLayout === '2page') {
+        apply2PageTheme();
+    }
+    
     updateReadModeUI();
     
     const modeText = readMode === 'scroll' ? 'Scroll Mode' : 'Click Mode';
@@ -905,11 +891,16 @@ function setReadMode(mode) {
  * 레이아웃 변경
  */
 function setTextLayout(layout) {
+    const currentProgress = TextViewerState.scrollProgress || 0;
+    
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
     
-    // 콘텐츠 다시 렌더링
     renderContent();
+    
+    setTimeout(() => {
+        scrollToProgress(currentProgress);
+    }, 100);
     
     if (window.showToast) {
         window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
@@ -960,8 +951,8 @@ export function scrollToPosition(position) {
  */
 export function scrollToProgress(percent) {
     if (pageLayout === '2page') {
-        const spreadIndex = Math.floor((percent / 100) * (totalSpreads - 1));
-        renderSpread(spreadIndex);
+        const spreadIndex = Math.round((percent / 100) * (totalSpreads - 1));
+        renderSpread(Math.max(0, Math.min(spreadIndex, totalSpreads - 1)));
     } else {
         const container = document.getElementById('textViewerContainer');
         if (container) {
@@ -1036,7 +1027,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// 호환성 유지
 export function renderPage(pageIndex) {
     console.log('renderPage called but using scroll mode');
 }
