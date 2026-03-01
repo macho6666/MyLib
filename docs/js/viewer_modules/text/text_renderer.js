@@ -377,26 +377,22 @@ function create2PageContent(container, textContent, metadata) {
         position: relative;
     `;
     
-    // 책 중앙 접힌 부분 (바인딩)
-    const binding = document.createElement('div');
-    binding.style.cssText = `
-        position: absolute;
-        left: 50%;
-        top: 0;
-        bottom: 0;
-        width: 20px;
-        transform: translateX(-50%);
-        background: linear-gradient(to right, 
-            rgba(0,0,0,0.3) 0%,
-            rgba(0,0,0,0.1) 30%,
-            rgba(255,255,255,0.05) 50%,
-            rgba(0,0,0,0.1) 70%,
-            rgba(0,0,0,0.3) 100%
-        );
-        z-index: 10;
-        pointer-events: none;
-    `;
-    
+JavaScript
+
+// 책 중앙 접힌 부분 (바인딩)
+const binding = document.createElement('div');
+binding.style.cssText = `
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.1);
+    box-shadow: -3px 0 8px rgba(0,0,0,0.3), 3px 0 8px rgba(0,0,0,0.3);
+    z-index: 10;
+    pointer-events: none;
+`;
     // 왼쪽 페이지
     const leftPage = document.createElement('div');
     leftPage.id = 'textLeftPage';
@@ -434,13 +430,16 @@ function create2PageContent(container, textContent, metadata) {
         position: relative;
     `;
     
-    // 페이지 번호 스타일
-    const pageNumStyle = `
-        position: absolute;
-        bottom: 20px;
-        font-size: 12px;
-        color: var(--text-tertiary, #666);
-    `;
+// 페이지 번호 스타일
+const pageNumStyle = `
+    position: absolute;
+    bottom: 0;
+    padding: 12px 0;
+    font-size: 12px;
+    color: var(--text-tertiary, #666);
+    background: linear-gradient(to top, var(--bg-primary, #1c1c1c) 60%, transparent 100%);
+    width: 100px;
+`;
     
     // 왼쪽 페이지 번호
     const leftPageNum = document.createElement('div');
@@ -567,8 +566,8 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
         return;
     }
     
-    const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'height: calc(100% - 40px); overflow: hidden;';
+const contentDiv = document.createElement('div');
+contentDiv.style.cssText = 'height: 100%; overflow: hidden; padding-bottom: 40px; box-sizing: border-box;';
     
     switch (pageData.type) {
         case 'cover':
