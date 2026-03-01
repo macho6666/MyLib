@@ -242,7 +242,6 @@ function toggleHeader() {
         if (toggleBtn) toggleBtn.style.opacity = '1';
     }
 }
-
 /**
  * 클릭 영역 설정 (클릭 모드) - 좌우만
  */
@@ -255,15 +254,15 @@ function setupClickZones(container) {
         const clickX = e.clientX - rect.left;
         const width = rect.width;
         
-        // 좌측 40% → 이전 페이지
-        if (clickX < width * 0.4) {
+        // 좌측 20% → 이전 페이지
+        if (clickX < width * 0.2) {
             scrollPageAmount(-1);
         }
-        // 우측 40% → 다음 페이지
-        else if (clickX > width * 0.6) {
+        // 우측 20% → 다음 페이지
+        else if (clickX > width * 0.8) {
             scrollPageAmount(1);
         }
-        // 중앙 20% → 아무것도 안 함 (토글 버튼으로만 헤더 열기)
+        // 중앙 60% → 아무것도 안 함
     };
 }
 /**
