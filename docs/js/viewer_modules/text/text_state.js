@@ -9,7 +9,7 @@
 export const TextViewerState = {
     currentBook: null,
     renderType: null,
-    layout: '1page',
+    layout: '1page', 
     
     input: {
         click: true,
@@ -55,8 +55,8 @@ export const TextViewerState = {
 
 // 초기값 로드 (한 번만)
 (function loadSavedSettings() {
-    const theme = localStorage.getItem('text_theme');
-    if (theme) TextViewerState.theme.mode = theme;
+    const layout = localStorage.getItem('text_layout');
+    if (layout) TextViewerState.layout = layout;
     
     const fontSize = localStorage.getItem('text_fontsize');
     if (fontSize) TextViewerState.typography.fontSize = parseInt(fontSize);
@@ -79,6 +79,12 @@ export function setLayout(layout) {
     localStorage.setItem('text_layout', layout);
 }
 
+/**
+ * 레이아웃 불러오기
+ */
+export function getLayout() {
+    return TextViewerState.layout;
+}
 /**
  * 테마 변경
  */
