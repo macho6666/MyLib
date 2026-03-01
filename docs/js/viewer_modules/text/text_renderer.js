@@ -14,7 +14,8 @@ let headerVisible = false;
 let readMode = 'scroll'; // 'scroll' | 'click'
 let pageLayout = '1page'; // '1page' | '2page'
 let headerAutoCloseTimer = null;
-let current2PageOffset = 0; // 2페이지 모드용 오프셋
+let currentSpreadIndex = 0; // 2페이지 모드용 스프레드 인덱스
+let totalSpreads = 0;
 
 /**
  * TXT 뷰어 초기화 및 렌더링
@@ -23,7 +24,7 @@ export async function renderTxt(textContent, metadata) {
     TextViewerState.renderType = 'txt';
     TextViewerState.currentBook = metadata;
     headerVisible = false;
-    current2PageOffset = 0;
+    currentSpreadIndex = 0;
     
     // 저장된 읽기 모드 불러오기
     readMode = localStorage.getItem('mylib_text_readmode') || 'scroll';
@@ -70,10 +71,7 @@ export async function renderTxt(textContent, metadata) {
     createHeader(metadata.name);
     
     // 본문 콘텐츠 생성
-    const content = createContent(textContent, metadata);
-    
-    container.innerHTML = '';
-    container.appendChild(content);
+    createContent(container, textContent, metadata);
     
     // 모드별 설정
     setupInteraction(container);
@@ -115,11 +113,14 @@ function applyContainerStyle(container) {
         left: 0;
         right: 0;
         bottom: 0;
-        background: var(--bg-primary, #0d0d0d);
+        background: ${is2Page ? '#1a1a1a' : 'var(--bg-primary, #0d0d0d)'};
         color: var(--text-primary, #e8e8e8);
         overflow: ${is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')};
         z-index: 5001;
         -webkit-overflow-scrolling: touch;
+        display: ${is2Page ? 'flex' : 'block'};
+        align-items: ${is2Page ? 'center' : 'stretch'};
+        justify-content: ${is2Page ? 'center' : 'stretch'};
     `;
 }
 
@@ -272,75 +273,367 @@ function toggleHeader() {
 /**
  * 본문 콘텐츠 생성
  */
-function createContent(textContent, metadata) {
+function createContent(container, textContent, metadata) {
+    container.innerHTML = '';
+    
+    const is2Page = pageLayout === '2page';
+    
+    if (is2Page) {
+        // 2페이지 모드: 책 스타일
+        create2PageContent(container, textContent, metadata);
+    } else {
+        // 1페이지 모드: 기존 스크롤
+        create1PageContent(container, textContent, metadata);
+    }
+}
+
+/**
+ * 1페이지 콘텐츠 생성
+ */
+function create1PageContent(container, textContent, metadata) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     
-    const is2Page = pageLayout === '2page';
-    const verticalPadding = '24px';
-    
-    if (is2Page) {
-        // 2페이지: 가로로 컬럼 확장, 화면 높이 고정
-        content.style.cssText = `
-            column-count: 2;
-            column-gap: 48px;
-            column-fill: auto;
-            height: calc(100vh - 48px);
-            width: max-content;
-            padding: ${verticalPadding} 48px;
-            font-size: 18px;
-            line-height: 1.9;
-            word-break: keep-all;
-            letter-spacing: 0.3px;
-            box-sizing: border-box;
-            background: var(--bg-primary, #0d0d0d);
-            color: var(--text-primary, #e8e8e8);
-        `;
-    } else {
-        content.style.cssText = `
-            max-width: 800px;
-            margin: 0 auto;
-            padding: ${verticalPadding} 16px;
-            font-size: 18px;
-            line-height: 1.9;
-            word-break: keep-all;
-            letter-spacing: 0.3px;
-            box-sizing: border-box;
-            background: var(--bg-primary, #0d0d0d);
-            color: var(--text-primary, #e8e8e8);
-        `;
-    }
+    content.style.cssText = `
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 24px 16px;
+        font-size: 18px;
+        line-height: 1.9;
+        word-break: keep-all;
+        letter-spacing: 0.3px;
+        box-sizing: border-box;
+        background: var(--bg-primary, #0d0d0d);
+        color: var(--text-primary, #e8e8e8);
+    `;
     
     // 표지
     if (metadata.coverUrl) {
         content.innerHTML += `
-            <div style="
-                text-align: center;
-                margin-bottom: 32px;
-                ${is2Page ? 'break-inside: avoid;' : ''}
-            ">
+            <div style="text-align: center; margin-bottom: 32px;">
                 <img src="${metadata.coverUrl}" alt="cover" style="
                     max-width: 180px;
                     max-height: 260px;
                     border-radius: 8px;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
                 ">
-                <h1 style="
-                    margin-top: 16px;
-                    font-size: 20px;
-                    font-weight: 600;
-                ">${escapeHtml(metadata.name || '')}</h1>
+                <h1 style="margin-top: 16px; font-size: 20px; font-weight: 600;">
+                    ${escapeHtml(metadata.name || '')}
+                </h1>
             </div>
-            <hr style="
-                border: none;
-                border-top: 1px solid var(--border-color, #2a2a2a);
-                margin: 32px 0;
-            ">
+            <hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">
         `;
     }
     
-    // 본문 텍스트
-    const paragraphs = textContent
+    // 본문
+    content.innerHTML += formatText(textContent);
+    
+    // 끝 표시
+    content.innerHTML += `
+        <div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">
+            — 끝 —
+        </div>
+    `;
+    
+    container.appendChild(content);
+}
+
+/**
+ * 2페이지 콘텐츠 생성 (책 스타일)
+ */
+function create2PageContent(container, textContent, metadata) {
+    // 텍스트를 페이지로 분할
+    const pages = splitTextToPages(textContent, metadata);
+    totalSpreads = Math.ceil(pages.length / 2);
+    
+    // 책 래퍼
+    const bookWrapper = document.createElement('div');
+    bookWrapper.id = 'textBookWrapper';
+    bookWrapper.style.cssText = `
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        padding: 20px;
+        box-sizing: border-box;
+    `;
+    
+    // 책 컨테이너 (그림자, 테두리)
+    const book = document.createElement('div');
+    book.id = 'textBook';
+    book.style.cssText = `
+        display: flex;
+        width: calc(100% - 80px);
+        max-width: 1400px;
+        height: calc(100vh - 80px);
+        background: var(--bg-primary, #1c1c1c);
+        border-radius: 4px 16px 16px 4px;
+        box-shadow: 
+            0 0 40px rgba(0,0,0,0.5),
+            0 0 100px rgba(0,0,0,0.3),
+            inset 0 0 2px rgba(255,255,255,0.1);
+        overflow: hidden;
+        position: relative;
+    `;
+    
+    // 책 중앙 접힌 부분 (바인딩)
+    const binding = document.createElement('div');
+    binding.style.cssText = `
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 20px;
+        transform: translateX(-50%);
+        background: linear-gradient(to right, 
+            rgba(0,0,0,0.3) 0%,
+            rgba(0,0,0,0.1) 30%,
+            rgba(255,255,255,0.05) 50%,
+            rgba(0,0,0,0.1) 70%,
+            rgba(0,0,0,0.3) 100%
+        );
+        z-index: 10;
+        pointer-events: none;
+    `;
+    
+    // 왼쪽 페이지
+    const leftPage = document.createElement('div');
+    leftPage.id = 'textLeftPage';
+    leftPage.style.cssText = `
+        flex: 1;
+        height: 100%;
+        padding: 40px 50px 40px 40px;
+        overflow: hidden;
+        background: var(--bg-primary, #1c1c1c);
+        color: var(--text-primary, #e8e8e8);
+        font-size: 17px;
+        line-height: 1.85;
+        word-break: keep-all;
+        letter-spacing: 0.3px;
+        box-sizing: border-box;
+        border-right: 1px solid rgba(255,255,255,0.05);
+        position: relative;
+    `;
+    
+    // 오른쪽 페이지
+    const rightPage = document.createElement('div');
+    rightPage.id = 'textRightPage';
+    rightPage.style.cssText = `
+        flex: 1;
+        height: 100%;
+        padding: 40px 40px 40px 50px;
+        overflow: hidden;
+        background: var(--bg-primary, #1c1c1c);
+        color: var(--text-primary, #e8e8e8);
+        font-size: 17px;
+        line-height: 1.85;
+        word-break: keep-all;
+        letter-spacing: 0.3px;
+        box-sizing: border-box;
+        position: relative;
+    `;
+    
+    // 페이지 번호 스타일
+    const pageNumStyle = `
+        position: absolute;
+        bottom: 20px;
+        font-size: 12px;
+        color: var(--text-tertiary, #666);
+    `;
+    
+    // 왼쪽 페이지 번호
+    const leftPageNum = document.createElement('div');
+    leftPageNum.id = 'textLeftPageNum';
+    leftPageNum.style.cssText = pageNumStyle + 'left: 40px;';
+    
+    // 오른쪽 페이지 번호
+    const rightPageNum = document.createElement('div');
+    rightPageNum.id = 'textRightPageNum';
+    rightPageNum.style.cssText = pageNumStyle + 'right: 40px;';
+    
+    leftPage.appendChild(leftPageNum);
+    rightPage.appendChild(rightPageNum);
+    
+    book.appendChild(leftPage);
+    book.appendChild(binding);
+    book.appendChild(rightPage);
+    bookWrapper.appendChild(book);
+    container.appendChild(bookWrapper);
+    
+    // 페이지 데이터 저장
+    container._pages = pages;
+    
+    // 첫 스프레드 렌더링
+    renderSpread(0);
+}
+
+/**
+ * 텍스트를 페이지로 분할
+ */
+function splitTextToPages(textContent, metadata) {
+    const pages = [];
+    
+    // 표지 페이지 (있으면)
+    if (metadata.coverUrl) {
+        pages.push({
+            type: 'cover',
+            coverUrl: metadata.coverUrl,
+            title: metadata.name
+        });
+        pages.push({ type: 'empty' }); // 표지 뒷면 (빈 페이지)
+    }
+    
+    // 본문을 문단으로 분할
+    const paragraphs = textContent.split(/\n/).filter(line => line.trim());
+    
+    // 대략적인 페이지당 문자 수 (화면 크기에 따라 조정 필요)
+    const charsPerPage = 800;
+    let currentPageText = '';
+    
+    paragraphs.forEach(para => {
+        const trimmed = para.trim();
+        if (!trimmed) return;
+        
+        if (currentPageText.length + trimmed.length > charsPerPage) {
+            if (currentPageText) {
+                pages.push({ type: 'text', content: currentPageText });
+            }
+            currentPageText = trimmed;
+        } else {
+            currentPageText += (currentPageText ? '\n\n' : '') + trimmed;
+        }
+    });
+    
+    // 마지막 페이지
+    if (currentPageText) {
+        pages.push({ type: 'text', content: currentPageText });
+    }
+    
+    // 끝 페이지
+    pages.push({ type: 'end' });
+    
+    // 짝수로 맞추기
+    if (pages.length % 2 !== 0) {
+        pages.push({ type: 'empty' });
+    }
+    
+    return pages;
+}
+
+/**
+ * 스프레드 렌더링 (2페이지)
+ */
+function renderSpread(spreadIndex) {
+    const container = document.getElementById('textViewerContainer');
+    const leftPage = document.getElementById('textLeftPage');
+    const rightPage = document.getElementById('textRightPage');
+    const leftPageNum = document.getElementById('textLeftPageNum');
+    const rightPageNum = document.getElementById('textRightPageNum');
+    
+    if (!container || !leftPage || !rightPage) return;
+    
+    const pages = container._pages || [];
+    const leftIdx = spreadIndex * 2;
+    const rightIdx = spreadIndex * 2 + 1;
+    
+    // 왼쪽 페이지 렌더링
+    renderSinglePage(leftPage, pages[leftIdx], leftPageNum, leftIdx + 1);
+    
+    // 오른쪽 페이지 렌더링
+    renderSinglePage(rightPage, pages[rightIdx], rightPageNum, rightIdx + 1);
+    
+    currentSpreadIndex = spreadIndex;
+    
+    // 진행률 업데이트
+    const progress = totalSpreads > 1 ? Math.round((spreadIndex / (totalSpreads - 1)) * 100) : 100;
+    updateProgressIndicator(progress);
+}
+
+/**
+ * 단일 페이지 렌더링
+ */
+function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
+    // 페이지 번호 제외한 내용 초기화
+    const children = Array.from(pageEl.children);
+    children.forEach(child => {
+        if (child !== pageNumEl) {
+            child.remove();
+        }
+    });
+    
+    if (!pageData) {
+        pageNumEl.textContent = '';
+        return;
+    }
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.style.cssText = 'height: calc(100% - 40px); overflow: hidden;';
+    
+    switch (pageData.type) {
+        case 'cover':
+            contentDiv.innerHTML = `
+                <div style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    text-align: center;
+                ">
+                    <img src="${pageData.coverUrl}" alt="cover" style="
+                        max-width: 200px;
+                        max-height: 300px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    ">
+                    <h1 style="
+                        margin-top: 24px;
+                        font-size: 22px;
+                        font-weight: 600;
+                    ">${escapeHtml(pageData.title || '')}</h1>
+                </div>
+            `;
+            pageNumEl.textContent = '';
+            break;
+            
+        case 'text':
+            contentDiv.innerHTML = formatText(pageData.content);
+            pageNumEl.textContent = pageNumber;
+            break;
+            
+        case 'end':
+            contentDiv.innerHTML = `
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    color: var(--text-tertiary, #666);
+                    font-size: 16px;
+                ">
+                    — 끝 —
+                </div>
+            `;
+            pageNumEl.textContent = pageNumber;
+            break;
+            
+        case 'empty':
+        default:
+            pageNumEl.textContent = '';
+            break;
+    }
+    
+    pageEl.insertBefore(contentDiv, pageNumEl);
+}
+
+/**
+ * 텍스트 포맷팅
+ */
+function formatText(text) {
+    if (!text) return '';
+    
+    return text
         .split(/\n/)
         .map(line => {
             const trimmed = line.trim();
@@ -348,38 +641,20 @@ function createContent(textContent, metadata) {
             return `<p style="margin: 0 0 0.8em 0; text-indent: 1em;">${escapeHtml(trimmed)}</p>`;
         })
         .join('');
-    
-    content.innerHTML += paragraphs;
-    
-    // 끝 표시
-    content.innerHTML += `
-        <div style="
-            text-align: center;
-            padding: 40px 0;
-            color: var(--text-tertiary, #666);
-            font-size: 14px;
-            ${is2Page ? 'break-inside: avoid;' : ''}
-        ">
-            — 끝 —
-        </div>
-    `;
-    
-    return content;
 }
 
 /**
  * 인터랙션 설정
  */
 function setupInteraction(container) {
-    // 기존 이벤트 제거
     container.onclick = null;
     container.onwheel = null;
+    container.ontouchstart = null;
+    container.ontouchend = null;
     
     if (pageLayout === '2page') {
-        // 2페이지 모드: 항상 페이지 단위 이동
         setup2PageInteraction(container);
     } else {
-        // 1페이지 모드
         if (readMode === 'click') {
             setupClickZones(container);
         }
@@ -390,20 +665,17 @@ function setupInteraction(container) {
  * 2페이지 인터랙션 설정
  */
 function setup2PageInteraction(container) {
-    const content = document.getElementById('textViewerContent');
-    if (!content) return;
-    
-    // 휠 이벤트 (스크롤 모드)
+    // 휠 이벤트
     container.onwheel = (e) => {
         e.preventDefault();
-        if (e.deltaY > 0) {
+        if (e.deltaY > 0 || e.deltaX > 0) {
             navigate2Page(1);
-        } else if (e.deltaY < 0) {
+        } else if (e.deltaY < 0 || e.deltaX < 0) {
             navigate2Page(-1);
         }
     };
     
-    // 터치 이벤트 (스크롤 모드)
+    // 터치 이벤트
     let touchStartX = 0;
     let touchStartY = 0;
     
@@ -418,68 +690,48 @@ function setup2PageInteraction(container) {
         const diffX = touchStartX - touchEndX;
         const diffY = touchStartY - touchEndY;
         
-        // 가로 스와이프가 더 크면
         if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
             if (diffX > 0) {
-                navigate2Page(1); // 왼쪽으로 스와이프 = 다음
+                navigate2Page(1);
             } else {
-                navigate2Page(-1); // 오른쪽으로 스와이프 = 이전
+                navigate2Page(-1);
             }
-        }
-        // 세로 스와이프
-        else if (Math.abs(diffY) > 50) {
+        } else if (Math.abs(diffY) > 50) {
             if (diffY > 0) {
-                navigate2Page(1); // 위로 스와이프 = 다음
+                navigate2Page(1);
             } else {
-                navigate2Page(-1); // 아래로 스와이프 = 이전
+                navigate2Page(-1);
             }
         }
     };
     
-    // 클릭 모드
-    if (readMode === 'click') {
-        container.onclick = (e) => {
-            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-            
-            const rect = container.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const width = rect.width;
-            
-            if (clickX < width * 0.2) {
-                navigate2Page(-1);
-            } else if (clickX > width * 0.8) {
-                navigate2Page(1);
-            }
-        };
-    }
+    // 클릭 이벤트
+    container.onclick = (e) => {
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+        
+        const rect = container.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        
+        if (clickX < width * 0.2) {
+            navigate2Page(-1);
+        } else if (clickX > width * 0.8) {
+            navigate2Page(1);
+        }
+    };
 }
 
 /**
  * 2페이지 네비게이션
  */
 function navigate2Page(direction) {
-    const container = document.getElementById('textViewerContainer');
-    const content = document.getElementById('textViewerContent');
-    if (!container || !content) return;
+    const newIndex = currentSpreadIndex + direction;
     
-    const containerWidth = container.clientWidth;
-    const maxScroll = Math.max(0, content.scrollWidth - containerWidth);
-    
-    // 2컬럼 너비만큼 이동
-    const scrollAmount = containerWidth;
-    
-    if (direction > 0) {
-        current2PageOffset = Math.min(current2PageOffset + scrollAmount, maxScroll);
-    } else {
-        current2PageOffset = Math.max(current2PageOffset - scrollAmount, 0);
+    if (newIndex < 0 || newIndex >= totalSpreads) {
+        return;
     }
     
-    content.style.transform = `translateX(-${current2PageOffset}px)`;
-    content.style.transition = 'transform 0.3s ease';
-    
-    // 진행률 업데이트
-    const progress = maxScroll > 0 ? Math.round((current2PageOffset / maxScroll) * 100) : 0;
-    updateProgressIndicator(progress);
+    renderSpread(newIndex);
 }
 
 /**
@@ -560,7 +812,7 @@ function setupKeyboardNavigation() {
 }
 
 /**
- * 페이지 네비게이션 (레이아웃별 분기)
+ * 페이지 네비게이션
  */
 function navigatePage(direction) {
     if (pageLayout === '2page') {
@@ -574,18 +826,11 @@ function navigatePage(direction) {
  * 처음으로
  */
 function goToStart() {
-    const container = document.getElementById('textViewerContainer');
-    const content = document.getElementById('textViewerContent');
-    
     if (pageLayout === '2page') {
-        current2PageOffset = 0;
-        if (content) {
-            content.style.transform = 'translateX(0)';
-            content.style.transition = 'transform 0.3s ease';
-        }
-        updateProgressIndicator(0);
-    } else if (container) {
-        container.scrollTop = 0;
+        renderSpread(0);
+    } else {
+        const container = document.getElementById('textViewerContainer');
+        if (container) container.scrollTop = 0;
     }
 }
 
@@ -593,19 +838,11 @@ function goToStart() {
  * 끝으로
  */
 function goToEnd() {
-    const container = document.getElementById('textViewerContainer');
-    const content = document.getElementById('textViewerContent');
-    
     if (pageLayout === '2page') {
-        if (container && content) {
-            const maxScroll = Math.max(0, content.scrollWidth - container.clientWidth);
-            current2PageOffset = maxScroll;
-            content.style.transform = `translateX(-${current2PageOffset}px)`;
-            content.style.transition = 'transform 0.3s ease';
-        }
-        updateProgressIndicator(100);
-    } else if (container) {
-        container.scrollTop = container.scrollHeight;
+        renderSpread(totalSpreads - 1);
+    } else {
+        const container = document.getElementById('textViewerContainer');
+        if (container) container.scrollTop = container.scrollHeight;
     }
 }
 
@@ -668,7 +905,6 @@ function setReadMode(mode) {
         setupInteraction(container);
     }
     
-    // 테마 재적용
     applyTheme();
     applyTypography();
     
@@ -685,61 +921,25 @@ function setTextLayout(layout) {
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
     
+    // 현재 진행률 저장
+    const currentProgress = TextViewerState.scrollProgress || 0;
+    
+    // 다시 렌더링 필요 - 현재 책 정보로 재렌더
     const container = document.getElementById('textViewerContainer');
-    const content = document.getElementById('textViewerContent');
+    const metadata = TextViewerState.currentBook;
     
-    if (!content) return;
-    
-    // 오프셋 리셋
-    content.style.transform = '';
-    content.style.transition = '';
-    current2PageOffset = 0;
-    
-    const verticalPadding = '24px';
-    
-    if (pageLayout === '2page') {
-        content.style.cssText = `
-            column-count: 2;
-            column-gap: 48px;
-            column-fill: auto;
-            height: calc(100vh - 48px);
-            width: max-content;
-            padding: ${verticalPadding} 48px;
-            font-size: 18px;
-            line-height: 1.9;
-            word-break: keep-all;
-            letter-spacing: 0.3px;
-            box-sizing: border-box;
-            background: var(--bg-primary, #0d0d0d);
-            color: var(--text-primary, #e8e8e8);
-        `;
-    } else {
-        content.style.cssText = `
-            max-width: 800px;
-            margin: 0 auto;
-            padding: ${verticalPadding} 16px;
-            font-size: 18px;
-            line-height: 1.9;
-            word-break: keep-all;
-            letter-spacing: 0.3px;
-            box-sizing: border-box;
-            background: var(--bg-primary, #0d0d0d);
-            color: var(--text-primary, #e8e8e8);
-        `;
-    }
-    
-    if (container) {
+    if (container && metadata) {
         applyContainerStyle(container);
-        setupInteraction(container);
+        
+        // 콘텐츠 다시 생성하려면 원본 텍스트 필요
+        // 여기서는 간단히 토스트만 표시
+        if (window.showToast) {
+            window.showToast(layout === '2page' ? '2 Page Mode (새로고침 필요)' : '1 Page Mode (새로고침 필요)');
+        }
     }
     
-    // 테마 재적용
     applyTheme();
     applyTypography();
-    
-    if (window.showToast) {
-        window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
-    }
 }
 
 /**
@@ -771,10 +971,10 @@ export function scrollToPosition(position) {
     const container = document.getElementById('textViewerContainer');
     if (container && position) {
         if (pageLayout === '2page') {
-            current2PageOffset = position;
-            const content = document.getElementById('textViewerContent');
-            if (content) {
-                content.style.transform = `translateX(-${position}px)`;
+            // 스프레드 인덱스로 변환
+            const spreadIndex = Math.floor(position);
+            if (spreadIndex < totalSpreads) {
+                renderSpread(spreadIndex);
             }
         } else {
             container.scrollTop = position;
@@ -786,16 +986,15 @@ export function scrollToPosition(position) {
  * 진행률로 스크롤
  */
 export function scrollToProgress(percent) {
-    const container = document.getElementById('textViewerContainer');
-    const content = document.getElementById('textViewerContent');
-    
-    if (pageLayout === '2page' && container && content) {
-        const maxScroll = Math.max(0, content.scrollWidth - container.clientWidth);
-        current2PageOffset = (percent / 100) * maxScroll;
-        content.style.transform = `translateX(-${current2PageOffset}px)`;
-    } else if (container) {
-        const scrollHeight = container.scrollHeight - container.clientHeight;
-        container.scrollTop = (percent / 100) * scrollHeight;
+    if (pageLayout === '2page') {
+        const spreadIndex = Math.floor((percent / 100) * (totalSpreads - 1));
+        renderSpread(spreadIndex);
+    } else {
+        const container = document.getElementById('textViewerContainer');
+        if (container) {
+            const scrollHeight = container.scrollHeight - container.clientHeight;
+            container.scrollTop = (percent / 100) * scrollHeight;
+        }
     }
 }
 
@@ -804,7 +1003,8 @@ export function scrollToProgress(percent) {
  */
 export function cleanupTextRenderer() {
     headerVisible = false;
-    current2PageOffset = 0;
+    currentSpreadIndex = 0;
+    totalSpreads = 0;
     
     if (headerAutoCloseTimer) {
         clearTimeout(headerAutoCloseTimer);
@@ -834,13 +1034,13 @@ export function cleanupTextRenderer() {
         controls.style.display = '';
     }
     
-    // 컨테이너 이벤트 제거
     const container = document.getElementById('textViewerContainer');
     if (container) {
         container.onclick = null;
         container.onwheel = null;
         container.ontouchstart = null;
         container.ontouchend = null;
+        container._pages = null;
     }
     
     delete window.openTextSettings;
