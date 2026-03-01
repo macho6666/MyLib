@@ -13,6 +13,7 @@ import { openSettings } from './text_controls.js';
 let headerVisible = false;
 let readMode = 'scroll'; // 'scroll' | 'click'
 let pageLayout = '1page';
+let headerAutoCloseTimer = null; // 헤더 자동 닫힘 타이머
 
 /**
  * TXT 뷰어 초기화 및 렌더링
@@ -25,12 +26,13 @@ export async function renderTxt(textContent, metadata) {
     // 저장된 읽기 모드 불러오기
     readMode = localStorage.getItem('mylib_text_readmode') || 'scroll';
     
-// 저장된 레이아웃 불러오기 (PC만)
-if (window.innerWidth >= 1024) {
-    pageLayout = localStorage.getItem('text_layout') || '1page';
-} else {
-    pageLayout = '1page';  // 모바일은 무조건 1page
-}
+    // 저장된 레이아웃 불러오기 (PC만)
+    if (window.innerWidth >= 1024) {
+        pageLayout = localStorage.getItem('text_layout') || '1page';
+    } else {
+        pageLayout = '1page';  // 모바일은 무조건 1page
+    }
+    
     // 뷰어 오버레이 표시
     const viewer = document.getElementById('viewerOverlay');
     viewer.style.display = 'flex';
@@ -80,7 +82,6 @@ if (window.innerWidth >= 1024) {
     setupScrollTracking(container, metadata);
         
     // 테마 적용
-    // applyTheme();  // ← 주석 처리 (설정에서 적용됨)
     applyTypography();
     
     // 전역 함수 등록
@@ -101,8 +102,6 @@ if (window.innerWidth >= 1024) {
  * 컨테이너 스타일 적용
  */
 function applyContainerStyle(container) {
-    const is2Page = pageLayout === '2page';
-    
     container.style.cssText = `
         position: fixed;
         top: 0;
@@ -111,16 +110,15 @@ function applyContainerStyle(container) {
         bottom: 0;
         background: var(--bg-primary, #0d0d0d);
         color: var(--text-primary, #e8e8e8);
-        overflow-y: ${readMode === 'scroll' || is2Page ? 'auto' : 'hidden'};
+        overflow-y: auto;
         overflow-x: hidden;
         z-index: 5001;
         -webkit-overflow-scrolling: touch;
-        padding-bottom: 0;
     `;
 }
 
 /**
- * 토글 버튼 생성 (항상 보임)
+ * 토글 버튼 생성 (항상 보임, 열린 후 3초 뒤 자동 닫힘)
  */
 function createToggleButton() {
     // 기존 버튼 제거
@@ -236,7 +234,7 @@ function createHeader(title) {
 }
 
 /**
- * 헤더 토글
+ * 헤더 토글 (열린 후 3초 뒤 자동 닫힘)
  */
 function toggleHeader() {
     const header = document.getElementById('textViewerHeader');
@@ -244,16 +242,31 @@ function toggleHeader() {
     
     if (!header) return;
     
+    // 기존 타이머 취소
+    if (headerAutoCloseTimer) {
+        clearTimeout(headerAutoCloseTimer);
+        headerAutoCloseTimer = null;
+    }
+    
     headerVisible = !headerVisible;
     
     if (headerVisible) {
         header.style.transform = 'translateY(0)';
         if (toggleBtn) toggleBtn.style.opacity = '0';
+        
+        // 3초 후 자동 닫힘
+        headerAutoCloseTimer = setTimeout(() => {
+            headerVisible = false;
+            header.style.transform = 'translateY(-100%)';
+            if (toggleBtn) toggleBtn.style.opacity = '1';
+            headerAutoCloseTimer = null;
+        }, 3000);
     } else {
         header.style.transform = 'translateY(-100%)';
         if (toggleBtn) toggleBtn.style.opacity = '1';
     }
 }
+
 /**
  * 클릭 영역 설정 (클릭 모드) - 좌우만
  */
@@ -276,6 +289,7 @@ function setupClickZones(container) {
         // 중앙 60% → 아무것도 안 함
     };
 }
+
 /**
  * 한 화면 분량 스크롤
  */
@@ -306,8 +320,7 @@ function setReadMode(mode) {
     // 컨테이너 스타일 업데이트
     const container = document.getElementById('textViewerContainer');
     if (container) {
-        // overflow만 변경 (전체 스타일 재적용 안 함)
-        container.style.overflowY = readMode === 'scroll' ? 'auto' : 'hidden';
+        container.style.overflowY = 'auto';
         
         // 클릭 이벤트 설정
         if (readMode === 'click') {
@@ -323,6 +336,7 @@ function setReadMode(mode) {
     const modeText = readMode === 'scroll' ? 'Scroll Mode' : 'Click Mode';
     if (window.showToast) window.showToast(modeText);
 }
+
 /**
  * 레이아웃 변경
  */
@@ -334,19 +348,32 @@ function setTextLayout(layout) {
     const content = document.getElementById('textViewerContent');
     
     if (content && pageLayout === '2page') {
-        content.style.columnCount = '2';
-        content.style.columnGap = '40px';
-        content.style.columnFill = 'auto';
-        content.style.maxWidth = '1400px';
-        content.style.padding = '16px 24px';
-        content.style.height = '';
-        content.style.overflow = '';
+        const verticalPadding = '24px';
+        content.style.cssText = `
+            column-count: 2;
+            column-gap: 40px;
+            column-fill: auto;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: ${verticalPadding} 24px;
+            font-size: 18px;
+            line-height: 1.9;
+            word-break: keep-all;
+            letter-spacing: 0.3px;
+            box-sizing: border-box;
+        `;
     } else if (content) {
-        content.style.columnCount = '';
-        content.style.columnGap = '';
-        content.style.columnFill = '';
-        content.style.maxWidth = '800px';
-        content.style.padding = '16px 16px 100px 16px';
+        const verticalPadding = '24px';
+        content.style.cssText = `
+            max-width: 800px;
+            margin: 0 auto;
+            padding: ${verticalPadding} 16px;
+            font-size: 18px;
+            line-height: 1.9;
+            word-break: keep-all;
+            letter-spacing: 0.3px;
+            box-sizing: border-box;
+        `;
     }
     
     // 컨테이너 스타일도 업데이트
@@ -363,12 +390,14 @@ function setTextLayout(layout) {
         window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
     }
 }
+
 /**
  * 레이아웃 가져오기
  */
 function getTextLayout() {
     return pageLayout;
 }
+
 /**
  * 읽기 모드 UI 업데이트
  */
@@ -391,30 +420,33 @@ function createContent(textContent, metadata) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     
-  // 2페이지 모드일 때
-if (pageLayout === '2page') {
-    content.style.cssText = `
-        column-count: 2;
-        column-gap: 40px;
-        column-fill: auto;
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 16px 24px;
-        font-size: 18px;
-        line-height: 1.9;
-        word-break: keep-all;
-        letter-spacing: 0.3px;
-    `;
-} 
-    else {
+    const verticalPadding = '24px';
+    
+    // 2페이지 모드일 때
+    if (pageLayout === '2page') {
         content.style.cssText = `
-            max-width: 800px;
+            column-count: 2;
+            column-gap: 40px;
+            column-fill: auto;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 16px 16px 100px 16px;
+            padding: ${verticalPadding} 24px;
             font-size: 18px;
             line-height: 1.9;
             word-break: keep-all;
             letter-spacing: 0.3px;
+            box-sizing: border-box;
+        `;
+    } else {
+        content.style.cssText = `
+            max-width: 800px;
+            margin: 0 auto;
+            padding: ${verticalPadding} 16px;
+            font-size: 18px;
+            line-height: 1.9;
+            word-break: keep-all;
+            letter-spacing: 0.3px;
+            box-sizing: border-box;
         `;
     }
     
@@ -424,7 +456,6 @@ if (pageLayout === '2page') {
             <div style="
                 text-align: center;
                 margin-bottom: 32px;
-                padding-top: 20px;
             ">
                 <img src="${metadata.coverUrl}" alt="cover" style="
                     max-width: 180px;
@@ -462,7 +493,7 @@ if (pageLayout === '2page') {
     content.innerHTML += `
         <div style="
             text-align: center;
-            padding: 60px 0;
+            padding: 40px 0;
             color: var(--text-tertiary, #666);
             font-size: 14px;
         ">
@@ -533,7 +564,15 @@ export function scrollToProgress(percent) {
  */
 export function cleanupTextRenderer() {
     headerVisible = false;
+    
+    // 타이머 정리
+    if (headerAutoCloseTimer) {
+        clearTimeout(headerAutoCloseTimer);
+        headerAutoCloseTimer = null;
+    }
+    
     document.body.style.overflow = '';
+    
     // 토글 버튼 제거
     const toggleBtn = document.getElementById('textToggleBtn');
     if (toggleBtn) toggleBtn.remove();
