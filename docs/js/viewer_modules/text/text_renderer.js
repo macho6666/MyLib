@@ -12,6 +12,7 @@ import { openSettings } from './text_controls.js';
 
 let headerVisible = false;
 let readMode = 'scroll'; // 'scroll' | 'click'
+let pageLayout = '1page';
 
 /**
  * TXT 뷰어 초기화 및 렌더링
@@ -24,6 +25,12 @@ export async function renderTxt(textContent, metadata) {
     // 저장된 읽기 모드 불러오기
     readMode = localStorage.getItem('mylib_text_readmode') || 'scroll';
     
+// 저장된 레이아웃 불러오기 (PC만)
+if (window.innerWidth >= 1024) {
+    pageLayout = localStorage.getItem('text_layout') || '1page';
+} else {
+    pageLayout = '1page';  // 모바일은 무조건 1page
+}
     // 뷰어 오버레이 표시
     const viewer = document.getElementById('viewerOverlay');
     viewer.style.display = 'flex';
@@ -335,15 +342,32 @@ function createContent(textContent, metadata) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     
-    content.style.cssText = `
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 16px 16px 100px 16px;
-        font-size: 18px;
-        line-height: 1.9;
-        word-break: keep-all;
-        letter-spacing: 0.3px;
-    `;
+    // 2페이지 모드일 때
+    if (pageLayout === '2page') {
+        content.style.cssText = `
+            column-count: 2;
+            column-gap: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 16px 24px 100px 24px;
+            font-size: 18px;
+            line-height: 1.9;
+            word-break: keep-all;
+            letter-spacing: 0.3px;
+            height: calc(100vh - 32px);
+            overflow: hidden;
+        `;
+    } else {
+        content.style.cssText = `
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 16px 16px 100px 16px;
+            font-size: 18px;
+            line-height: 1.9;
+            word-break: keep-all;
+            letter-spacing: 0.3px;
+        `;
+    }
     
     // 표지 (있으면)
     if (metadata.coverUrl) {
