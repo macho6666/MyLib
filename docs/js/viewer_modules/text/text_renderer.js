@@ -1,6 +1,6 @@
 /**
  * viewer_modules/text/text_renderer.js
- * TXT 렌더링 (스크롤/클릭 모드)
+ * TXT 렌더링 (스크롤/클릭 모드, 1페이지/2페이지 레이아웃)
  */
 
 import { TextViewerState, setCurrentPage } from './text_state.js';
@@ -12,8 +12,9 @@ import { openSettings } from './text_controls.js';
 
 let headerVisible = false;
 let readMode = 'scroll'; // 'scroll' | 'click'
-let pageLayout = '1page';
-let headerAutoCloseTimer = null; // 헤더 자동 닫힘 타이머
+let pageLayout = '1page'; // '1page' | '2page'
+let headerAutoCloseTimer = null;
+let current2PageOffset = 0; // 2페이지 모드용 오프셋
 
 /**
  * TXT 뷰어 초기화 및 렌더링
@@ -22,6 +23,7 @@ export async function renderTxt(textContent, metadata) {
     TextViewerState.renderType = 'txt';
     TextViewerState.currentBook = metadata;
     headerVisible = false;
+    current2PageOffset = 0;
     
     // 저장된 읽기 모드 불러오기
     readMode = localStorage.getItem('mylib_text_readmode') || 'scroll';
@@ -30,7 +32,7 @@ export async function renderTxt(textContent, metadata) {
     if (window.innerWidth >= 1024) {
         pageLayout = localStorage.getItem('text_layout') || '1page';
     } else {
-        pageLayout = '1page';  // 모바일은 무조건 1page
+        pageLayout = '1page';
     }
     
     // 뷰어 오버레이 표시
@@ -61,10 +63,10 @@ export async function renderTxt(textContent, metadata) {
     // 컨테이너 스타일
     applyContainerStyle(container);
     
-    // 토글 버튼 생성 (항상 보임)
+    // 토글 버튼 생성
     createToggleButton();
     
-    // 헤더 생성 (숨김 상태)
+    // 헤더 생성
     createHeader(metadata.name);
     
     // 본문 콘텐츠 생성
@@ -73,15 +75,16 @@ export async function renderTxt(textContent, metadata) {
     container.innerHTML = '';
     container.appendChild(content);
     
-    // 클릭 모드일 때 터치 영역 설정
-    if (readMode === 'click') {
-        setupClickZones(container);
+    // 모드별 설정
+    setupInteraction(container);
+    
+    // 스크롤 진행률 추적 (1페이지 모드용)
+    if (pageLayout === '1page') {
+        setupScrollTracking(container, metadata);
     }
     
-    // 스크롤 진행률 추적
-    setupScrollTracking(container, metadata);
-        
     // 테마 적용
+    applyTheme();
     applyTypography();
     
     // 전역 함수 등록
@@ -92,16 +95,20 @@ export async function renderTxt(textContent, metadata) {
     window.setTextLayout = setTextLayout;
     window.getTextLayout = getTextLayout;
     
-    // 이벤트 발생
+    // 키보드 이벤트
+    setupKeyboardNavigation();
+    
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
     
-    console.log('📖 TXT Viewer opened (mode: ' + readMode + ')');
+    console.log(`📖 TXT Viewer opened (mode: ${readMode}, layout: ${pageLayout})`);
 }
 
 /**
  * 컨테이너 스타일 적용
  */
 function applyContainerStyle(container) {
+    const is2Page = pageLayout === '2page';
+    
     container.style.cssText = `
         position: fixed;
         top: 0;
@@ -110,18 +117,16 @@ function applyContainerStyle(container) {
         bottom: 0;
         background: var(--bg-primary, #0d0d0d);
         color: var(--text-primary, #e8e8e8);
-        overflow-y: auto;
-        overflow-x: hidden;
+        overflow: ${is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')};
         z-index: 5001;
         -webkit-overflow-scrolling: touch;
     `;
 }
 
 /**
- * 토글 버튼 생성 (항상 보임, 열린 후 3초 뒤 자동 닫힘)
+ * 토글 버튼 생성
  */
 function createToggleButton() {
-    // 기존 버튼 제거
     const existing = document.getElementById('textToggleBtn');
     if (existing) existing.remove();
     
@@ -153,10 +158,9 @@ function createToggleButton() {
 }
 
 /**
- * 헤더 생성 (숨김 상태로 시작)
+ * 헤더 생성
  */
 function createHeader(title) {
-    // 기존 헤더 제거
     const existing = document.getElementById('textViewerHeader');
     if (existing) existing.remove();
     
@@ -234,7 +238,7 @@ function createHeader(title) {
 }
 
 /**
- * 헤더 토글 (열린 후 3초 뒤 자동 닫힘)
+ * 헤더 토글 (3초 후 자동 닫힘)
  */
 function toggleHeader() {
     const header = document.getElementById('textViewerHeader');
@@ -242,7 +246,6 @@ function toggleHeader() {
     
     if (!header) return;
     
-    // 기존 타이머 취소
     if (headerAutoCloseTimer) {
         clearTimeout(headerAutoCloseTimer);
         headerAutoCloseTimer = null;
@@ -254,7 +257,6 @@ function toggleHeader() {
         header.style.transform = 'translateY(0)';
         if (toggleBtn) toggleBtn.style.opacity = '0';
         
-        // 3초 후 자동 닫힘
         headerAutoCloseTimer = setTimeout(() => {
             headerVisible = false;
             header.style.transform = 'translateY(-100%)';
@@ -268,174 +270,31 @@ function toggleHeader() {
 }
 
 /**
- * 클릭 영역 설정 (클릭 모드) - 좌우만
- */
-function setupClickZones(container) {
-    container.onclick = (e) => {
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-        
-        const rect = container.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const width = rect.width;
-        
-        // 좌측 20% → 이전
-        if (clickX < width * 0.2) {
-            scrollPageAmount(-1);
-        }
-        // 우측 20% → 다음
-        else if (clickX > width * 0.8) {
-            scrollPageAmount(1);
-        }
-        // 중앙 60% → 아무것도 안 함
-    };
-}
-
-/**
- * 한 화면 분량 스크롤
- */
-function scrollPageAmount(direction) {
-    const container = document.getElementById('textViewerContainer');
-    if (!container) return;
-    
-    const scrollAmount = container.clientHeight * 0.9;
-    
-    container.scrollBy({
-        top: direction * scrollAmount,
-        behavior: 'smooth'
-    });
-}
-
-/**
- * 읽기 모드 변경
- */
-function setReadMode(mode) {
-    if (mode) {
-        readMode = mode;
-    } else {
-        readMode = readMode === 'scroll' ? 'click' : 'scroll';
-    }
-    
-    localStorage.setItem('mylib_text_readmode', readMode);
-    
-    // 컨테이너 스타일 업데이트
-    const container = document.getElementById('textViewerContainer');
-    if (container) {
-        container.style.overflowY = 'auto';
-        
-        // 클릭 이벤트 설정
-        if (readMode === 'click') {
-            setupClickZones(container);
-        } else {
-            container.onclick = null;
-        }
-    }
-    
-    // 설정 UI 업데이트
-    updateReadModeUI();
-    
-    const modeText = readMode === 'scroll' ? 'Scroll Mode' : 'Click Mode';
-    if (window.showToast) window.showToast(modeText);
-}
-
-/**
- * 레이아웃 변경
- */
-function setTextLayout(layout) {
-    pageLayout = layout;
-    localStorage.setItem('text_layout', layout);
-    
-    const container = document.getElementById('textViewerContainer');
-    const content = document.getElementById('textViewerContent');
-    
-    if (content && pageLayout === '2page') {
-        const verticalPadding = '24px';
-        content.style.cssText = `
-            column-count: 2;
-            column-gap: 40px;
-            column-fill: auto;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: ${verticalPadding} 24px;
-            font-size: 18px;
-            line-height: 1.9;
-            word-break: keep-all;
-            letter-spacing: 0.3px;
-            box-sizing: border-box;
-        `;
-    } else if (content) {
-        const verticalPadding = '24px';
-        content.style.cssText = `
-            max-width: 800px;
-            margin: 0 auto;
-            padding: ${verticalPadding} 16px;
-            font-size: 18px;
-            line-height: 1.9;
-            word-break: keep-all;
-            letter-spacing: 0.3px;
-            box-sizing: border-box;
-        `;
-    }
-    
-    // 컨테이너 스타일도 업데이트
-    if (container) {
-        applyContainerStyle(container);
-        
-        // 클릭 모드면 클릭 영역 재설정
-        if (readMode === 'click') {
-            setupClickZones(container);
-        }
-    }
-    
-    if (window.showToast) {
-        window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
-    }
-}
-
-/**
- * 레이아웃 가져오기
- */
-function getTextLayout() {
-    return pageLayout;
-}
-
-/**
- * 읽기 모드 UI 업데이트
- */
-function updateReadModeUI() {
-    const scrollBtn = document.getElementById('btnModeScroll');
-    const clickBtn = document.getElementById('btnModeClick');
-    
-    if (scrollBtn) {
-        scrollBtn.classList.toggle('active', readMode === 'scroll');
-    }
-    if (clickBtn) {
-        clickBtn.classList.toggle('active', readMode === 'click');
-    }
-}
-
-/**
  * 본문 콘텐츠 생성
  */
 function createContent(textContent, metadata) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     
+    const is2Page = pageLayout === '2page';
     const verticalPadding = '24px';
     
-    // 2페이지 모드일 때
-    if (pageLayout === '2page') {
+    if (is2Page) {
+        // 2페이지: 가로로 컬럼 확장, 화면 높이 고정
         content.style.cssText = `
             column-count: 2;
-            column-gap: 40px;
+            column-gap: 48px;
             column-fill: auto;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: ${verticalPadding} 24px;
+            height: calc(100vh - 48px);
+            width: max-content;
+            padding: ${verticalPadding} 48px;
             font-size: 18px;
             line-height: 1.9;
             word-break: keep-all;
             letter-spacing: 0.3px;
             box-sizing: border-box;
+            background: var(--bg-primary, #0d0d0d);
+            color: var(--text-primary, #e8e8e8);
         `;
     } else {
         content.style.cssText = `
@@ -447,15 +306,18 @@ function createContent(textContent, metadata) {
             word-break: keep-all;
             letter-spacing: 0.3px;
             box-sizing: border-box;
+            background: var(--bg-primary, #0d0d0d);
+            color: var(--text-primary, #e8e8e8);
         `;
     }
     
-    // 표지 (있으면)
+    // 표지
     if (metadata.coverUrl) {
         content.innerHTML += `
             <div style="
                 text-align: center;
                 margin-bottom: 32px;
+                ${is2Page ? 'break-inside: avoid;' : ''}
             ">
                 <img src="${metadata.coverUrl}" alt="cover" style="
                     max-width: 180px;
@@ -496,6 +358,7 @@ function createContent(textContent, metadata) {
             padding: 40px 0;
             color: var(--text-tertiary, #666);
             font-size: 14px;
+            ${is2Page ? 'break-inside: avoid;' : ''}
         ">
             — 끝 —
         </div>
@@ -505,7 +368,260 @@ function createContent(textContent, metadata) {
 }
 
 /**
- * 스크롤 진행률 추적
+ * 인터랙션 설정
+ */
+function setupInteraction(container) {
+    // 기존 이벤트 제거
+    container.onclick = null;
+    container.onwheel = null;
+    
+    if (pageLayout === '2page') {
+        // 2페이지 모드: 항상 페이지 단위 이동
+        setup2PageInteraction(container);
+    } else {
+        // 1페이지 모드
+        if (readMode === 'click') {
+            setupClickZones(container);
+        }
+    }
+}
+
+/**
+ * 2페이지 인터랙션 설정
+ */
+function setup2PageInteraction(container) {
+    const content = document.getElementById('textViewerContent');
+    if (!content) return;
+    
+    // 휠 이벤트 (스크롤 모드)
+    container.onwheel = (e) => {
+        e.preventDefault();
+        if (e.deltaY > 0) {
+            navigate2Page(1);
+        } else if (e.deltaY < 0) {
+            navigate2Page(-1);
+        }
+    };
+    
+    // 터치 이벤트 (스크롤 모드)
+    let touchStartX = 0;
+    let touchStartY = 0;
+    
+    container.ontouchstart = (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    };
+    
+    container.ontouchend = (e) => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const diffX = touchStartX - touchEndX;
+        const diffY = touchStartY - touchEndY;
+        
+        // 가로 스와이프가 더 크면
+        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+            if (diffX > 0) {
+                navigate2Page(1); // 왼쪽으로 스와이프 = 다음
+            } else {
+                navigate2Page(-1); // 오른쪽으로 스와이프 = 이전
+            }
+        }
+        // 세로 스와이프
+        else if (Math.abs(diffY) > 50) {
+            if (diffY > 0) {
+                navigate2Page(1); // 위로 스와이프 = 다음
+            } else {
+                navigate2Page(-1); // 아래로 스와이프 = 이전
+            }
+        }
+    };
+    
+    // 클릭 모드
+    if (readMode === 'click') {
+        container.onclick = (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+            
+            const rect = container.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            
+            if (clickX < width * 0.2) {
+                navigate2Page(-1);
+            } else if (clickX > width * 0.8) {
+                navigate2Page(1);
+            }
+        };
+    }
+}
+
+/**
+ * 2페이지 네비게이션
+ */
+function navigate2Page(direction) {
+    const container = document.getElementById('textViewerContainer');
+    const content = document.getElementById('textViewerContent');
+    if (!container || !content) return;
+    
+    const containerWidth = container.clientWidth;
+    const maxScroll = Math.max(0, content.scrollWidth - containerWidth);
+    
+    // 2컬럼 너비만큼 이동
+    const scrollAmount = containerWidth;
+    
+    if (direction > 0) {
+        current2PageOffset = Math.min(current2PageOffset + scrollAmount, maxScroll);
+    } else {
+        current2PageOffset = Math.max(current2PageOffset - scrollAmount, 0);
+    }
+    
+    content.style.transform = `translateX(-${current2PageOffset}px)`;
+    content.style.transition = 'transform 0.3s ease';
+    
+    // 진행률 업데이트
+    const progress = maxScroll > 0 ? Math.round((current2PageOffset / maxScroll) * 100) : 0;
+    updateProgressIndicator(progress);
+}
+
+/**
+ * 1페이지 클릭 영역 설정
+ */
+function setupClickZones(container) {
+    container.onclick = (e) => {
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+        
+        const rect = container.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        
+        if (clickX < width * 0.2) {
+            scrollPageAmount(-1);
+        } else if (clickX > width * 0.8) {
+            scrollPageAmount(1);
+        }
+    };
+}
+
+/**
+ * 1페이지 한 화면 스크롤
+ */
+function scrollPageAmount(direction) {
+    const container = document.getElementById('textViewerContainer');
+    if (!container) return;
+    
+    const scrollAmount = container.clientHeight * 0.9;
+    
+    container.scrollBy({
+        top: direction * scrollAmount,
+        behavior: 'smooth'
+    });
+}
+
+/**
+ * 키보드 네비게이션
+ */
+function setupKeyboardNavigation() {
+    if (window._textKeyHandler) {
+        document.removeEventListener('keydown', window._textKeyHandler);
+    }
+    
+    window._textKeyHandler = (e) => {
+        const container = document.getElementById('textViewerContainer');
+        if (!container || container.style.display === 'none') return;
+        
+        switch (e.key) {
+            case 'ArrowLeft':
+            case 'ArrowUp':
+            case 'PageUp':
+                e.preventDefault();
+                navigatePage(-1);
+                break;
+            case 'ArrowRight':
+            case 'ArrowDown':
+            case 'PageDown':
+            case ' ':
+                e.preventDefault();
+                navigatePage(1);
+                break;
+            case 'Home':
+                e.preventDefault();
+                goToStart();
+                break;
+            case 'End':
+                e.preventDefault();
+                goToEnd();
+                break;
+            case 'Escape':
+                if (typeof closeViewer === 'function') closeViewer();
+                break;
+        }
+    };
+    
+    document.addEventListener('keydown', window._textKeyHandler);
+}
+
+/**
+ * 페이지 네비게이션 (레이아웃별 분기)
+ */
+function navigatePage(direction) {
+    if (pageLayout === '2page') {
+        navigate2Page(direction);
+    } else {
+        scrollPageAmount(direction);
+    }
+}
+
+/**
+ * 처음으로
+ */
+function goToStart() {
+    const container = document.getElementById('textViewerContainer');
+    const content = document.getElementById('textViewerContent');
+    
+    if (pageLayout === '2page') {
+        current2PageOffset = 0;
+        if (content) {
+            content.style.transform = 'translateX(0)';
+            content.style.transition = 'transform 0.3s ease';
+        }
+        updateProgressIndicator(0);
+    } else if (container) {
+        container.scrollTop = 0;
+    }
+}
+
+/**
+ * 끝으로
+ */
+function goToEnd() {
+    const container = document.getElementById('textViewerContainer');
+    const content = document.getElementById('textViewerContent');
+    
+    if (pageLayout === '2page') {
+        if (container && content) {
+            const maxScroll = Math.max(0, content.scrollWidth - container.clientWidth);
+            current2PageOffset = maxScroll;
+            content.style.transform = `translateX(-${current2PageOffset}px)`;
+            content.style.transition = 'transform 0.3s ease';
+        }
+        updateProgressIndicator(100);
+    } else if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+/**
+ * 진행률 표시 업데이트
+ */
+function updateProgressIndicator(progress) {
+    const indicator = document.getElementById('textProgressIndicator');
+    if (indicator) {
+        indicator.textContent = progress + '%';
+    }
+    TextViewerState.scrollProgress = progress;
+}
+
+/**
+ * 스크롤 진행률 추적 (1페이지 모드용)
  */
 function setupScrollTracking(container, metadata) {
     let ticking = false;
@@ -520,13 +636,8 @@ function setupScrollTracking(container, metadata) {
                 TextViewerState.scrollProgress = progress;
                 TextViewerState.scrollPosition = scrollTop;
                 
-                // 진행률 표시 업데이트
-                const indicator = document.getElementById('textProgressIndicator');
-                if (indicator) {
-                    indicator.textContent = progress + '%';
-                }
+                updateProgressIndicator(progress);
                 
-                // 진행률 저장 (5% 단위로)
                 if (progress % 5 === 0) {
                     updateProgress(metadata.seriesId, metadata.bookId);
                 }
@@ -539,12 +650,135 @@ function setupScrollTracking(container, metadata) {
 }
 
 /**
+ * 읽기 모드 변경
+ */
+function setReadMode(mode) {
+    if (mode) {
+        readMode = mode;
+    } else {
+        readMode = readMode === 'scroll' ? 'click' : 'scroll';
+    }
+    
+    localStorage.setItem('mylib_text_readmode', readMode);
+    
+    const container = document.getElementById('textViewerContainer');
+    
+    if (container) {
+        applyContainerStyle(container);
+        setupInteraction(container);
+    }
+    
+    // 테마 재적용
+    applyTheme();
+    applyTypography();
+    
+    updateReadModeUI();
+    
+    const modeText = readMode === 'scroll' ? 'Scroll Mode' : 'Click Mode';
+    if (window.showToast) window.showToast(modeText);
+}
+
+/**
+ * 레이아웃 변경
+ */
+function setTextLayout(layout) {
+    pageLayout = layout;
+    localStorage.setItem('text_layout', layout);
+    
+    const container = document.getElementById('textViewerContainer');
+    const content = document.getElementById('textViewerContent');
+    
+    if (!content) return;
+    
+    // 오프셋 리셋
+    content.style.transform = '';
+    content.style.transition = '';
+    current2PageOffset = 0;
+    
+    const verticalPadding = '24px';
+    
+    if (pageLayout === '2page') {
+        content.style.cssText = `
+            column-count: 2;
+            column-gap: 48px;
+            column-fill: auto;
+            height: calc(100vh - 48px);
+            width: max-content;
+            padding: ${verticalPadding} 48px;
+            font-size: 18px;
+            line-height: 1.9;
+            word-break: keep-all;
+            letter-spacing: 0.3px;
+            box-sizing: border-box;
+            background: var(--bg-primary, #0d0d0d);
+            color: var(--text-primary, #e8e8e8);
+        `;
+    } else {
+        content.style.cssText = `
+            max-width: 800px;
+            margin: 0 auto;
+            padding: ${verticalPadding} 16px;
+            font-size: 18px;
+            line-height: 1.9;
+            word-break: keep-all;
+            letter-spacing: 0.3px;
+            box-sizing: border-box;
+            background: var(--bg-primary, #0d0d0d);
+            color: var(--text-primary, #e8e8e8);
+        `;
+    }
+    
+    if (container) {
+        applyContainerStyle(container);
+        setupInteraction(container);
+    }
+    
+    // 테마 재적용
+    applyTheme();
+    applyTypography();
+    
+    if (window.showToast) {
+        window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
+    }
+}
+
+/**
+ * 레이아웃 가져오기
+ */
+function getTextLayout() {
+    return pageLayout;
+}
+
+/**
+ * 읽기 모드 UI 업데이트
+ */
+function updateReadModeUI() {
+    const scrollBtn = document.getElementById('btnModeScroll');
+    const clickBtn = document.getElementById('btnModeClick');
+    
+    if (scrollBtn) {
+        scrollBtn.classList.toggle('active', readMode === 'scroll');
+    }
+    if (clickBtn) {
+        clickBtn.classList.toggle('active', readMode === 'click');
+    }
+}
+
+/**
  * 특정 위치로 스크롤
  */
 export function scrollToPosition(position) {
     const container = document.getElementById('textViewerContainer');
     if (container && position) {
-        container.scrollTop = position;
+        if (pageLayout === '2page') {
+            current2PageOffset = position;
+            const content = document.getElementById('textViewerContent');
+            if (content) {
+                content.style.transform = `translateX(-${position}px)`;
+            }
+        } else {
+            container.scrollTop = position;
+        }
     }
 }
 
@@ -553,7 +787,13 @@ export function scrollToPosition(position) {
  */
 export function scrollToProgress(percent) {
     const container = document.getElementById('textViewerContainer');
-    if (container) {
+    const content = document.getElementById('textViewerContent');
+    
+    if (pageLayout === '2page' && container && content) {
+        const maxScroll = Math.max(0, content.scrollWidth - container.clientWidth);
+        current2PageOffset = (percent / 100) * maxScroll;
+        content.style.transform = `translateX(-${current2PageOffset}px)`;
+    } else if (container) {
         const scrollHeight = container.scrollHeight - container.clientHeight;
         container.scrollTop = (percent / 100) * scrollHeight;
     }
@@ -564,40 +804,51 @@ export function scrollToProgress(percent) {
  */
 export function cleanupTextRenderer() {
     headerVisible = false;
+    current2PageOffset = 0;
     
-    // 타이머 정리
     if (headerAutoCloseTimer) {
         clearTimeout(headerAutoCloseTimer);
         headerAutoCloseTimer = null;
     }
     
+    if (window._textKeyHandler) {
+        document.removeEventListener('keydown', window._textKeyHandler);
+        delete window._textKeyHandler;
+    }
+    
     document.body.style.overflow = '';
     
-    // 토글 버튼 제거
     const toggleBtn = document.getElementById('textToggleBtn');
     if (toggleBtn) toggleBtn.remove();
     
-    // 헤더 제거
     const header = document.getElementById('textViewerHeader');
     if (header) header.remove();
     
-    // 이미지 뷰어 요소 다시 표시
     const imageContent = document.getElementById('viewerContent');
     if (imageContent) {
         imageContent.style.display = '';
     }
     
-    // 컨트롤 다시 표시
     const controls = document.getElementById('viewerControls');
     if (controls) {
         controls.style.display = '';
     }
     
-    // 전역 함수 제거
+    // 컨테이너 이벤트 제거
+    const container = document.getElementById('textViewerContainer');
+    if (container) {
+        container.onclick = null;
+        container.onwheel = null;
+        container.ontouchstart = null;
+        container.ontouchend = null;
+    }
+    
     delete window.openTextSettings;
     delete window.toggleTextHeader;
     delete window.setTextReadMode;
     delete window.getTextReadMode;
+    delete window.setTextLayout;
+    delete window.getTextLayout;
 }
 
 /**
