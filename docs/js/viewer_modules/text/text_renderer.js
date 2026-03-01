@@ -378,22 +378,22 @@ function createContent(textContent, metadata) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     
-    // 2페이지 모드일 때
-    if (pageLayout === '2page') {
-        content.style.cssText = `
-            column-count: 2;
-            column-gap: 40px;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 16px 24px 100px 24px;
-            font-size: 18px;
-            line-height: 1.9;
-            word-break: keep-all;
-            letter-spacing: 0.3px;
-            height: calc(100vh - 32px);
-            overflow: hidden;
-        `;
-    } else {
+  // 2페이지 모드일 때
+if (pageLayout === '2page') {
+    content.style.cssText = `
+        column-count: 2;
+        column-gap: 40px;
+        column-fill: auto;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 16px 24px;
+        font-size: 18px;
+        line-height: 1.9;
+        word-break: keep-all;
+        letter-spacing: 0.3px;
+    `;
+} 
+    else {
         content.style.cssText = `
             max-width: 800px;
             margin: 0 auto;
