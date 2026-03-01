@@ -376,9 +376,6 @@ function create2PageContent(container, textContent, metadata) {
         overflow: hidden;
         position: relative;
     `;
-    
-JavaScript
-
 // 책 중앙 선
 const binding = document.createElement('div');
 binding.style.cssText = `
