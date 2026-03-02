@@ -138,21 +138,22 @@ function apply2PageTheme() {
 function applyContainerStyle(container) {
     const is2Page = pageLayout === '2page';
     
-    container.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: var(--bg-primary, #0d0d0d);
-        color: var(--text-primary, #e8e8e8);
-        overflow: ${is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')};
-        z-index: 5001;
-        -webkit-overflow-scrolling: touch;
-        display: ${is2Page ? 'flex' : 'block'};
-        align-items: ${is2Page ? 'center' : 'stretch'};
-        justify-content: ${is2Page ? 'center' : 'stretch'};
-    `;
+container.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-primary, #0d0d0d);
+    color: var(--text-primary, #e8e8e8);
+    overflow-x: hidden;
+    overflow-y: ${is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')};
+    z-index: 5001;
+    -webkit-overflow-scrolling: touch;
+    display: ${is2Page ? 'flex' : 'block'};
+    align-items: ${is2Page ? 'center' : 'stretch'};
+    justify-content: ${is2Page ? 'center' : 'stretch'};
+`;
 }
 
 /**
@@ -308,16 +309,18 @@ function create1PageContent(container, textContent, metadata) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     
-    content.style.cssText = `
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 24px 16px;
-        font-size: 18px;
-        line-height: 1.9;
-        word-break: keep-all;
-        letter-spacing: 0.3px;
-        box-sizing: border-box;
-    `;
+content.style.cssText = `
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    font-size: 18px;
+    line-height: 1.9;
+    word-break: keep-all;
+    letter-spacing: 0.3px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    width: 100%;
+`;
     
     if (metadata.coverUrl) {
         content.innerHTML += `
@@ -897,17 +900,21 @@ function setTextLayout(layout) {
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
     
+    // 컨테이너 숨기고 렌더링
+    const container = document.getElementById('textViewerContainer');
+    if (container) container.style.visibility = 'hidden';
+    
     renderContent();
     
-    // 1페이지 모드는 DOM 렌더 후 스크롤 필요
+    // 진행률 복원 후 보이기
     if (layout === '1page') {
         requestAnimationFrame(() => {
-            setTimeout(() => {
-                scrollToProgress(currentProgress);
-            }, 50);
+            scrollToProgress(currentProgress);
+            if (container) container.style.visibility = 'visible';
         });
     } else {
         scrollToProgress(currentProgress);
+        if (container) container.style.visibility = 'visible';
     }
     
     if (window.showToast) {
