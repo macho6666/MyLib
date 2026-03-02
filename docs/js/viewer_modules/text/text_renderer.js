@@ -133,26 +133,21 @@ function apply2PageTheme() {
         const textColor = computedStyle.color || '#e8e8e8';
         
         // 밝은 테마인지 확인
-        const isLightTheme = isLightColor(bgColor);
-        const bindingColor = isLightTheme ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.08)';
-        const borderColor = isLightTheme ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)';
+        const isLight = isLightColor(bgColor);
+        const bindingColor = isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.08)';
+        const borderColor = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.05)';
         
         const book = document.getElementById('textBook');
         const leftPage = document.getElementById('textLeftPage');
         const rightPage = document.getElementById('textRightPage');
+        const binding = document.getElementById('textBookBinding');
         
-        if (book) {
-            book.style.background = bgColor;
-            // 바인딩 라인
-            const binding = book.querySelector('div[style*="position: absolute"]');
-            if (binding) {
-                binding.style.background = bindingColor;
-            }
-        }
+        if (book) book.style.background = bgColor;
+        if (binding) binding.style.background = bindingColor;
         if (leftPage) {
             leftPage.style.background = bgColor;
             leftPage.style.color = textColor;
-            leftPage.style.borderRightColor = borderColor;
+            leftPage.style.borderRight = `1px solid ${borderColor}`;
         }
         if (rightPage) {
             rightPage.style.background = bgColor;
@@ -165,13 +160,11 @@ function apply2PageTheme() {
  * 밝은 색상인지 확인
  */
 function isLightColor(color) {
-    // rgb(r, g, b) 형태에서 추출
     const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (match) {
         const r = parseInt(match[1]);
         const g = parseInt(match[2]);
         const b = parseInt(match[3]);
-        // 밝기 계산 (YIQ 공식)
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
         return brightness > 128;
     }
@@ -524,18 +517,19 @@ function create2PageContent(container, textContent, metadata) {
         position: relative;
     `;
     
-    const binding = document.createElement('div');
-    binding.style.cssText = `
-        position: absolute;
-        left: 50%;
-        top: 20px;
-        bottom: 20px;
-        width: 1px;
-        transform: translateX(-50%);
-        background: rgba(255,255,255,0.08);
-        z-index: 10;
-        pointer-events: none;
-    `;
+const binding = document.createElement('div');
+binding.id = 'textBookBinding';
+binding.style.cssText = `
+    position: absolute;
+    left: 50%;
+    top: 20px;
+    bottom: 20px;
+    width: 1px;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.08);
+    z-index: 10;
+    pointer-events: none;
+`;
     
     const leftPage = document.createElement('div');
     leftPage.id = 'textLeftPage';
@@ -874,10 +868,17 @@ function scrollPageAmount(direction) {
     
     const scrollAmount = container.clientHeight * 0.9;
     
-    container.scrollBy({
-        top: direction * scrollAmount,
-        behavior: readMode === 'click' ? 'instant' : 'smooth'
-    });
+    if (readMode === 'click') {
+        // 클릭 모드: 즉시 이동 (애니메이션 없음)
+        container.style.scrollBehavior = 'auto';
+        container.scrollTop += direction * scrollAmount;
+    } else {
+        // 스크롤 모드: 부드럽게
+        container.scrollBy({
+            top: direction * scrollAmount,
+            behavior: 'smooth'
+        });
+    }
 }
 
 /**
