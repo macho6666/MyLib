@@ -520,7 +520,7 @@ leftPage.id = 'textLeftPage';
 leftPage.style.cssText = `
     flex: 1;
     height: 100%;
-    padding: 40px 50px 90px 40px;
+    padding: 40px 50px 40px 40px;
     overflow: hidden;
     font-size: 17px;
     line-height: 1.85;
@@ -536,7 +536,7 @@ rightPage.id = 'textRightPage';
 rightPage.style.cssText = `
     flex: 1;
     height: 100%;
-    padding: 40px 40px 90px 50px;
+    padding: 40px 40px 40px 50px;
     overflow: hidden;
     font-size: 17px;
     line-height: 1.85;
@@ -546,13 +546,14 @@ rightPage.style.cssText = `
     position: relative;
 `;
     
-    const pageNumStyle = `
-        position: absolute;
-        bottom: 20px;
-        font-size: 12px;
-        color: var(--text-tertiary, #666);
-        z-index: 1;
-    `;
+const pageNumStyle = `
+    position: absolute;
+    bottom: 20px;
+    font-size: 12px;
+    color: var(--text-tertiary, #666);
+    z-index: 3;
+    background: transparent;
+`;
     
     const leftPageNum = document.createElement('div');
     leftPageNum.id = 'textLeftPageNum';
@@ -664,7 +665,7 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
     }
     
 const contentDiv = document.createElement('div');
-contentDiv.style.cssText = 'max-height: calc(100% - 10px); overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
+contentDiv.style.cssText = 'height: 100%; overflow: hidden; position: relative; z-index: 1; box-sizing: border-box;';
     
     switch (pageData.type) {
         case 'cover':
