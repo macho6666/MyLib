@@ -7,7 +7,7 @@ import { TextViewerState, setCurrentPage } from './text_state.js';
 import { Events } from '../core/events.js';
 import { applyTheme, applyTypography } from './text_theme.js';
 import { createCoverPage, createTOCPage } from './text_toc.js';
-import { updateProgress } from './text_bookmark.js';
+import { updateProgress, startAutoSave, stopAutoSave } from './text_bookmark.js';
 import { openSettings } from './text_controls.js';
 
 let headerVisible = false;
@@ -70,6 +70,9 @@ export async function renderTxt(textContent, metadata) {
     window.getTextLayout = getTextLayout;
     window.onTextThemeChange = onThemeChange;
     window.scrollToProgress = scrollToProgress;
+    
+    // 자동 저장 시작 (10초마다)
+    startAutoSave(metadata.seriesId, metadata.bookId, 10000);
     
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
     console.log(`📖 TXT Viewer opened (mode: ${readMode}, layout: ${pageLayout})`);
@@ -314,10 +317,12 @@ function create2PageContent(container, textContent, metadata) {
     
     const leftPage = document.createElement('div');
     leftPage.id = 'textLeftPage';
-   leftPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 10px 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);`;
+    leftPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 50px 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);`;
+    
     const rightPage = document.createElement('div');
     rightPage.id = 'textRightPage';
-    rightPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 10px 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;`;
+    rightPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 50px 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;`;
+    
     book.appendChild(leftPage);
     book.appendChild(rightPage);
     bookWrapper.appendChild(book);
@@ -336,21 +341,29 @@ function splitTextToPages(textContent, metadata) {
     }
     
     const paragraphs = textContent.split(/\n/).filter(line => line.trim());
-    const charsPerPage = 350;
-    let currentPageText = '';
+    const linesPerPage = 15;
+    let currentLines = [];
     
     paragraphs.forEach(para => {
         const trimmed = para.trim();
         if (!trimmed) return;
-        if (currentPageText.length + trimmed.length > charsPerPage) {
-            if (currentPageText) pages.push({ type: 'text', content: currentPageText });
-            currentPageText = trimmed;
+        
+        const estimatedLines = Math.ceil(trimmed.length / 35);
+        
+        if (currentLines.length + estimatedLines > linesPerPage) {
+            if (currentLines.length > 0) {
+                pages.push({ type: 'text', content: currentLines.join('\n\n') });
+            }
+            currentLines = [trimmed];
         } else {
-            currentPageText += (currentPageText ? '\n\n' : '') + trimmed;
+            currentLines.push(trimmed);
         }
     });
     
-    if (currentPageText) pages.push({ type: 'text', content: currentPageText });
+    if (currentLines.length > 0) {
+        pages.push({ type: 'text', content: currentLines.join('\n\n') });
+    }
+    
     pages.push({ type: 'end' });
     if (pages.length % 2 !== 0) pages.push({ type: 'empty' });
     
@@ -384,10 +397,10 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     wrapper.style.cssText = 'position: relative; height: 100%; box-sizing: border-box;';
     
     const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 30px; overflow: hidden; box-sizing: border-box;';
+    contentDiv.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 40px; overflow: hidden; box-sizing: border-box;';
     
     const pageNumDiv = document.createElement('div');
-    pageNumDiv.style.cssText = `position: absolute; bottom: 0; left: 0; right: 0; height: 30px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ${side === 'left' ? 'flex-start' : 'flex-end'};`;
+    pageNumDiv.style.cssText = `position: absolute; bottom: 10px; ${side === 'left' ? 'left: 0;' : 'right: 0;'} font-size: 12px; color: var(--text-tertiary, #666);`;
     
     switch (pageData.type) {
         case 'cover':
@@ -610,6 +623,9 @@ export function scrollToProgress(percent) {
 }
 
 export function cleanupTextRenderer() {
+    // 자동 저장 중지
+    stopAutoSave();
+    
     headerVisible = false; currentSpreadIndex = 0; totalSpreads = 0;
     currentTextContent = ''; currentMetadata = null;
     
