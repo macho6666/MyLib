@@ -76,6 +76,7 @@ export function applyTheme(mode = null) {
     }
     
     console.log('🎨 Theme applied:', currentMode);
+    if (window.onTextThemeChange) window.onTextThemeChange();
 }
 
 /**
