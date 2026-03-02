@@ -74,7 +74,7 @@ export async function renderTxt(textContent, metadata) {
     window.setTextLayout = setTextLayout;
     window.getTextLayout = getTextLayout;
     window.onTextThemeChange = onThemeChange;
-    
+    window.scrollToProgress = scrollToProgress;
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
     
     console.log(`📖 TXT Viewer opened (mode: ${readMode}, layout: ${pageLayout})`);
