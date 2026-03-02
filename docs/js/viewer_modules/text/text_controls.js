@@ -115,6 +115,40 @@ function createSettingsPanel() {
             <input type="range" id="lineHeightSlider" min="1.2" max="2.5" step="0.1" value="1.8" style="width: 100%; cursor: pointer;">
         </div>
         
+        <!-- 📝 Calendar Settings -->
+        <div class="setting-group" style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">📝 Calendar Settings</label>
+            
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; cursor: pointer;">
+                <input type="checkbox" id="chkSaveProgress" style="width: 18px; height: 18px; cursor: pointer;">
+                <span style="font-size: 13px; color: var(--text-secondary, #aaa);">Save progress to calendar</span>
+            </label>
+            
+            <label style="display: block; font-size: 12px; color: var(--text-tertiary, #666); margin-bottom: 8px;">Highlight Color:</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <label class="color-option" style="cursor: pointer;">
+                    <input type="radio" name="highlightColor" value="#ffeb3b" style="display: none;">
+                    <span class="color-circle" style="display: block; width: 28px; height: 28px; background: #ffeb3b; border-radius: 50%; border: 2px solid transparent; transition: all 0.2s;"></span>
+                </label>
+                <label class="color-option" style="cursor: pointer;">
+                    <input type="radio" name="highlightColor" value="#4caf50" style="display: none;">
+                    <span class="color-circle" style="display: block; width: 28px; height: 28px; background: #4caf50; border-radius: 50%; border: 2px solid transparent; transition: all 0.2s;"></span>
+                </label>
+                <label class="color-option" style="cursor: pointer;">
+                    <input type="radio" name="highlightColor" value="#2196f3" style="display: none;">
+                    <span class="color-circle" style="display: block; width: 28px; height: 28px; background: #2196f3; border-radius: 50%; border: 2px solid transparent; transition: all 0.2s;"></span>
+                </label>
+                <label class="color-option" style="cursor: pointer;">
+                    <input type="radio" name="highlightColor" value="#e91e63" style="display: none;">
+                    <span class="color-circle" style="display: block; width: 28px; height: 28px; background: #e91e63; border-radius: 50%; border: 2px solid transparent; transition: all 0.2s;"></span>
+                </label>
+                <label class="color-option" style="cursor: pointer;">
+                    <input type="radio" name="highlightColor" value="#ff9800" style="display: none;">
+                    <span class="color-circle" style="display: block; width: 28px; height: 28px; background: #ff9800; border-radius: 50%; border: 2px solid transparent; transition: all 0.2s;"></span>
+                </label>
+            </div>
+        </div>
+        
         <!-- 북마크 초기화 -->
         <div class="setting-group" style="margin-bottom: 24px;">
             <button id="btnResetBookmark" style="
@@ -215,6 +249,53 @@ function setupControlEvents() {
             applyTypography();
         };
     }
+    
+    // Calendar Settings - 진행도 저장 체크박스
+    const chkSaveProgress = document.getElementById('chkSaveProgress');
+    if (chkSaveProgress) {
+        // 초기값 로드
+        chkSaveProgress.checked = localStorage.getItem('text_save_progress_to_calendar') !== 'false';
+        
+        chkSaveProgress.onchange = () => {
+            localStorage.setItem('text_save_progress_to_calendar', chkSaveProgress.checked);
+            if (window.showToast) {
+                window.showToast(chkSaveProgress.checked ? 'Progress will be saved' : 'Progress won\'t be saved');
+            }
+        };
+    }
+    
+    // Calendar Settings - 하이라이트 색상
+    const savedColor = localStorage.getItem('text_highlight_color') || '#ffeb3b';
+    document.querySelectorAll('input[name="highlightColor"]').forEach(radio => {
+        const colorCircle = radio.parentElement.querySelector('.color-circle');
+        
+        // 초기값 설정
+        if (radio.value === savedColor) {
+            radio.checked = true;
+            if (colorCircle) {
+                colorCircle.style.border = '2px solid var(--text-primary, #fff)';
+                colorCircle.style.boxShadow = '0 0 0 2px var(--bg-card, #1a1a1a)';
+            }
+        }
+        
+        radio.onchange = () => {
+            localStorage.setItem('text_highlight_color', radio.value);
+            
+            // UI 업데이트 - 모든 색상 원 초기화
+            document.querySelectorAll('.color-circle').forEach(circle => {
+                circle.style.border = '2px solid transparent';
+                circle.style.boxShadow = 'none';
+            });
+            
+            // 선택된 색상 표시
+            if (colorCircle) {
+                colorCircle.style.border = '2px solid var(--text-primary, #fff)';
+                colorCircle.style.boxShadow = '0 0 0 2px var(--bg-card, #1a1a1a)';
+            }
+            
+            if (window.showToast) window.showToast('Highlight color changed');
+        };
+    });
     
     // 북마크 초기화
     const resetBtn = document.getElementById('btnResetBookmark');
@@ -331,12 +412,13 @@ function resetCurrentBookmark() {
     
     if (!confirm('Reset bookmark for this book?')) return;
     
-    const key = `bookmark_${book.seriesId}`;
-    const bookmarks = JSON.parse(localStorage.getItem(key) || '{}');
+    // progress_ 키 사용 (bookmark_ → progress_ 통합됨)
+    const key = `progress_${book.seriesId}`;
+    const progressData = JSON.parse(localStorage.getItem(key) || '{}');
     
-    if (bookmarks[book.bookId]) {
-        delete bookmarks[book.bookId];
-        localStorage.setItem(key, JSON.stringify(bookmarks));
+    if (progressData[book.bookId]) {
+        delete progressData[book.bookId];
+        localStorage.setItem(key, JSON.stringify(progressData));
         if (window.showToast) window.showToast('Bookmark reset');
     } else {
         if (window.showToast) window.showToast('No bookmark found');
@@ -358,7 +440,36 @@ export function openSettings() {
         updateLayoutUI();
         updateThemeUI();
         updateFontUI();
+        updateCalendarUI();
     }
+}
+
+/**
+ * Calendar 설정 UI 업데이트
+ */
+function updateCalendarUI() {
+    const chkSaveProgress = document.getElementById('chkSaveProgress');
+    if (chkSaveProgress) {
+        chkSaveProgress.checked = localStorage.getItem('text_save_progress_to_calendar') !== 'false';
+    }
+    
+    const savedColor = localStorage.getItem('text_highlight_color') || '#ffeb3b';
+    document.querySelectorAll('input[name="highlightColor"]').forEach(radio => {
+        const colorCircle = radio.parentElement.querySelector('.color-circle');
+        
+        if (radio.value === savedColor) {
+            radio.checked = true;
+            if (colorCircle) {
+                colorCircle.style.border = '2px solid var(--text-primary, #fff)';
+                colorCircle.style.boxShadow = '0 0 0 2px var(--bg-card, #1a1a1a)';
+            }
+        } else {
+            if (colorCircle) {
+                colorCircle.style.border = '2px solid transparent';
+                colorCircle.style.boxShadow = 'none';
+            }
+        }
+    });
 }
 
 /**
@@ -384,6 +495,20 @@ export function toggleSettings() {
     } else {
         openSettings();
     }
+}
+
+/**
+ * 하이라이트 색상 가져오기 (외부 사용)
+ */
+export function getHighlightColor() {
+    return localStorage.getItem('text_highlight_color') || '#ffeb3b';
+}
+
+/**
+ * 진행도 저장 설정 가져오기 (외부 사용)
+ */
+export function getSaveProgressSetting() {
+    return localStorage.getItem('text_save_progress_to_calendar') !== 'false';
 }
 
 // CSS 스타일 추가
@@ -434,6 +559,14 @@ style.textContent = `
         border-radius: 50%;
         cursor: pointer;
         border: none;
+    }
+    
+    .color-option:hover .color-circle {
+        transform: scale(1.1);
+    }
+    
+    .color-circle {
+        transition: all 0.2s ease;
     }
 `;
 document.head.appendChild(style);
