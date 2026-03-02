@@ -314,12 +314,10 @@ function create2PageContent(container, textContent, metadata) {
     
     const leftPage = document.createElement('div');
     leftPage.id = 'textLeftPage';
-    leftPage.style.cssText = `flex: 1; height: 100%; padding: 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);`;
-    
+   leftPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 10px 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);`;
     const rightPage = document.createElement('div');
     rightPage.id = 'textRightPage';
-    rightPage.style.cssText = `flex: 1; height: 100%; padding: 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;`;
-    
+    rightPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 10px 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;`;
     book.appendChild(leftPage);
     book.appendChild(rightPage);
     bookWrapper.appendChild(book);
