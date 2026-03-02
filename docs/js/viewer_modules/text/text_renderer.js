@@ -132,20 +132,50 @@ function apply2PageTheme() {
         const bgColor = computedStyle.backgroundColor || '#1c1c1c';
         const textColor = computedStyle.color || '#e8e8e8';
         
+        // 밝은 테마인지 확인
+        const isLightTheme = isLightColor(bgColor);
+        const bindingColor = isLightTheme ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.08)';
+        const borderColor = isLightTheme ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)';
+        
         const book = document.getElementById('textBook');
         const leftPage = document.getElementById('textLeftPage');
         const rightPage = document.getElementById('textRightPage');
         
-        if (book) book.style.background = bgColor;
+        if (book) {
+            book.style.background = bgColor;
+            // 바인딩 라인
+            const binding = book.querySelector('div[style*="position: absolute"]');
+            if (binding) {
+                binding.style.background = bindingColor;
+            }
+        }
         if (leftPage) {
             leftPage.style.background = bgColor;
             leftPage.style.color = textColor;
+            leftPage.style.borderRightColor = borderColor;
         }
         if (rightPage) {
             rightPage.style.background = bgColor;
             rightPage.style.color = textColor;
         }
     }, 10);
+}
+
+/**
+ * 밝은 색상인지 확인
+ */
+function isLightColor(color) {
+    // rgb(r, g, b) 형태에서 추출
+    const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        // 밝기 계산 (YIQ 공식)
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness > 128;
+    }
+    return false;
 }
 
 /**
@@ -846,7 +876,7 @@ function scrollPageAmount(direction) {
     
     container.scrollBy({
         top: direction * scrollAmount,
-        behavior: 'smooth'
+        behavior: readMode === 'click' ? 'instant' : 'smooth'
     });
 }
 
