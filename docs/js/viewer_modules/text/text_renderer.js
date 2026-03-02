@@ -341,7 +341,7 @@ function splitTextToPages(textContent, metadata) {
     }
     
     const paragraphs = textContent.split(/\n/).filter(line => line.trim());
-    const linesPerPage = 12;
+    const linesPerPage = 10;
     let currentLines = [];
     
     paragraphs.forEach(para => {
@@ -394,12 +394,12 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     if (!pageData) return;
     
     // 본문 영역 (페이지 번호 영역 제외)
-    const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'height: calc(100% - 25px); overflow: hidden; box-sizing: border-box;';
+const contentDiv = document.createElement('div');
+contentDiv.style.cssText = 'height: calc(100% - 40px); overflow: hidden; box-sizing: border-box;';
     
     // 페이지 번호 (하단 고정)
-    const pageNumDiv = document.createElement('div');
-    pageNumDiv.style.cssText = `height: 25px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ${side === 'left' ? 'flex-start' : 'flex-end'};`;
+const pageNumDiv = document.createElement('div');
+pageNumDiv.style.cssText = `height: 40px; display: flex; align-items: flex-end; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ${side === 'left' ? 'flex-start' : 'flex-end'}; padding-bottom: 5px;`;
     
     switch (pageData.type) {
         case 'cover':
