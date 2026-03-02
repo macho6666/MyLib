@@ -140,15 +140,17 @@ function apply2PageTheme() {
         const book = document.getElementById('textBook');
         const leftPage = document.getElementById('textLeftPage');
         const rightPage = document.getElementById('textRightPage');
-        const binding = document.getElementById('textBookBinding');
+        // binding 관련 코드 삭제
         
-        if (book) book.style.background = bgColor;
-        if (binding) binding.style.background = bindingColor;
-        if (leftPage) {
-            leftPage.style.background = bgColor;
-            leftPage.style.color = textColor;
-            leftPage.style.borderRight = `1px solid ${borderColor}`;
-        }
+const isLight = isLightColor(bgColor);
+const borderColor = isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.15)';
+
+if (book) book.style.background = bgColor;
+if (leftPage) {
+    leftPage.style.background = bgColor;
+    leftPage.style.color = textColor;
+    leftPage.style.borderRight = `1px solid ${borderColor}`;
+}
         if (rightPage) {
             rightPage.style.background = bgColor;
             rightPage.style.color = textColor;
@@ -501,66 +503,54 @@ function create2PageContent(container, textContent, metadata) {
         box-sizing: border-box;
     `;
     
-    const book = document.createElement('div');
-    book.id = 'textBook';
-    book.style.cssText = `
-        display: flex;
-        width: calc(100% - 80px);
-        max-width: 1400px;
-        height: calc(100vh - 80px);
-        border-radius: 8px;
-        box-shadow: 
-            0 0 40px rgba(0,0,0,0.5),
-            0 0 100px rgba(0,0,0,0.3),
-            inset 0 0 2px rgba(255,255,255,0.1);
-        overflow: hidden;
-        position: relative;
-    `;
-    
-const binding = document.createElement('div');
-binding.id = 'textBookBinding';
-binding.style.cssText = `
-    position: absolute;
-    left: 50%;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    transform: translateX(-50%);
-    background: rgba(255,255,255,0.08);
-    z-index: 10;
-    pointer-events: none;
+const book = document.createElement('div');
+book.id = 'textBook';
+book.style.cssText = `
+    display: flex;
+    width: calc(100% - 80px);
+    max-width: 1400px;
+    height: calc(100vh - 80px);
+    border-radius: 8px;
+    box-shadow: 
+        0 0 40px rgba(0,0,0,0.5),
+        0 0 100px rgba(0,0,0,0.3),
+        inset 0 0 2px rgba(255,255,255,0.1);
+    overflow: hidden;
+    position: relative;
+`;
+
+// 바인딩 선 제거 (아래에서 별도 생성 안 함)
+        
+const leftPage = document.createElement('div');
+leftPage.id = 'textLeftPage';
+leftPage.style.cssText = `
+    flex: 1;
+    height: 100%;
+    padding: 40px 50px 90px 40px;
+    overflow: hidden;
+    font-size: 17px;
+    line-height: 1.85;
+    word-break: keep-all;
+    letter-spacing: 0.3px;
+    box-sizing: border-box;
+    position: relative;
+    border-right: 1px solid rgba(128,128,128,0.3);
 `;
     
-    const leftPage = document.createElement('div');
-    leftPage.id = 'textLeftPage';
-    leftPage.style.cssText = `
-        flex: 1;
-        height: 100%;
-        padding: 40px 50px 70px 40px;
-        overflow: hidden;
-        font-size: 17px;
-        line-height: 1.85;
-        word-break: keep-all;
-        letter-spacing: 0.3px;
-        box-sizing: border-box;
-        border-right: 1px solid rgba(255,255,255,0.05);
-        position: relative;
-    `;
-    
-    const rightPage = document.createElement('div');
-    rightPage.id = 'textRightPage';
-    rightPage.style.cssText = `
-        flex: 1;
-        height: 100%;
-        padding: 40px 40px 70px 50px;
-        overflow: hidden;
-        font-size: 17px;
-        line-height: 1.85;
-        word-break: keep-all;
-        letter-spacing: 0.3px;
-        box-sizing: border-box;
-        position: relative;
-    `;
+const rightPage = document.createElement('div');
+rightPage.id = 'textRightPage';
+rightPage.style.cssText = `
+    flex: 1;
+    height: 100%;
+    padding: 40px 40px 90px 50px;
+    overflow: hidden;
+    font-size: 17px;
+    line-height: 1.85;
+    word-break: keep-all;
+    letter-spacing: 0.3px;
+    box-sizing: border-box;
+    position: relative;
+`;
     
     const pageNumStyle = `
         position: absolute;
@@ -582,7 +572,6 @@ binding.style.cssText = `
     rightPage.appendChild(rightPageNum);
     
     book.appendChild(leftPage);
-    book.appendChild(binding);
     book.appendChild(rightPage);
     bookWrapper.appendChild(book);
     container.appendChild(bookWrapper);
@@ -680,8 +669,8 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
         return;
     }
     
-    const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'height: calc(100% - 40px); overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
+const contentDiv = document.createElement('div');
+contentDiv.style.cssText = 'height: 100%; overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
     
     switch (pageData.type) {
         case 'cover':
