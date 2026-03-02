@@ -344,7 +344,7 @@ function splitTextToPages(textContent, metadata) {
     }
     
     const paragraphs = textContent.split(/\n/).filter(function(line) { return line.trim(); });
-    const linesPerPage = 9;
+    const linesPerPage = 8;
     let currentLines = [];
     
     paragraphs.forEach(function(para) {
