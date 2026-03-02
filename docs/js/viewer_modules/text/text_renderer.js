@@ -592,7 +592,7 @@ function splitTextToPages(textContent, metadata) {
     
     const paragraphs = textContent.split(/\n/).filter(line => line.trim());
     
-    const charsPerPage = 800;
+    const charsPerPage = 500;
     let currentPageText = '';
     
     paragraphs.forEach(para => {
@@ -664,7 +664,7 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
     }
     
 const contentDiv = document.createElement('div');
-contentDiv.style.cssText = 'height: 100%; overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
+contentDiv.style.cssText = 'max-height: calc(100% - 10px); overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
     
     switch (pageData.type) {
         case 'cover':
