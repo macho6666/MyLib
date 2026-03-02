@@ -344,14 +344,14 @@ function splitTextToPages(textContent, metadata) {
     }
     
     const paragraphs = textContent.split(/\n/).filter(function(line) { return line.trim(); });
-    const linesPerPage = 8;
+    const linesPerPage = 9;
     let currentLines = [];
     
     paragraphs.forEach(function(para) {
         const trimmed = para.trim();
         if (!trimmed) return;
         
-        const estimatedLines = Math.ceil(trimmed.length / 35);
+        const estimatedLines = Math.ceil(trimmed.length / 30);
         
         if (currentLines.length + estimatedLines > linesPerPage) {
             if (currentLines.length > 0) {
