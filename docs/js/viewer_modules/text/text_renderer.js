@@ -551,8 +551,8 @@ const pageNumStyle = `
     bottom: 20px;
     font-size: 12px;
     color: var(--text-tertiary, #666);
-    z-index: 3;
-    background: transparent;
+    z-index: 5;
+    pointer-events: none;
 `;
     
     const leftPageNum = document.createElement('div');
@@ -665,7 +665,7 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
     }
     
 const contentDiv = document.createElement('div');
-contentDiv.style.cssText = 'height: 100%; overflow: hidden; position: relative; z-index: 1; box-sizing: border-box;';
+contentDiv.style.cssText = 'max-height: calc(100% - 50px); overflow: hidden; position: relative; z-index: 1; box-sizing: border-box;';
     
     switch (pageData.type) {
         case 'cover':
