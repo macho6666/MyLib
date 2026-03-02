@@ -522,8 +522,8 @@ binding.id = 'textBookBinding';
 binding.style.cssText = `
     position: absolute;
     left: 50%;
-    top: 20px;
-    bottom: 20px;
+    top: 0;
+    bottom: 0;
     width: 1px;
     transform: translateX(-50%);
     background: rgba(255,255,255,0.08);
