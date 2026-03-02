@@ -9,6 +9,7 @@ import { applyTheme, applyTypography } from './text_theme.js';
 import { createCoverPage, createTOCPage } from './text_toc.js';
 import { updateProgress, startAutoSave, stopAutoSave, saveOnClose } from './text_bookmark.js';
 import { openSettings } from './text_controls.js';
+import { initHighlights } from './text_highlight.js';
 
 let headerVisible = false;
 let readMode = 'scroll';
@@ -58,6 +59,9 @@ export async function renderTxt(textContent, metadata) {
     createToggleButton();
     createHeader(metadata.name);
     setupKeyboardNavigation();
+    
+    // ✅ 하이라이트/메모 기능 초기화
+    initHighlights();
     
     window.openTextSettings = openSettings;
     window.toggleTextHeader = toggleHeader;
@@ -173,7 +177,9 @@ function applyContainerStyle(container) {
         '-webkit-overflow-scrolling: touch;' +
         'display: ' + (is2Page ? 'flex' : 'block') + ';' +
         'align-items: ' + (is2Page ? 'center' : 'stretch') + ';' +
-        'justify-content: ' + (is2Page ? 'center' : 'stretch') + ';';
+        'justify-content: ' + (is2Page ? 'center' : 'stretch') + ';' +
+        'user-select: text !important;' +
+        '-webkit-user-select: text !important;';
 }
 
 function createToggleButton() {
@@ -335,7 +341,6 @@ function create2PageContent(container, textContent, metadata) {
     renderSpread(0);
 }
 
-// ✅ 수정된 splitTextToPages 함수
 function splitTextToPages(textContent, metadata) {
     const pages = [];
     
@@ -346,7 +351,6 @@ function splitTextToPages(textContent, metadata) {
     
     const paragraphs = textContent.split(/\n/).filter(function(line) { return line.trim(); });
     
-    // ✅ 실제 렌더링 높이를 측정하여 페이지 분할
     const testPage = createTestPageElement();
     const maxHeight = calculateMaxPageHeight();
     
@@ -356,12 +360,10 @@ function splitTextToPages(textContent, metadata) {
         const trimmed = para.trim();
         if (!trimmed) return;
         
-        // 임시로 추가해서 높이 체크
         const testContent = [...currentPageContent, trimmed];
         testPage.innerHTML = formatText(testContent.join('\n\n'));
         
         if (testPage.scrollHeight > maxHeight && currentPageContent.length > 0) {
-            // 높이 초과 → 현재 페이지 저장하고 새 페이지 시작
             pages.push({ type: 'text', content: currentPageContent.join('\n\n') });
             currentPageContent = [trimmed];
         } else {
@@ -373,7 +375,6 @@ function splitTextToPages(textContent, metadata) {
         pages.push({ type: 'text', content: currentPageContent.join('\n\n') });
     }
     
-    // 테스트 요소 제거
     document.body.removeChild(testPage);
     
     pages.push({ type: 'end' });
@@ -382,14 +383,13 @@ function splitTextToPages(textContent, metadata) {
     return pages;
 }
 
-// ✅ 테스트용 페이지 요소 생성
 function createTestPageElement() {
     const testPage = document.createElement('div');
     testPage.style.cssText = 
         'position: absolute; ' +
         'left: -9999px; ' +
         'top: 0; ' +
-        'width: 700px; ' +  // 2페이지 모드의 한 페이지 너비
+        'width: 700px; ' +
         'padding: 40px 40px 0 40px; ' +
         'font-size: 17px; ' +
         'line-height: 1.85; ' +
@@ -401,11 +401,10 @@ function createTestPageElement() {
     return testPage;
 }
 
-// ✅ 페이지당 최대 높이 계산 (상하 여백 동일)
 function calculateMaxPageHeight() {
-    const bookHeight = window.innerHeight - 80;  // book wrapper 패딩 (상하 20px씩)
-    const topPadding = 40;       // 상단 패딩
-    const pageNumArea = 40;      // 하단 페이지번호 영역 (하단 여백 역할)
+    const bookHeight = window.innerHeight - 80;
+    const topPadding = 40;
+    const pageNumArea = 40;
     
     return bookHeight - topPadding - pageNumArea;
 }
@@ -658,7 +657,7 @@ export function scrollToProgress(percent) {
 }
 
 export function cleanupTextRenderer() {
-    // ✅ 뷰어 닫을 때 저장 추가
+    // ✅ 뷰어 닫을 때 저장
     if (currentMetadata && currentMetadata.seriesId && currentMetadata.bookId) {
         saveOnClose(currentMetadata.seriesId, currentMetadata.bookId);
     }
