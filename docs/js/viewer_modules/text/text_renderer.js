@@ -21,9 +21,6 @@ let currentMetadata = null;
 let clickGuideVisible = false;
 let clickGuideTimeout = null;
 
-/**
- * TXT 뷰어 초기화 및 렌더링
- */
 export async function renderTxt(textContent, metadata) {
     TextViewerState.renderType = 'txt';
     TextViewerState.currentBook = metadata;
@@ -71,11 +68,24 @@ export async function renderTxt(textContent, metadata) {
     window.onTextThemeChange = onThemeChange;
     window.scrollToProgress = scrollToProgress;
     
-    // 자동 저장 시작 (10초마다)
+    // 자동 저장 시작
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
     
+    // 저장된 위치로 복원
+    setTimeout(() => {
+        const saved = localStorage.getItem('progress_' + metadata.seriesId);
+        if (saved) {
+            const progressData = JSON.parse(saved);
+            const bookProgress = progressData[metadata.bookId];
+            if (bookProgress && bookProgress.progress > 0) {
+                scrollToProgress(bookProgress.progress);
+                console.log('📖 Restored to ' + bookProgress.progress + '%');
+            }
+        }
+    }, 200);
+    
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
-    console.log(`📖 TXT Viewer opened (mode: ${readMode}, layout: ${pageLayout})`);
+    console.log('📖 TXT Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
 }
 
 function renderContent() {
@@ -130,7 +140,7 @@ function apply2PageTheme() {
         if (leftPage) {
             leftPage.style.background = bgColor;
             leftPage.style.color = textColor;
-            leftPage.style.borderRight = `1px solid ${borderColor}`;
+            leftPage.style.borderRight = '1px solid ' + borderColor;
         }
         if (rightPage) {
             rightPage.style.background = bgColor;
@@ -153,19 +163,17 @@ function isLightColor(color) {
 
 function applyContainerStyle(container) {
     const is2Page = pageLayout === '2page';
-    container.style.cssText = `
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: var(--bg-primary, #0d0d0d);
-        color: var(--text-primary, #e8e8e8);
-        overflow-x: hidden;
-        overflow-y: ${is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')};
-        z-index: 5001;
-        -webkit-overflow-scrolling: touch;
-        display: ${is2Page ? 'flex' : 'block'};
-        align-items: ${is2Page ? 'center' : 'stretch'};
-        justify-content: ${is2Page ? 'center' : 'stretch'};
-    `;
+    container.style.cssText = 
+        'position: fixed; top: 0; left: 0; right: 0; bottom: 0;' +
+        'background: var(--bg-primary, #0d0d0d);' +
+        'color: var(--text-primary, #e8e8e8);' +
+        'overflow-x: hidden;' +
+        'overflow-y: ' + (is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')) + ';' +
+        'z-index: 5001;' +
+        '-webkit-overflow-scrolling: touch;' +
+        'display: ' + (is2Page ? 'flex' : 'block') + ';' +
+        'align-items: ' + (is2Page ? 'center' : 'stretch') + ';' +
+        'justify-content: ' + (is2Page ? 'center' : 'stretch') + ';';
 }
 
 function createToggleButton() {
@@ -175,22 +183,21 @@ function createToggleButton() {
     const btn = document.createElement('button');
     btn.id = 'textToggleBtn';
     btn.innerHTML = '☰';
-    btn.onclick = () => {
+    btn.onclick = function() {
         toggleHeader();
         if (readMode === 'click' && window.innerWidth >= 1024) {
             showClickGuide();
         }
     };
-    btn.style.cssText = `
-        position: fixed; top: 12px; right: 12px;
-        width: 40px; height: 40px;
-        background: rgba(0, 0, 0, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px; color: #fff; font-size: 20px;
-        cursor: pointer; z-index: 5200;
-        display: flex; align-items: center; justify-content: center;
-        backdrop-filter: blur(10px); transition: opacity 0.3s;
-    `;
+    btn.style.cssText = 
+        'position: fixed; top: 12px; right: 12px;' +
+        'width: 40px; height: 40px;' +
+        'background: rgba(0, 0, 0, 0.5);' +
+        'border: 1px solid rgba(255, 255, 255, 0.2);' +
+        'border-radius: 8px; color: #fff; font-size: 20px;' +
+        'cursor: pointer; z-index: 5200;' +
+        'display: flex; align-items: center; justify-content: center;' +
+        'backdrop-filter: blur(10px); transition: opacity 0.3s;';
     document.body.appendChild(btn);
 }
 
@@ -200,26 +207,24 @@ function createHeader(title) {
     
     const header = document.createElement('div');
     header.id = 'textViewerHeader';
-    header.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; height: 56px;
-        background: rgba(20, 20, 20, 0.95);
-        border-bottom: 1px solid var(--border-color, #2a2a2a);
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0 16px; z-index: 5150; backdrop-filter: blur(10px);
-        transform: translateY(-100%); transition: transform 0.3s ease;
-    `;
-    header.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
-            <button onclick="closeViewer()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 20px; cursor: pointer; padding: 8px;">←</button>
-            <span style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(title || 'Text Viewer')}</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 4px;">
-            <span id="textProgressIndicator" style="font-size: 13px; color: var(--text-secondary, #999);">0%</span>
-            <button onclick="saveTextBookmark()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 14px; cursor: pointer; padding: 6px;">Save</button>
-            <button onclick="openTextSettings()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 14px; cursor: pointer; padding: 6px;">Set</button>
-            <button onclick="toggleTextHeader()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 18px; cursor: pointer; padding: 6px;">x</button>
-        </div>
-    `;
+    header.style.cssText = 
+        'position: fixed; top: 0; left: 0; right: 0; height: 56px;' +
+        'background: rgba(20, 20, 20, 0.95);' +
+        'border-bottom: 1px solid var(--border-color, #2a2a2a);' +
+        'display: flex; align-items: center; justify-content: space-between;' +
+        'padding: 0 16px; z-index: 5150; backdrop-filter: blur(10px);' +
+        'transform: translateY(-100%); transition: transform 0.3s ease;';
+    header.innerHTML = 
+        '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
+            '<button onclick="closeViewer()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 20px; cursor: pointer; padding: 8px;">←</button>' +
+            '<span style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(title || 'Text Viewer') + '</span>' +
+        '</div>' +
+        '<div style="display: flex; align-items: center; gap: 4px;">' +
+            '<span id="textProgressIndicator" style="font-size: 13px; color: var(--text-secondary, #999);">0%</span>' +
+            '<button onclick="saveTextBookmark()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 14px; cursor: pointer; padding: 6px;">Save</button>' +
+            '<button onclick="openTextSettings()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 14px; cursor: pointer; padding: 6px;">Set</button>' +
+            '<button onclick="toggleTextHeader()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 18px; cursor: pointer; padding: 6px;">x</button>' +
+        '</div>';
     document.body.appendChild(header);
 }
 
@@ -238,7 +243,7 @@ function toggleHeader() {
     if (headerVisible) {
         header.style.transform = 'translateY(0)';
         if (toggleBtn) toggleBtn.style.opacity = '0';
-        headerAutoCloseTimer = setTimeout(() => {
+        headerAutoCloseTimer = setTimeout(function() {
             headerVisible = false;
             header.style.transform = 'translateY(-100%)';
             if (toggleBtn) toggleBtn.style.opacity = '1';
@@ -255,16 +260,15 @@ function showClickGuide() {
     if (!guide) {
         guide = document.createElement('div');
         guide.id = 'textClickGuide';
-        guide.style.cssText = `position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 5100; pointer-events: none; display: flex; transition: opacity 0.3s;`;
-        guide.innerHTML = `
-            <div style="width: 20%; height: 100%; background: rgba(100, 150, 255, 0.15); display: flex; align-items: center; justify-content: center; border-right: 2px dashed rgba(100, 150, 255, 0.5);">
-                <span style="color: rgba(255,255,255,0.8); font-size: 14px; background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px;">◀ 이전</span>
-            </div>
-            <div style="flex: 1; height: 100%;"></div>
-            <div style="width: 20%; height: 100%; background: rgba(100, 150, 255, 0.15); display: flex; align-items: center; justify-content: center; border-left: 2px dashed rgba(100, 150, 255, 0.5);">
-                <span style="color: rgba(255,255,255,0.8); font-size: 14px; background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px;">다음 ▶</span>
-            </div>
-        `;
+        guide.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 5100; pointer-events: none; display: flex; transition: opacity 0.3s;';
+        guide.innerHTML = 
+            '<div style="width: 20%; height: 100%; background: rgba(100, 150, 255, 0.15); display: flex; align-items: center; justify-content: center; border-right: 2px dashed rgba(100, 150, 255, 0.5);">' +
+                '<span style="color: rgba(255,255,255,0.8); font-size: 14px; background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px;">◀ 이전</span>' +
+            '</div>' +
+            '<div style="flex: 1; height: 100%;"></div>' +
+            '<div style="width: 20%; height: 100%; background: rgba(100, 150, 255, 0.15); display: flex; align-items: center; justify-content: center; border-left: 2px dashed rgba(100, 150, 255, 0.5);">' +
+                '<span style="color: rgba(255,255,255,0.8); font-size: 14px; background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px;">다음 ▶</span>' +
+            '</div>';
         document.body.appendChild(guide);
     }
     guide.style.opacity = '1';
@@ -272,14 +276,14 @@ function showClickGuide() {
     clickGuideVisible = true;
     
     if (clickGuideTimeout) clearTimeout(clickGuideTimeout);
-    clickGuideTimeout = setTimeout(() => hideClickGuide(), 3000);
+    clickGuideTimeout = setTimeout(function() { hideClickGuide(); }, 3000);
 }
 
 function hideClickGuide() {
     const guide = document.getElementById('textClickGuide');
     if (guide) {
         guide.style.opacity = '0';
-        setTimeout(() => { guide.style.display = 'none'; }, 300);
+        setTimeout(function() { guide.style.display = 'none'; }, 300);
     }
     clickGuideVisible = false;
 }
@@ -287,19 +291,18 @@ function hideClickGuide() {
 function create1PageContent(container, textContent, metadata) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
-    content.style.cssText = `max-width: 800px; margin: 0 auto; padding: 24px 16px; font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; overflow-x: hidden; width: 100%;`;
+    content.style.cssText = 'max-width: 800px; margin: 0 auto; padding: 24px 16px; font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; overflow-x: hidden; width: 100%;';
     
     if (metadata.coverUrl) {
-        content.innerHTML += `
-            <div style="text-align: center; margin-bottom: 32px;">
-                <img src="${metadata.coverUrl}" alt="cover" style="max-width: 180px; max-height: 260px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-                <h1 style="margin-top: 16px; font-size: 20px; font-weight: 600;">${escapeHtml(metadata.name || '')}</h1>
-            </div>
-            <hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">
-        `;
+        content.innerHTML += 
+            '<div style="text-align: center; margin-bottom: 32px;">' +
+                '<img src="' + metadata.coverUrl + '" alt="cover" style="max-width: 180px; max-height: 260px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
+                '<h1 style="margin-top: 16px; font-size: 20px; font-weight: 600;">' + escapeHtml(metadata.name || '') + '</h1>' +
+            '</div>' +
+            '<hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">';
     }
     content.innerHTML += formatText(textContent);
-    content.innerHTML += `<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>`;
+    content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
     container.appendChild(content);
 }
 
@@ -309,19 +312,19 @@ function create2PageContent(container, textContent, metadata) {
     
     const bookWrapper = document.createElement('div');
     bookWrapper.id = 'textBookWrapper';
-    bookWrapper.style.cssText = `display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 20px; box-sizing: border-box;`;
+    bookWrapper.style.cssText = 'display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 20px; box-sizing: border-box;';
     
     const book = document.createElement('div');
     book.id = 'textBook';
-    book.style.cssText = `display: flex; width: calc(100% - 80px); max-width: 1400px; height: calc(100vh - 80px); border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 2px rgba(255,255,255,0.1); overflow: hidden; position: relative;`;
+    book.style.cssText = 'display: flex; width: calc(100% - 80px); max-width: 1400px; height: calc(100vh - 80px); border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 2px rgba(255,255,255,0.1); overflow: hidden; position: relative;';
     
     const leftPage = document.createElement('div');
     leftPage.id = 'textLeftPage';
-   leftPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);`;
+    leftPage.style.cssText = 'flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);';
     
     const rightPage = document.createElement('div');
     rightPage.id = 'textRightPage';
-    rightPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;`;
+    rightPage.style.cssText = 'flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;';
     
     book.appendChild(leftPage);
     book.appendChild(rightPage);
@@ -340,11 +343,11 @@ function splitTextToPages(textContent, metadata) {
         pages.push({ type: 'empty' });
     }
     
-    const paragraphs = textContent.split(/\n/).filter(line => line.trim());
+    const paragraphs = textContent.split(/\n/).filter(function(line) { return line.trim(); });
     const linesPerPage = 10;
     let currentLines = [];
     
-    paragraphs.forEach(para => {
+    paragraphs.forEach(function(para) {
         const trimmed = para.trim();
         if (!trimmed) return;
         
@@ -393,29 +396,26 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     pageEl.innerHTML = '';
     if (!pageData) return;
     
-    // 본문 영역
     const contentDiv = document.createElement('div');
     contentDiv.style.cssText = 'height: calc(100% - 40px); overflow: hidden; box-sizing: border-box;';
     
-    // 페이지 번호 (하단)
-const pageNumDiv = document.createElement('div');
-pageNumDiv.style.cssText = `height: 40px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ${side === 'left' ? 'flex-start' : 'flex-end'};`;};`;
+    const pageNumDiv = document.createElement('div');
+    pageNumDiv.style.cssText = 'height: 40px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ' + (side === 'left' ? 'flex-start' : 'flex-end') + ';';
     
     switch (pageData.type) {
         case 'cover':
-            contentDiv.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
-                    <img src="${pageData.coverUrl}" alt="cover" style="max-width: 200px; max-height: 300px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-                    <h1 style="margin-top: 24px; font-size: 22px; font-weight: 600;">${escapeHtml(pageData.title || '')}</h1>
-                </div>
-            `;
+            contentDiv.innerHTML = 
+                '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">' +
+                    '<img src="' + pageData.coverUrl + '" alt="cover" style="max-width: 200px; max-height: 300px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
+                    '<h1 style="margin-top: 24px; font-size: 22px; font-weight: 600;">' + escapeHtml(pageData.title || '') + '</h1>' +
+                '</div>';
             break;
         case 'text':
             contentDiv.innerHTML = formatText(pageData.content);
             pageNumDiv.textContent = pageNumber;
             break;
         case 'end':
-            contentDiv.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-tertiary, #666); font-size: 16px;">— 끝 —</div>`;
+            contentDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-tertiary, #666); font-size: 16px;">— 끝 —</div>';
             pageNumDiv.textContent = pageNumber;
             break;
     }
@@ -426,10 +426,10 @@ pageNumDiv.style.cssText = `height: 40px; display: flex; align-items: center; fo
 
 function formatText(text) {
     if (!text) return '';
-    return text.split(/\n/).map(line => {
+    return text.split(/\n/).map(function(line) {
         const trimmed = line.trim();
         if (!trimmed) return '<br>';
-        return `<p style="margin: 0 0 0.8em 0; text-indent: 1em;">${escapeHtml(trimmed)}</p>`;
+        return '<p style="margin: 0 0 0.8em 0; text-indent: 1em;">' + escapeHtml(trimmed) + '</p>';
     }).join('');
 }
 
@@ -448,26 +448,26 @@ function setupInteraction(container) {
 
 function setup2PageInteraction(container) {
     if (readMode === 'scroll') {
-        container.onwheel = (e) => {
+        container.onwheel = function(e) {
             e.preventDefault();
             navigate2Page(e.deltaY > 0 || e.deltaX > 0 ? 1 : -1);
         };
         
-        let touchStartX = 0, touchStartY = 0;
-        container.ontouchstart = (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; };
-        container.ontouchend = (e) => {
-            const diffX = touchStartX - e.changedTouches[0].clientX;
-            const diffY = touchStartY - e.changedTouches[0].clientY;
+        var touchStartX = 0, touchStartY = 0;
+        container.ontouchstart = function(e) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; };
+        container.ontouchend = function(e) {
+            var diffX = touchStartX - e.changedTouches[0].clientX;
+            var diffY = touchStartY - e.changedTouches[0].clientY;
             if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) navigate2Page(diffX > 0 ? 1 : -1);
             else if (Math.abs(diffY) > 50) navigate2Page(diffY > 0 ? 1 : -1);
         };
     }
     
     if (readMode === 'click') {
-        container.onclick = (e) => {
+        container.onclick = function(e) {
             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-            const clickX = e.clientX - container.getBoundingClientRect().left;
-            const width = container.getBoundingClientRect().width;
+            var clickX = e.clientX - container.getBoundingClientRect().left;
+            var width = container.getBoundingClientRect().width;
             if (clickX < width * 0.2) navigate2Page(-1);
             else if (clickX > width * 0.8) navigate2Page(1);
         };
@@ -475,24 +475,24 @@ function setup2PageInteraction(container) {
 }
 
 function navigate2Page(direction) {
-    const newIndex = currentSpreadIndex + direction;
+    var newIndex = currentSpreadIndex + direction;
     if (newIndex >= 0 && newIndex < totalSpreads) renderSpread(newIndex);
 }
 
 function setupClickZones(container) {
-    container.onclick = (e) => {
+    container.onclick = function(e) {
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-        const clickX = e.clientX - container.getBoundingClientRect().left;
-        const width = container.getBoundingClientRect().width;
+        var clickX = e.clientX - container.getBoundingClientRect().left;
+        var width = container.getBoundingClientRect().width;
         if (clickX < width * 0.2) scrollPageAmount(-1);
         else if (clickX > width * 0.8) scrollPageAmount(1);
     };
 }
 
 function scrollPageAmount(direction) {
-    const container = document.getElementById('textViewerContainer');
+    var container = document.getElementById('textViewerContainer');
     if (!container) return;
-    const scrollAmount = container.clientHeight * 0.9;
+    var scrollAmount = container.clientHeight * 0.9;
     if (readMode === 'click') {
         container.style.scrollBehavior = 'auto';
         container.scrollTop += direction * scrollAmount;
@@ -504,8 +504,8 @@ function scrollPageAmount(direction) {
 function setupKeyboardNavigation() {
     if (window._textKeyHandler) document.removeEventListener('keydown', window._textKeyHandler);
     
-    window._textKeyHandler = (e) => {
-        const container = document.getElementById('textViewerContainer');
+    window._textKeyHandler = function(e) {
+        var container = document.getElementById('textViewerContainer');
         if (!container || container.style.display === 'none') return;
         
         switch (e.key) {
@@ -533,23 +533,23 @@ function goToStart() {
 
 function goToEnd() {
     if (pageLayout === '2page') renderSpread(totalSpreads - 1);
-    else { const c = document.getElementById('textViewerContainer'); c.scrollTop = c.scrollHeight; }
+    else { var c = document.getElementById('textViewerContainer'); c.scrollTop = c.scrollHeight; }
 }
 
 function updateProgressIndicator(progress) {
-    const indicator = document.getElementById('textProgressIndicator');
+    var indicator = document.getElementById('textProgressIndicator');
     if (indicator) indicator.textContent = progress + '%';
     TextViewerState.scrollProgress = progress;
 }
 
 function setupScrollTracking(container, metadata) {
-    let ticking = false;
-    container.addEventListener('scroll', () => {
+    var ticking = false;
+    container.addEventListener('scroll', function() {
         if (!ticking) {
-            requestAnimationFrame(() => {
-                const scrollTop = container.scrollTop;
-                const scrollHeight = container.scrollHeight - container.clientHeight;
-                const progress = scrollHeight > 0 ? Math.round((scrollTop / scrollHeight) * 100) : 0;
+            requestAnimationFrame(function() {
+                var scrollTop = container.scrollTop;
+                var scrollHeight = container.scrollHeight - container.clientHeight;
+                var progress = scrollHeight > 0 ? Math.round((scrollTop / scrollHeight) * 100) : 0;
                 TextViewerState.scrollProgress = progress;
                 TextViewerState.scrollPosition = scrollTop;
                 updateProgressIndicator(progress);
@@ -565,7 +565,7 @@ function setReadMode(mode) {
     readMode = mode || (readMode === 'scroll' ? 'click' : 'scroll');
     localStorage.setItem('mylib_text_readmode', readMode);
     
-    const container = document.getElementById('textViewerContainer');
+    var container = document.getElementById('textViewerContainer');
     if (container) { applyContainerStyle(container); setupInteraction(container); }
     
     applyTheme(); applyTypography();
@@ -575,17 +575,17 @@ function setReadMode(mode) {
 }
 
 function setTextLayout(layout) {
-    const currentProgress = TextViewerState.scrollProgress || 0;
+    var currentProgress = TextViewerState.scrollProgress || 0;
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
     
-    const container = document.getElementById('textViewerContainer');
+    var container = document.getElementById('textViewerContainer');
     if (container) container.style.visibility = 'hidden';
     
     renderContent();
     
     if (layout === '1page') {
-        requestAnimationFrame(() => { scrollToProgress(currentProgress); if (container) container.style.visibility = 'visible'; });
+        requestAnimationFrame(function() { scrollToProgress(currentProgress); if (container) container.style.visibility = 'visible'; });
     } else {
         scrollToProgress(currentProgress);
         if (container) container.style.visibility = 'visible';
@@ -596,14 +596,14 @@ function setTextLayout(layout) {
 function getTextLayout() { return pageLayout; }
 
 function updateReadModeUI() {
-    const scrollBtn = document.getElementById('btnModeScroll');
-    const clickBtn = document.getElementById('btnModeClick');
+    var scrollBtn = document.getElementById('btnModeScroll');
+    var clickBtn = document.getElementById('btnModeClick');
     if (scrollBtn) scrollBtn.classList.toggle('active', readMode === 'scroll');
     if (clickBtn) clickBtn.classList.toggle('active', readMode === 'click');
 }
 
 export function scrollToPosition(position) {
-    const container = document.getElementById('textViewerContainer');
+    var container = document.getElementById('textViewerContainer');
     if (container && position) {
         if (pageLayout === '2page') { if (position < totalSpreads) renderSpread(Math.floor(position)); }
         else container.scrollTop = position;
@@ -612,16 +612,15 @@ export function scrollToPosition(position) {
 
 export function scrollToProgress(percent) {
     if (pageLayout === '2page') {
-        const spreadIndex = Math.round((percent / 100) * (totalSpreads - 1));
+        var spreadIndex = Math.round((percent / 100) * (totalSpreads - 1));
         renderSpread(Math.max(0, Math.min(spreadIndex, totalSpreads - 1)));
     } else {
-        const container = document.getElementById('textViewerContainer');
+        var container = document.getElementById('textViewerContainer');
         if (container) container.scrollTop = (percent / 100) * (container.scrollHeight - container.clientHeight);
     }
 }
 
 export function cleanupTextRenderer() {
-    // 자동 저장 중지
     stopAutoSave();
     
     headerVisible = false; currentSpreadIndex = 0; totalSpreads = 0;
@@ -632,14 +631,14 @@ export function cleanupTextRenderer() {
     if (window._textKeyHandler) { document.removeEventListener('keydown', window._textKeyHandler); delete window._textKeyHandler; }
     
     document.body.style.overflow = '';
-    ['textToggleBtn', 'textViewerHeader', 'textClickGuide'].forEach(id => { const el = document.getElementById(id); if (el) el.remove(); });
+    ['textToggleBtn', 'textViewerHeader', 'textClickGuide'].forEach(function(id) { var el = document.getElementById(id); if (el) el.remove(); });
     
-    const imageContent = document.getElementById('viewerContent');
+    var imageContent = document.getElementById('viewerContent');
     if (imageContent) imageContent.style.display = '';
-    const controls = document.getElementById('viewerControls');
+    var controls = document.getElementById('viewerControls');
     if (controls) controls.style.display = '';
     
-    const container = document.getElementById('textViewerContainer');
+    var container = document.getElementById('textViewerContainer');
     if (container) { container.onclick = null; container.onwheel = null; container.ontouchstart = null; container.ontouchend = null; container._pages = null; }
     
     delete window.openTextSettings; delete window.toggleTextHeader;
@@ -650,7 +649,7 @@ export function cleanupTextRenderer() {
 
 function escapeHtml(text) {
     if (!text) return '';
-    const div = document.createElement('div');
+    var div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
