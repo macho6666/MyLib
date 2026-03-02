@@ -5,10 +5,14 @@
 
 import { TextViewerState, addHighlight, removeHighlight, getHighlights } from './text_state.js';
 import { addEpubHighlight, removeEpubHighlight } from './epub_renderer.js';
-import { syncToCalendar } from './text_bookmark.js';
+// import { syncToCalendar } from './text_bookmark.js'; // ❌ 사용 안 함
 import { showToast, generateId } from '../core/utils.js';
 import { Events } from '../core/events.js';
 
+// ✅ 설정에서 저장한 하이라이트 색상 가져오기
+function getHighlightColor() {
+    return localStorage.getItem('text_highlight_color') || '#ffeb3b';
+}
 /**
  * 하이라이트 초기화
  */
@@ -77,37 +81,29 @@ function showHighlightMenu(range, text) {
         z-index: 4000;
         animation: slideUp 0.2s ease;
     `;
+
+    // ✅ 하이라이트 버튼 (설정 색상 사용)
+    const hlBtn = document.createElement('button');
+    hlBtn.innerHTML = '💡';
+    hlBtn.title = 'Highlight';
+    hlBtn.style.cssText = `
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid var(--border-color, #2a2a2a);
+        background: var(--bg-input, #222);
+        color: #ffd54f;
+        cursor: pointer;
+        font-size: 18px;
+    `;
+    hlBtn.onclick = () => {
+        const color = getHighlightColor();
+        createHighlight(range, text, color);
+        menu.remove();
+    };
+    menu.appendChild(hlBtn);
     
-    // 색상 버튼들
-    const colors = [
-        { name: '노란색', value: '#ffeb3b' },
-        { name: '초록색', value: '#4ade80' },
-        { name: '파란색', value: '#60a5fa' },
-        { name: '분홍색', value: '#f472b6' }
-    ];
-    
-    colors.forEach(color => {
-        const btn = document.createElement('button');
-        btn.style.cssText = `
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 2px solid var(--border-color, #2a2a2a);
-            background: ${color.value};
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        `;
-        btn.title = color.name;
-        btn.onclick = () => {
-            createHighlight(range, text, color.value);
-            menu.remove();
-        };
-        btn.onmouseenter = () => btn.style.transform = 'scale(1.1)';
-        btn.onmouseleave = () => btn.style.transform = 'scale(1)';
-        menu.appendChild(btn);
-    });
-    
-    // 메모 버튼
+    // ✅ 메모 버튼 (기존 그대로)
     const memoBtn = document.createElement('button');
     memoBtn.innerHTML = '📝';
     memoBtn.style.cssText = `
@@ -127,7 +123,7 @@ function showHighlightMenu(range, text) {
     };
     menu.appendChild(memoBtn);
     
-    // 닫기 버튼
+    // 닫기 버튼 (기존 그대로)
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '×';
     closeBtn.style.cssText = `
@@ -146,7 +142,6 @@ function showHighlightMenu(range, text) {
     
     document.body.appendChild(menu);
     
-    // 3초 후 자동 닫기
     setTimeout(() => {
         if (document.getElementById('highlightMenu')) {
             menu.remove();
@@ -161,8 +156,10 @@ function showHighlightMenu(range, text) {
  * @param {string} color - 색상
  */
 function createHighlight(range, text, color) {
-    const bookId = TextViewerState.currentBook?.bookId;
-    if (!bookId) return;
+    const book = TextViewerState.currentBook;
+    const bookId = book?.bookId;
+    const seriesId = book?.seriesId;
+    if (!bookId || !seriesId) return;
     
     const highlightData = {
         id: generateId(),
@@ -181,6 +178,19 @@ function createHighlight(range, text, color) {
         addEpubHighlight(range, color, highlightData);
     } else {
         applyTxtHighlight(highlightData);
+    }
+    
+    // ✅ 캘린더에 기록 요청 (main.js 쪽에서 처리)
+    if (window.addCalendarHighlightFromViewer) {
+        window.addCalendarHighlightFromViewer({
+            seriesId,
+            bookId,
+            text,
+            memo: '', // 메모 없음
+            color,
+            page: TextViewerState.currentPage,
+            progress: TextViewerState.scrollProgress || 0
+        });
     }
     
     showToast('✨ 하이라이트 추가됨');
@@ -250,10 +260,6 @@ function showMemoDialog(range, text) {
                 resize: vertical;
                 margin-bottom: 12px;
             "></textarea>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                <input type="checkbox" id="syncCalendar" style="width: 16px; height: 16px;">
-                <label for="syncCalendar" style="font-size: 13px; color: var(--text-secondary, #999);">📅 캘린더에 기록</label>
-            </div>
             <div style="display: flex; gap: 8px; justify-content: flex-end;">
                 <button id="btnCancelMemo" style="padding: 10px 20px; background: var(--bg-input, #222); border: 1px solid var(--border-color, #2a2a2a); border-radius: 8px; color: var(--text-secondary, #999); cursor: pointer;">취소</button>
                 <button id="btnSaveMemo" style="padding: 10px 20px; background: var(--accent, #71717a); border: none; border-radius: 8px; color: white; cursor: pointer;">저장</button>
@@ -268,42 +274,54 @@ function showMemoDialog(range, text) {
     
     document.getElementById('btnCancelMemo').onclick = () => dialog.remove();
     
-    document.getElementById('btnSaveMemo').onclick = async () => {
+    document.getElementById('btnSaveMemo').onclick = () => {
         const memo = memoInput.value.trim();
         if (!memo) {
             showToast('메모를 입력하세요');
             return;
         }
         
-        // 하이라이트 생성 (노란색 기본)
+        const book = TextViewerState.currentBook;
+        const bookId = book?.bookId;
+        const seriesId = book?.seriesId;
+        if (!bookId || !seriesId) {
+            showToast('책 정보가 없습니다');
+            return;
+        }
+
+        const color = getHighlightColor();
+        
+        // 하이라이트 + 메모 데이터
         const highlightData = {
             id: generateId(),
             range: range,
             text: text,
-            color: '#ffeb3b',
+            color: color,
             memo: memo,
             timestamp: new Date().toISOString(),
             page: TextViewerState.currentPage
         };
         
-        const bookId = TextViewerState.currentBook?.bookId;
+        // 뷰어 상태에 저장
         addHighlight(bookId, highlightData);
         
         if (TextViewerState.renderType === 'epub') {
-            addEpubHighlight(range, '#ffeb3b', highlightData);
+            addEpubHighlight(range, color, highlightData);
+        } else {
+            applyTxtHighlight(highlightData);
         }
         
-        // 캘린더 동기화
-        if (document.getElementById('syncCalendar').checked) {
-            await syncToCalendar(
-                TextViewerState.currentBook.seriesId,
+        // ✅ 캘린더에 기록 요청
+        if (window.addCalendarHighlightFromViewer) {
+            window.addCalendarHighlightFromViewer({
+                seriesId,
                 bookId,
-                {
-                    page: TextViewerState.currentPage,
-                    memo: memo,
-                    highlight: text
-                }
-            );
+                text,
+                memo,
+                color,
+                page: TextViewerState.currentPage,
+                progress: TextViewerState.scrollProgress || 0
+            });
         }
         
         showToast('📝 메모가 저장되었습니다');
