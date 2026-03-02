@@ -335,6 +335,7 @@ function create2PageContent(container, textContent, metadata) {
     renderSpread(0);
 }
 
+// ✅ 수정된 splitTextToPages 함수
 function splitTextToPages(textContent, metadata) {
     const pages = [];
     
@@ -344,33 +345,66 @@ function splitTextToPages(textContent, metadata) {
     }
     
     const paragraphs = textContent.split(/\n/).filter(function(line) { return line.trim(); });
-    const linesPerPage = 8;
-    let currentLines = [];
+    
+    // ✅ 실제 렌더링 높이를 측정하여 페이지 분할
+    const testPage = createTestPageElement();
+    const maxHeight = calculateMaxPageHeight();
+    
+    let currentPageContent = [];
     
     paragraphs.forEach(function(para) {
         const trimmed = para.trim();
         if (!trimmed) return;
         
-        const estimatedLines = Math.ceil(trimmed.length / 30);
+        // 임시로 추가해서 높이 체크
+        const testContent = [...currentPageContent, trimmed];
+        testPage.innerHTML = formatText(testContent.join('\n\n'));
         
-        if (currentLines.length + estimatedLines > linesPerPage) {
-            if (currentLines.length > 0) {
-                pages.push({ type: 'text', content: currentLines.join('\n\n') });
-            }
-            currentLines = [trimmed];
+        if (testPage.scrollHeight > maxHeight && currentPageContent.length > 0) {
+            // 높이 초과 → 현재 페이지 저장하고 새 페이지 시작
+            pages.push({ type: 'text', content: currentPageContent.join('\n\n') });
+            currentPageContent = [trimmed];
         } else {
-            currentLines.push(trimmed);
+            currentPageContent.push(trimmed);
         }
     });
     
-    if (currentLines.length > 0) {
-        pages.push({ type: 'text', content: currentLines.join('\n\n') });
+    if (currentPageContent.length > 0) {
+        pages.push({ type: 'text', content: currentPageContent.join('\n\n') });
     }
+    
+    // 테스트 요소 제거
+    document.body.removeChild(testPage);
     
     pages.push({ type: 'end' });
     if (pages.length % 2 !== 0) pages.push({ type: 'empty' });
     
     return pages;
+}
+
+// ✅ 테스트용 페이지 요소 생성
+function createTestPageElement() {
+    const testPage = document.createElement('div');
+    testPage.style.cssText = 
+        'position: absolute; ' +
+        'left: -9999px; ' +
+        'top: 0; ' +
+        'width: 700px; ' +  // 2페이지 모드의 한 페이지 너비
+        'padding: 40px 40px 0 40px; ' +
+        'font-size: 17px; ' +
+        'line-height: 1.85; ' +
+        'word-break: keep-all; ' +
+        'letter-spacing: 0.3px; ' +
+        'box-sizing: border-box; ' +
+        'visibility: hidden;';
+    document.body.appendChild(testPage);
+    return testPage;
+}
+
+// ✅ 페이지당 최대 높이 계산
+function calculateMaxPageHeight() {
+    // 전체 뷰포트 높이에서 여백 제외 (상하 패딩 80px + 페이지번호 40px + 안전여백)
+    return (window.innerHeight - 160) - 40;
 }
 
 function renderSpread(spreadIndex) {
