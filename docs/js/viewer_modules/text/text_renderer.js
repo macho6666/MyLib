@@ -401,10 +401,13 @@ function createTestPageElement() {
     return testPage;
 }
 
-// ✅ 페이지당 최대 높이 계산
+// ✅ 페이지당 최대 높이 계산 (상하 여백 동일)
 function calculateMaxPageHeight() {
-    // 전체 뷰포트 높이에서 여백 제외 (상하 패딩 80px + 페이지번호 40px + 안전여백)
-    return (window.innerHeight - 160) - 40;
+    const bookHeight = window.innerHeight - 80;  // book wrapper 패딩 (상하 20px씩)
+    const topPadding = 40;       // 상단 패딩
+    const pageNumArea = 40;      // 하단 페이지번호 영역 (하단 여백 역할)
+    
+    return bookHeight - topPadding - pageNumArea;
 }
 
 function renderSpread(spreadIndex) {
