@@ -1297,9 +1297,13 @@ function addCalendarHighlightFromViewer(data) {
     }
     
     // 같은 시리즈 기록 찾기
-    var existing = calendarData[today].find(function(r) {
-        return r.seriesId === data.seriesId;
-    });
+    var existing = null;
+    for (var i = 0; i < calendarData[today].length; i++) {
+        if (calendarData[today][i].seriesId === data.seriesId) {
+            existing = calendarData[today][i];
+            break;
+        }
+    }
     
     var highlightEntry = {
         text: data.text,
@@ -1311,25 +1315,23 @@ function addCalendarHighlightFromViewer(data) {
     };
     
     if (existing) {
-        // 기존 기록에 highlights 추가
         if (!existing.highlights) {
             existing.highlights = [];
         }
         existing.highlights.push(highlightEntry);
         
-        // 진행도 업데이트 (설정에 따라)
         var saveProgress = localStorage.getItem('text_save_progress_to_calendar') !== 'false';
         if (saveProgress && data.progress > 0) {
             existing.progress = data.progress;
         }
     } else {
-        // 새 기록 생성
         var saveProgress = localStorage.getItem('text_save_progress_to_calendar') !== 'false';
         
         var newRecord = {
             seriesId: data.seriesId,
             bookId: data.bookId,
             status: 'reading',
+            memos: [],
             highlights: [highlightEntry]
         };
         
@@ -1342,8 +1344,7 @@ function addCalendarHighlightFromViewer(data) {
     
     saveLocalData();
     
-    // 캘린더 열려있으면 UI 업데이트
-    if (document.getElementById('calendarModal').style.display === 'flex') {
+    if (document.getElementById('calendarModal') && document.getElementById('calendarModal').style.display === 'flex') {
         renderCalendar();
         updateCalendarStats();
     }
@@ -1986,7 +1987,7 @@ async function saveToDrive() {
     for (var i = 0; i < localStorage.length; i++) {
       var key = localStorage.key(i);
       // ✅ bookmark_ 제거, read_ 추가
-      if (key.startsWith('progress_') || key.startsWith('read_')) {
+      if (key.startsWith('progress_') || key.startsWith('read_') || key.startsWith('highlights_')) {
         bookmarkData[key] = JSON.parse(localStorage.getItem(key));
       }
     }
@@ -2296,6 +2297,27 @@ function openBookRecords(seriesId) {
 
       var progressHtml = record.progress !== undefined ? '<div class="book-record-progress">' + record.progress + '%</div>' : '';
 
+      // 하이라이트 HTML
+      var highlightsHtml = '';
+      if (record.highlights && record.highlights.length > 0) {
+        highlightsHtml = '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color, #333);">';
+        record.highlights.forEach(function(hl, hlIndex) {
+          var hlText = hl.text.length > 60 ? hl.text.substring(0, 60) + '...' : hl.text;
+          highlightsHtml += 
+            '<div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;">' +
+              '<span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ' + hl.color + '; flex-shrink: 0; margin-top: 3px;"></span>' +
+              '<div style="flex: 1; min-width: 0;">' +
+                '<div style="font-size: 12px; color: var(--text-secondary, #aaa);">"' + hlText + '"</div>' +
+                (hl.memo ? '<div style="font-size: 11px; color: var(--text-tertiary, #666); margin-top: 2px;">→ ' + hl.memo + '</div>' : '') +
+              '</div>' +
+              '<button onclick="deleteHighlightRecord(\'' + dateStr + '\', \'' + seriesId + '\', ' + hlIndex + ')" style="background: none; border: none; color: var(--text-tertiary, #666); cursor: pointer; font-size: 12px; padding: 2px;">x</button>' +
+            '</div>';
+        });
+        highlightsHtml += '</div>';
+      }
+
+      var progressHtml = record.progress !== undefined ? '<div class="book-record-progress">' + record.progress + '%</div>' : '';
+
       item.innerHTML = 
         '<div class="book-record-date">' +
           '<span class="book-record-date-text">' + dateStr + '</span>' +
@@ -2303,6 +2325,7 @@ function openBookRecords(seriesId) {
         '</div>' +
         progressHtml +
         '<div class="book-record-memos">' + memosHtml + '</div>' +
+        highlightsHtml; +
         (highlightsHtml ? '<div class="book-record-highlights" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color, #333);">' + highlightsHtml + '</div>' : '');    
       recordsList.appendChild(item);
     });
@@ -2351,24 +2374,29 @@ function deleteMemo(dateStr, seriesId, memoIndex) {
   }
 }
 function deleteHighlightRecord(dateStr, seriesId, hlIndex) {
-  if (!confirm('Delete this highlight?')) return;
-  
-  var record = calendarData[dateStr].find(function(r) {
-    return r.seriesId === seriesId;
-  });
-  
-  if (record && record.highlights && record.highlights[hlIndex] !== undefined) {
-    record.highlights.splice(hlIndex, 1);
+    if (!confirm('Delete this highlight?')) return;
     
-    // highlights 비었으면 제거
-    if (record.highlights.length === 0) {
-      delete record.highlights;
+    var record = null;
+    if (calendarData[dateStr]) {
+        for (var i = 0; i < calendarData[dateStr].length; i++) {
+            if (calendarData[dateStr][i].seriesId === seriesId) {
+                record = calendarData[dateStr][i];
+                break;
+            }
+        }
     }
     
-    saveLocalData();
-    openBookRecords(seriesId);
-    showToast('Highlight deleted');
-  }
+    if (record && record.highlights && record.highlights[hlIndex] !== undefined) {
+        record.highlights.splice(hlIndex, 1);
+        
+        if (record.highlights.length === 0) {
+            delete record.highlights;
+        }
+        
+        saveLocalData();
+        openBookRecords(seriesId);
+        showToast('Highlight deleted');
+    }
 }
 function addMemoField() {
   var container = document.getElementById('recordMemosContainer');
@@ -2457,4 +2485,6 @@ window.deleteRecord = deleteRecord;
 window.deleteMemo = deleteMemo;
 window.addMemoField = addMemoField;
 window.moveToCompletedById = moveToCompletedById;
+window.deleteHighlightRecord = deleteHighlightRecord;
+window.addCalendarHighlightFromViewer = addCalendarHighlightFromViewer;
 window.deleteHighlightRecord = deleteHighlightRecord;
