@@ -11,13 +11,15 @@ import { updateProgress } from './text_bookmark.js';
 import { openSettings } from './text_controls.js';
 
 let headerVisible = false;
-let readMode = 'scroll'; // 'scroll' | 'click'
-let pageLayout = '1page'; // '1page' | '2page'
+let readMode = 'scroll';
+let pageLayout = '1page';
 let headerAutoCloseTimer = null;
 let currentSpreadIndex = 0;
 let totalSpreads = 0;
 let currentTextContent = '';
 let currentMetadata = null;
+let clickGuideVisible = false;
+let clickGuideTimeout = null;
 
 /**
  * TXT 뷰어 초기화 및 렌더링
@@ -71,6 +73,7 @@ export async function renderTxt(textContent, metadata) {
     window.getTextReadMode = () => readMode;
     window.setTextLayout = setTextLayout;
     window.getTextLayout = getTextLayout;
+    window.onTextThemeChange = onThemeChange;
     
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
     
@@ -103,14 +106,22 @@ function renderContent() {
     applyTheme();
     applyTypography();
     
-    // 2페이지 모드 테마 강제 적용
     if (pageLayout === '2page') {
         apply2PageTheme();
     }
 }
 
 /**
- * 2페이지 모드 테마 강제 적용
+ * 테마 변경 감지
+ */
+export function onThemeChange() {
+    if (pageLayout === '2page') {
+        apply2PageTheme();
+    }
+}
+
+/**
+ * 2페이지 모드 테마 적용
  */
 function apply2PageTheme() {
     setTimeout(() => {
@@ -136,28 +147,29 @@ function apply2PageTheme() {
         }
     }, 10);
 }
+
 /**
  * 컨테이너 스타일 적용
  */
 function applyContainerStyle(container) {
     const is2Page = pageLayout === '2page';
     
-container.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--bg-primary, #0d0d0d);
-    color: var(--text-primary, #e8e8e8);
-    overflow-x: hidden;
-    overflow-y: ${is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')};
-    z-index: 5001;
-    -webkit-overflow-scrolling: touch;
-    display: ${is2Page ? 'flex' : 'block'};
-    align-items: ${is2Page ? 'center' : 'stretch'};
-    justify-content: ${is2Page ? 'center' : 'stretch'};
-`;
+    container.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-primary, #0d0d0d);
+        color: var(--text-primary, #e8e8e8);
+        overflow-x: hidden;
+        overflow-y: ${is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')};
+        z-index: 5001;
+        -webkit-overflow-scrolling: touch;
+        display: ${is2Page ? 'flex' : 'block'};
+        align-items: ${is2Page ? 'center' : 'stretch'};
+        justify-content: ${is2Page ? 'center' : 'stretch'};
+    `;
 }
 
 /**
@@ -170,7 +182,13 @@ function createToggleButton() {
     const btn = document.createElement('button');
     btn.id = 'textToggleBtn';
     btn.innerHTML = '☰';
-    btn.onclick = toggleHeader;
+btn.onclick = () => {
+    toggleHeader();
+    // PC에서 클릭 모드일 때만 가이드 표시
+    if (readMode === 'click' && window.innerWidth >= 1024) {
+        showClickGuide();
+    }
+};
     btn.style.cssText = `
         position: fixed;
         top: 12px;
@@ -307,24 +325,111 @@ function toggleHeader() {
 }
 
 /**
+ * 클릭 가이드 표시
+ */
+function showClickGuide() {
+    let guide = document.getElementById('textClickGuide');
+    
+    if (!guide) {
+        guide = document.createElement('div');
+        guide.id = 'textClickGuide';
+        guide.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 5100;
+            pointer-events: none;
+            display: flex;
+            transition: opacity 0.3s;
+        `;
+        guide.innerHTML = `
+            <div style="
+                width: 20%;
+                height: 100%;
+                background: rgba(100, 150, 255, 0.15);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-right: 2px dashed rgba(100, 150, 255, 0.5);
+            ">
+                <span style="
+                    color: rgba(255,255,255,0.8);
+                    font-size: 14px;
+                    background: rgba(0,0,0,0.5);
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                ">◀ 이전</span>
+            </div>
+            <div style="
+                flex: 1;
+                height: 100%;
+            "></div>
+            <div style="
+                width: 20%;
+                height: 100%;
+                background: rgba(100, 150, 255, 0.15);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-left: 2px dashed rgba(100, 150, 255, 0.5);
+            ">
+                <span style="
+                    color: rgba(255,255,255,0.8);
+                    font-size: 14px;
+                    background: rgba(0,0,0,0.5);
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                ">다음 ▶</span>
+            </div>
+        `;
+        document.body.appendChild(guide);
+    }
+    
+    guide.style.opacity = '1';
+    guide.style.display = 'flex';
+    clickGuideVisible = true;
+    
+    if (clickGuideTimeout) clearTimeout(clickGuideTimeout);
+    clickGuideTimeout = setTimeout(() => {
+        hideClickGuide();
+    }, 3000);
+}
+
+/**
+ * 클릭 가이드 숨김
+ */
+function hideClickGuide() {
+    const guide = document.getElementById('textClickGuide');
+    if (guide) {
+        guide.style.opacity = '0';
+        setTimeout(() => {
+            guide.style.display = 'none';
+        }, 300);
+    }
+    clickGuideVisible = false;
+}
+
+/**
  * 1페이지 콘텐츠 생성
  */
 function create1PageContent(container, textContent, metadata) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     
-content.style.cssText = `
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 24px 16px;
-    font-size: 18px;
-    line-height: 1.9;
-    word-break: keep-all;
-    letter-spacing: 0.3px;
-    box-sizing: border-box;
-    overflow-x: hidden;
-    width: 100%;
-`;
+    content.style.cssText = `
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 24px 16px;
+        font-size: 18px;
+        line-height: 1.9;
+        word-break: keep-all;
+        letter-spacing: 0.3px;
+        box-sizing: border-box;
+        overflow-x: hidden;
+        width: 100%;
+    `;
     
     if (metadata.coverUrl) {
         content.innerHTML += `
@@ -407,7 +512,7 @@ function create2PageContent(container, textContent, metadata) {
     leftPage.style.cssText = `
         flex: 1;
         height: 100%;
-        padding: 40px 50px 50px 40px;
+        padding: 40px 50px 70px 40px;
         overflow: hidden;
         font-size: 17px;
         line-height: 1.85;
@@ -423,7 +528,7 @@ function create2PageContent(container, textContent, metadata) {
     rightPage.style.cssText = `
         flex: 1;
         height: 100%;
-        padding: 40px 40px 50px 50px;
+        padding: 40px 40px 70px 50px;
         overflow: hidden;
         font-size: 17px;
         line-height: 1.85;
@@ -904,13 +1009,11 @@ function setTextLayout(layout) {
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
     
-    // 컨테이너 숨기고 렌더링
     const container = document.getElementById('textViewerContainer');
     if (container) container.style.visibility = 'hidden';
     
     renderContent();
     
-    // 진행률 복원 후 보이기
     if (layout === '1page') {
         requestAnimationFrame(() => {
             scrollToProgress(currentProgress);
@@ -925,6 +1028,7 @@ function setTextLayout(layout) {
         window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
     }
 }
+
 /**
  * 레이아웃 가져오기
  */
@@ -995,6 +1099,11 @@ export function cleanupTextRenderer() {
         headerAutoCloseTimer = null;
     }
     
+    if (clickGuideTimeout) {
+        clearTimeout(clickGuideTimeout);
+        clickGuideTimeout = null;
+    }
+    
     if (window._textKeyHandler) {
         document.removeEventListener('keydown', window._textKeyHandler);
         delete window._textKeyHandler;
@@ -1007,6 +1116,9 @@ export function cleanupTextRenderer() {
     
     const header = document.getElementById('textViewerHeader');
     if (header) header.remove();
+    
+    const clickGuide = document.getElementById('textClickGuide');
+    if (clickGuide) clickGuide.remove();
     
     const imageContent = document.getElementById('viewerContent');
     if (imageContent) {
@@ -1033,6 +1145,7 @@ export function cleanupTextRenderer() {
     delete window.getTextReadMode;
     delete window.setTextLayout;
     delete window.getTextLayout;
+    delete window.onTextThemeChange;
 }
 
 /**
