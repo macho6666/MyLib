@@ -317,11 +317,11 @@ function create2PageContent(container, textContent, metadata) {
     
     const leftPage = document.createElement('div');
     leftPage.id = 'textLeftPage';
-    leftPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 50px 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);`;
+    leftPage.style.cssText = `flex: 1; height: 100%; padding: 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);`;
     
     const rightPage = document.createElement('div');
     rightPage.id = 'textRightPage';
-    rightPage.style.cssText = `flex: 1; height: 100%; padding: 40px 40px 50px 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;`;
+    rightPage.style.cssText = `flex: 1; height: 100%; padding: 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;`;
     
     book.appendChild(leftPage);
     book.appendChild(rightPage);
@@ -341,7 +341,7 @@ function splitTextToPages(textContent, metadata) {
     }
     
     const paragraphs = textContent.split(/\n/).filter(line => line.trim());
-    const linesPerPage = 15;
+    const linesPerPage = 12;
     let currentLines = [];
     
     paragraphs.forEach(para => {
@@ -393,14 +393,13 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     pageEl.innerHTML = '';
     if (!pageData) return;
     
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position: relative; height: 100%; box-sizing: border-box;';
-    
+    // 본문 영역 (페이지 번호 영역 제외)
     const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 40px; overflow: hidden; box-sizing: border-box;';
+    contentDiv.style.cssText = 'height: calc(100% - 25px); overflow: hidden; box-sizing: border-box;';
     
+    // 페이지 번호 (하단 고정)
     const pageNumDiv = document.createElement('div');
-    pageNumDiv.style.cssText = `position: absolute; bottom: 10px; ${side === 'left' ? 'left: 0;' : 'right: 0;'} font-size: 12px; color: var(--text-tertiary, #666);`;
+    pageNumDiv.style.cssText = `height: 25px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ${side === 'left' ? 'flex-start' : 'flex-end'};`;
     
     switch (pageData.type) {
         case 'cover':
@@ -421,9 +420,8 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
             break;
     }
     
-    wrapper.appendChild(contentDiv);
-    wrapper.appendChild(pageNumDiv);
-    pageEl.appendChild(wrapper);
+    pageEl.appendChild(contentDiv);
+    pageEl.appendChild(pageNumDiv);
 }
 
 function formatText(text) {
