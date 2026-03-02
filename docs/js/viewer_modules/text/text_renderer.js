@@ -113,25 +113,29 @@ function renderContent() {
  * 2페이지 모드 테마 강제 적용
  */
 function apply2PageTheme() {
-    const container = document.getElementById('textViewerContainer');
-    const bgColor = container ? getComputedStyle(container).backgroundColor : '#1c1c1c';
-    const textColor = container ? getComputedStyle(container).color : '#e8e8e8';
-    
-    const book = document.getElementById('textBook');
-    const leftPage = document.getElementById('textLeftPage');
-    const rightPage = document.getElementById('textRightPage');
-    
-    if (book) book.style.background = bgColor;
-    if (leftPage) {
-        leftPage.style.background = bgColor;
-        leftPage.style.color = textColor;
-    }
-    if (rightPage) {
-        rightPage.style.background = bgColor;
-        rightPage.style.color = textColor;
-    }
+    setTimeout(() => {
+        const container = document.getElementById('textViewerContainer');
+        if (!container) return;
+        
+        const computedStyle = getComputedStyle(container);
+        const bgColor = computedStyle.backgroundColor || '#1c1c1c';
+        const textColor = computedStyle.color || '#e8e8e8';
+        
+        const book = document.getElementById('textBook');
+        const leftPage = document.getElementById('textLeftPage');
+        const rightPage = document.getElementById('textRightPage');
+        
+        if (book) book.style.background = bgColor;
+        if (leftPage) {
+            leftPage.style.background = bgColor;
+            leftPage.style.color = textColor;
+        }
+        if (rightPage) {
+            rightPage.style.background = bgColor;
+            rightPage.style.color = textColor;
+        }
+    }, 10);
 }
-
 /**
  * 컨테이너 스타일 적용
  */
