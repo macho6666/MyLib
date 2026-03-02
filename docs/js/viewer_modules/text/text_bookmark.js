@@ -9,9 +9,6 @@ import { showToast } from '../core/utils.js';
 
 /**
  * 책갈피 저장
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
- * @param {number|string} position - TXT: 페이지 번호, EPUB: CFI
  */
 export function saveBookmark(seriesId, bookId, position) {
     const key = `bookmark_${seriesId}`;
@@ -19,6 +16,7 @@ export function saveBookmark(seriesId, bookId, position) {
     
     bookmarks[bookId] = {
         position: position,
+        progress: TextViewerState.scrollProgress || 0,  // 진행률(%) 추가
         timestamp: new Date().toISOString(),
         type: TextViewerState.renderType,
         page: TextViewerState.currentPage,
@@ -27,15 +25,11 @@ export function saveBookmark(seriesId, bookId, position) {
     
     localStorage.setItem(key, JSON.stringify(bookmarks));
     
-    // 이벤트 발생
     Events.emit('bookmark:save', { seriesId, bookId, position });
 }
 
 /**
  * 책갈피 불러오기
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
- * @returns {Object|null} { position, timestamp, type, page, totalPages }
  */
 export function loadBookmark(seriesId, bookId) {
     const bookmarks = getBookmarks(seriesId);
@@ -51,8 +45,6 @@ export function loadBookmark(seriesId, bookId) {
 
 /**
  * 시리즈의 모든 책갈피 가져오기
- * @param {string} seriesId - 시리즈 ID
- * @returns {Object} { bookId: { position, timestamp, ... }, ... }
  */
 export function getBookmarks(seriesId) {
     const key = `bookmark_${seriesId}`;
@@ -62,8 +54,6 @@ export function getBookmarks(seriesId) {
 
 /**
  * 책갈피 삭제
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
  */
 export function deleteBookmark(seriesId, bookId) {
     const bookmarks = getBookmarks(seriesId);
@@ -75,9 +65,6 @@ export function deleteBookmark(seriesId, bookId) {
 
 /**
  * 진행도 계산 (퍼센트)
- * @param {number} currentPage - 현재 페이지
- * @param {number} totalPages - 전체 페이지
- * @returns {number} 0~100
  */
 export function calculateProgress(currentPage, totalPages) {
     if (totalPages === 0) return 0;
@@ -86,20 +73,16 @@ export function calculateProgress(currentPage, totalPages) {
 
 /**
  * 진행도 업데이트 (자동 저장)
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
  */
 export function updateProgress(seriesId, bookId) {
-    const progress = calculateProgress(
-        TextViewerState.currentPage,
-        TextViewerState.totalPages
-    );
+    // scrollProgress 사용 (1페이지/2페이지 모드 공통)
+    const progress = TextViewerState.scrollProgress || 0;
     
-    // 진행도 저장
     const key = `progress_${seriesId}`;
     const progressData = JSON.parse(localStorage.getItem(key) || '{}');
     
     progressData[bookId] = {
+        progress: progress,  // 진행률(%) 저장
         page: TextViewerState.currentPage,
         totalPages: TextViewerState.totalPages,
         percent: progress,
@@ -108,10 +91,8 @@ export function updateProgress(seriesId, bookId) {
     
     localStorage.setItem(key, JSON.stringify(progressData));
     
-    // 이벤트 발생
     Events.emit('progress:update', { seriesId, bookId, progress });
     
-    // 100% 완료 시 읽음 처리
     if (progress === 100) {
         markAsRead(seriesId, bookId);
     }
@@ -119,9 +100,6 @@ export function updateProgress(seriesId, bookId) {
 
 /**
  * 진행도 가져오기
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
- * @returns {Object|null} { page, totalPages, percent, timestamp }
  */
 export function getProgressData(seriesId, bookId) {
     const key = `progress_${seriesId}`;
@@ -131,8 +109,6 @@ export function getProgressData(seriesId, bookId) {
 
 /**
  * 읽음 처리
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
  */
 export function markAsRead(seriesId, bookId) {
     const key = `read_${seriesId}`;
@@ -152,9 +128,6 @@ export function markAsRead(seriesId, bookId) {
 
 /**
  * 읽음 상태 확인
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
- * @returns {boolean}
  */
 export function isRead(seriesId, bookId) {
     const key = `read_${seriesId}`;
@@ -164,9 +137,6 @@ export function isRead(seriesId, bookId) {
 
 /**
  * 캘린더 동기화 (GAS API)
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
- * @param {Object} data - { page, memo, highlight 등 }
  */
 export async function syncToCalendar(seriesId, bookId, data) {
     try {
@@ -196,22 +166,15 @@ export async function syncToCalendar(seriesId, bookId, data) {
 
 /**
  * 자동 저장 타이머 시작
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
- * @param {number} interval - 저장 간격 (ms), 기본 10초
  */
 export function startAutoSave(seriesId, bookId, interval = 10000) {
     stopAutoSave();
     
     window._bookmarkAutoSaveTimer = setInterval(() => {
-        // 스크롤 위치 직접 가져오기
-        const container = document.getElementById('textViewerContainer');
-        const position = TextViewerState.renderType === 'epub' 
-            ? TextViewerState.epub.currentCfi 
-            : (container ? container.scrollTop : 0);
+        const progress = TextViewerState.scrollProgress || 0;
         
-        if (position > 0) {
-            saveBookmark(seriesId, bookId, position);
+        if (progress > 0) {
+            saveBookmark(seriesId, bookId, progress);
             updateProgress(seriesId, bookId);
         }
     }, interval);
@@ -232,27 +195,19 @@ export function stopAutoSave() {
 
 /**
  * 뷰어 닫을 때 마지막 저장
- * @param {string} seriesId - 시리즈 ID
- * @param {string} bookId - 책 ID
  */
 export function saveOnClose(seriesId, bookId) {
-    // 스크롤 위치 직접 가져오기
-    const container = document.getElementById('textViewerContainer');
-    const position = TextViewerState.renderType === 'epub' 
-        ? TextViewerState.epub.currentCfi 
-        : (container ? container.scrollTop : 0);
+    const progress = TextViewerState.scrollProgress || 0;
     
-    if (position > 0) {
-        saveBookmark(seriesId, bookId, position);
+    if (progress > 0) {
+        saveBookmark(seriesId, bookId, progress);
         updateProgress(seriesId, bookId);
-        console.log('💾 Saved on close, position:', position);
+        console.log('💾 Saved on close, progress:', progress + '%');
     }
     
     stopAutoSave();
 }
-/**
- * 북마크 저장 (버튼 클릭용)
- */
+
 /**
  * 북마크 저장 (버튼 클릭용)
  */
@@ -263,15 +218,39 @@ export function saveTextBookmark() {
         return;
     }
     
-    // 현재 스크롤 위치 직접 가져오기
-    const container = document.getElementById('textViewerContainer');
-    const position = container ? container.scrollTop : 0;
+    const progress = TextViewerState.scrollProgress || 0;
     
-    console.log('💾 Saving bookmark, position:', position);
+    console.log('💾 Saving bookmark, progress:', progress + '%');
     
-    saveBookmark(book.seriesId, book.bookId, position);
-    showToast('Bookmark saved: ' + position + 'px');
+    saveBookmark(book.seriesId, book.bookId, progress);
+    showToast('Bookmark saved: ' + progress + '%');
 }
+
+/**
+ * 북마크 위치로 이동
+ */
+export function restoreBookmark(seriesId, bookId) {
+    const bookmark = loadBookmark(seriesId, bookId);
+    
+    if (bookmark) {
+        // progress 값 사용 (호환성: 없으면 position에서 계산 시도)
+        const progress = bookmark.progress !== undefined 
+            ? bookmark.progress 
+            : 0;
+        
+        if (progress > 0 && window.scrollToProgress) {
+            window.scrollToProgress(progress);
+            showToast('Restored to ' + progress + '%');
+        }
+        
+        return bookmark;
+    }
+    
+    return null;
+}
+
 // 전역 등록
 window.saveTextBookmark = saveTextBookmark;
+window.restoreBookmark = restoreBookmark;
+
 console.log('✅ Bookmark module loaded');
