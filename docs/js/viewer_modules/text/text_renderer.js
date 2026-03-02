@@ -592,7 +592,7 @@ function splitTextToPages(textContent, metadata) {
     
     const paragraphs = textContent.split(/\n/).filter(line => line.trim());
     
-    const charsPerPage = 500;
+    const charsPerPage = 800;
     let currentPageText = '';
     
     paragraphs.forEach(para => {
