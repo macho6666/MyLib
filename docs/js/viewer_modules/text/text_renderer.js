@@ -133,31 +133,25 @@ function apply2PageTheme() {
         const textColor = computedStyle.color || '#e8e8e8';
         
         // 밝은 테마인지 확인
-        const isLight = isLightColor(bgColor);
-        const bindingColor = isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.08)';
-        const borderColor = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.05)';
+        const lightTheme = isLightColor(bgColor);
+        const borderColor = lightTheme ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.15)';
         
         const book = document.getElementById('textBook');
         const leftPage = document.getElementById('textLeftPage');
         const rightPage = document.getElementById('textRightPage');
-        // binding 관련 코드 삭제
         
-const isLight = isLightColor(bgColor);
-const borderColor = isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.15)';
-
-if (book) book.style.background = bgColor;
-if (leftPage) {
-    leftPage.style.background = bgColor;
-    leftPage.style.color = textColor;
-    leftPage.style.borderRight = `1px solid ${borderColor}`;
-}
+        if (book) book.style.background = bgColor;
+        if (leftPage) {
+            leftPage.style.background = bgColor;
+            leftPage.style.color = textColor;
+            leftPage.style.borderRight = `1px solid ${borderColor}`;
+        }
         if (rightPage) {
             rightPage.style.background = bgColor;
             rightPage.style.color = textColor;
         }
     }, 10);
 }
-
 /**
  * 밝은 색상인지 확인
  */
