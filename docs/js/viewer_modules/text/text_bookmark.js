@@ -1,6 +1,7 @@
 /**
  * viewer_modules/text/text_bookmark.js
  * 책갈피 저장/불러오기 + 진행도 관리
+ * (bookmark_ → progress_ 통합)
  */
 
 import { TextViewerState } from './text_state.js';
@@ -8,57 +9,72 @@ import { Events } from '../core/events.js';
 import { showToast } from '../core/utils.js';
 
 /**
- * 책갈피 저장
+ * 진행도 업데이트 (메인 저장 함수)
  */
-export function saveBookmark(seriesId, bookId, position) {
-    const key = `bookmark_${seriesId}`;
-    const bookmarks = getBookmarks(seriesId);
+export function updateProgress(seriesId, bookId, isManual = false) {
+    const progress = TextViewerState.scrollProgress || 0;
     
-    bookmarks[bookId] = {
-        position: position,
-        progress: TextViewerState.scrollProgress || 0,  // 진행률(%) 추가
-        timestamp: new Date().toISOString(),
-        type: TextViewerState.renderType,
+    const key = `progress_${seriesId}`;
+    const progressData = JSON.parse(localStorage.getItem(key) || '{}');
+    
+    progressData[bookId] = {
+        progress: progress,
         page: TextViewerState.currentPage,
-        totalPages: TextViewerState.totalPages
+        totalPages: TextViewerState.totalPages,
+        timestamp: new Date().toISOString(),
+        type: TextViewerState.renderType
     };
     
-    localStorage.setItem(key, JSON.stringify(bookmarks));
+    localStorage.setItem(key, JSON.stringify(progressData));
     
+    Events.emit('progress:update', { seriesId, bookId, progress, isManual });
+    
+    if (progress === 100) {
+        markAsRead(seriesId, bookId);
+    }
+}
+
+/**
+ * 책갈피 저장 (자동 저장용 - updateProgress 호출)
+ */
+export function saveBookmark(seriesId, bookId, position) {
+    updateProgress(seriesId, bookId, false);
     Events.emit('bookmark:save', { seriesId, bookId, position });
 }
 
 /**
- * 책갈피 불러오기
+ * 진행도 가져오기
  */
-export function loadBookmark(seriesId, bookId) {
-    const bookmarks = getBookmarks(seriesId);
-    const bookmark = bookmarks[bookId];
-    
-    if (bookmark) {
-        Events.emit('bookmark:load', { seriesId, bookId, bookmark });
-        return bookmark;
-    }
-    
-    return null;
+export function getProgressData(seriesId, bookId) {
+    const key = `progress_${seriesId}`;
+    const data = JSON.parse(localStorage.getItem(key) || '{}');
+    return data[bookId] || null;
 }
 
 /**
- * 시리즈의 모든 책갈피 가져오기
+ * 시리즈의 모든 진행도 가져오기
  */
 export function getBookmarks(seriesId) {
-    const key = `bookmark_${seriesId}`;
+    const key = `progress_${seriesId}`;
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : {};
+}
+
+/**
+ * 책갈피 불러오기 (호환성 유지)
+ */
+export function loadBookmark(seriesId, bookId) {
+    return getProgressData(seriesId, bookId);
 }
 
 /**
  * 책갈피 삭제
  */
 export function deleteBookmark(seriesId, bookId) {
-    const bookmarks = getBookmarks(seriesId);
-    delete bookmarks[bookId];
-    localStorage.setItem(`bookmark_${seriesId}`, JSON.stringify(bookmarks));
+    const key = `progress_${seriesId}`;
+    const progressData = JSON.parse(localStorage.getItem(key) || '{}');
+    delete progressData[bookId];
+    localStorage.setItem(key, JSON.stringify(progressData));
     
     showToast('책갈피가 삭제되었습니다');
 }
@@ -69,42 +85,6 @@ export function deleteBookmark(seriesId, bookId) {
 export function calculateProgress(currentPage, totalPages) {
     if (totalPages === 0) return 0;
     return Math.round((currentPage / totalPages) * 100);
-}
-
-/**
- * 진행도 업데이트 (자동 저장)
- */
-export function updateProgress(seriesId, bookId) {
-    // scrollProgress 사용 (1페이지/2페이지 모드 공통)
-    const progress = TextViewerState.scrollProgress || 0;
-    
-    const key = `progress_${seriesId}`;
-    const progressData = JSON.parse(localStorage.getItem(key) || '{}');
-    
-    progressData[bookId] = {
-        progress: progress,  // 진행률(%) 저장
-        page: TextViewerState.currentPage,
-        totalPages: TextViewerState.totalPages,
-        percent: progress,
-        timestamp: new Date().toISOString()
-    };
-    
-    localStorage.setItem(key, JSON.stringify(progressData));
-    
-    Events.emit('progress:update', { seriesId, bookId, progress });
-    
-    if (progress === 100) {
-        markAsRead(seriesId, bookId);
-    }
-}
-
-/**
- * 진행도 가져오기
- */
-export function getProgressData(seriesId, bookId) {
-    const key = `progress_${seriesId}`;
-    const data = JSON.parse(localStorage.getItem(key) || '{}');
-    return data[bookId] || null;
 }
 
 /**
@@ -174,8 +154,7 @@ export function startAutoSave(seriesId, bookId, interval = 10000) {
         const progress = TextViewerState.scrollProgress || 0;
         
         if (progress > 0) {
-            saveBookmark(seriesId, bookId, progress);
-            updateProgress(seriesId, bookId);
+            updateProgress(seriesId, bookId, false);
         }
     }, interval);
     
@@ -200,8 +179,7 @@ export function saveOnClose(seriesId, bookId) {
     const progress = TextViewerState.scrollProgress || 0;
     
     if (progress > 0) {
-        saveBookmark(seriesId, bookId, progress);
-        updateProgress(seriesId, bookId);
+        updateProgress(seriesId, bookId, false);
         console.log('💾 Saved on close, progress:', progress + '%');
     }
     
@@ -209,7 +187,7 @@ export function saveOnClose(seriesId, bookId) {
 }
 
 /**
- * 북마크 저장 (버튼 클릭용)
+ * 북마크 저장 (버튼 클릭용 - 수동 저장)
  */
 export function saveTextBookmark() {
     const book = TextViewerState.currentBook;
@@ -220,23 +198,20 @@ export function saveTextBookmark() {
     
     const progress = TextViewerState.scrollProgress || 0;
     
-    console.log('💾 Saving bookmark, progress:', progress + '%');
+    console.log('💾 Manual save, progress:', progress + '%');
     
-    saveBookmark(book.seriesId, book.bookId, progress);
-    showToast('Bookmark saved: ' + progress + '%');
+    updateProgress(book.seriesId, book.bookId, true);
+    showToast('💾 Saved: ' + progress + '%');
 }
 
 /**
  * 북마크 위치로 이동
  */
 export function restoreBookmark(seriesId, bookId) {
-    const bookmark = loadBookmark(seriesId, bookId);
+    const bookmark = getProgressData(seriesId, bookId);
     
     if (bookmark) {
-        // progress 값 사용 (호환성: 없으면 position에서 계산 시도)
-        const progress = bookmark.progress !== undefined 
-            ? bookmark.progress 
-            : 0;
+        const progress = bookmark.progress || 0;
         
         if (progress > 0 && window.scrollToProgress) {
             window.scrollToProgress(progress);
