@@ -7,7 +7,7 @@ import { TextViewerState, setCurrentPage } from './text_state.js';
 import { Events } from '../core/events.js';
 import { applyTheme, applyTypography } from './text_theme.js';
 import { createCoverPage, createTOCPage } from './text_toc.js';
-import { updateProgress, startAutoSave, stopAutoSave } from './text_bookmark.js';
+import { updateProgress, startAutoSave, stopAutoSave, saveOnClose } from './text_bookmark.js';
 import { openSettings } from './text_controls.js';
 
 let headerVisible = false;
@@ -658,6 +658,11 @@ export function scrollToProgress(percent) {
 }
 
 export function cleanupTextRenderer() {
+    // ✅ 뷰어 닫을 때 저장 추가
+    if (currentMetadata && currentMetadata.seriesId && currentMetadata.bookId) {
+        saveOnClose(currentMetadata.seriesId, currentMetadata.bookId);
+    }
+    
     stopAutoSave();
     
     headerVisible = false; currentSpreadIndex = 0; totalSpreads = 0;
