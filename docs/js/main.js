@@ -1920,10 +1920,11 @@ async function saveToDrive() {
   showToast("Drive에 저장 중...");
   
   try {
-          var bookmarkData = {};
+    var bookmarkData = {};
     for (var i = 0; i < localStorage.length; i++) {
       var key = localStorage.key(i);
-      if (key.startsWith('bookmark_') || key.startsWith('progress_')) {
+      // ✅ bookmark_ 제거, read_ 추가
+      if (key.startsWith('progress_') || key.startsWith('read_')) {
         bookmarkData[key] = JSON.parse(localStorage.getItem(key));
       }
     }
@@ -1935,6 +1936,7 @@ async function saveToDrive() {
       seriesTags: seriesTags,
       calendar: calendarData,
       favorites: favorites,
+      bookmarks: bookmarkData,  // ✅ 추가
       settings: {
         adultFilter: adultFilterEnabled,
         theme: localStorage.getItem('mylib_theme'),
@@ -1949,7 +1951,6 @@ async function saveToDrive() {
     showToast("❌ 저장 실패: " + e.message, 5000);
   }
 }
-
 async function loadFromDrive() {
   if (!confirm("Drive에서 불러오면 현재 데이터가 덮어씌워집니다. 계속하시겠습니까?")) {
     return;
