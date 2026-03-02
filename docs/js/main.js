@@ -1288,7 +1288,68 @@ function padZero(num) {
 function addCalendarRecord() {
     openRecordModal();
 }
-
+// ===== TXT 뷰어에서 하이라이트/메모 추가 =====
+function addCalendarHighlightFromViewer(data) {
+    var today = formatDateStr(new Date());
+    
+    if (!calendarData[today]) {
+        calendarData[today] = [];
+    }
+    
+    // 같은 시리즈 기록 찾기
+    var existing = calendarData[today].find(function(r) {
+        return r.seriesId === data.seriesId;
+    });
+    
+    var highlightEntry = {
+        text: data.text,
+        memo: data.memo || '',
+        color: data.color,
+        bookId: data.bookId,
+        page: data.page,
+        timestamp: data.timestamp || new Date().toISOString()
+    };
+    
+    if (existing) {
+        // 기존 기록에 highlights 추가
+        if (!existing.highlights) {
+            existing.highlights = [];
+        }
+        existing.highlights.push(highlightEntry);
+        
+        // 진행도 업데이트 (설정에 따라)
+        var saveProgress = localStorage.getItem('text_save_progress_to_calendar') !== 'false';
+        if (saveProgress && data.progress > 0) {
+            existing.progress = data.progress;
+        }
+    } else {
+        // 새 기록 생성
+        var saveProgress = localStorage.getItem('text_save_progress_to_calendar') !== 'false';
+        
+        var newRecord = {
+            seriesId: data.seriesId,
+            bookId: data.bookId,
+            status: 'reading',
+            highlights: [highlightEntry]
+        };
+        
+        if (saveProgress && data.progress > 0) {
+            newRecord.progress = data.progress;
+        }
+        
+        calendarData[today].push(newRecord);
+    }
+    
+    saveLocalData();
+    
+    // 캘린더 열려있으면 UI 업데이트
+    if (document.getElementById('calendarModal').style.display === 'flex') {
+        renderCalendar();
+        updateCalendarStats();
+    }
+    
+    console.log('📝 Highlight added to calendar:', data.text.substring(0, 30) + '...');
+}
 function updateCalendarStats() {
     var completed = 0, dropped = 0, reading = 0;
     var countedBooks = {};
@@ -1511,6 +1572,7 @@ async function moveToCompletedById(seriesId) {
     showToast('Error: ' + e.message, 5000);
   }
 }
+
 // ===== 기타 함수들 =====
 function toggleSettings() {
     var el = document.getElementById('domainPanel');
@@ -2215,14 +2277,33 @@ function openBookRecords(seriesId) {
         });
       }
       
+      // 하이라이트 HTML 생성
+      var highlightsHtml = '';
+      if (record.highlights && record.highlights.length > 0) {
+        record.highlights.forEach(function(hl, hlIndex) {
+          var hlText = hl.text.length > 50 ? hl.text.substring(0, 50) + '...' : hl.text;
+          highlightsHtml += 
+            '<div class="book-record-highlight" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;">' +
+              '<span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ' + hl.color + '; flex-shrink: 0; margin-top: 4px;"></span>' +
+              '<div style="flex: 1; min-width: 0;">' +
+                '<div style="font-size: 12px; color: var(--text-secondary, #aaa);">"' + hlText + '"</div>' +
+                (hl.memo ? '<div style="font-size: 11px; color: var(--text-tertiary, #666); margin-top: 2px;">→ ' + hl.memo + '</div>' : '') +
+              '</div>' +
+              '<button class="book-record-hl-delete" onclick="deleteHighlightRecord(\'' + dateStr + '\', \'' + seriesId + '\', ' + hlIndex + ')" style="background: none; border: none; color: var(--text-tertiary, #666); cursor: pointer; font-size: 12px; padding: 2px;">x</button>' +
+            '</div>';
+        });
+      }
+
+      var progressHtml = record.progress !== undefined ? '<div class="book-record-progress">' + record.progress + '%</div>' : '';
+
       item.innerHTML = 
         '<div class="book-record-date">' +
           '<span class="book-record-date-text">' + dateStr + '</span>' +
           '<button class="book-record-delete" onclick="deleteRecord(\'' + dateStr + '\', \'' + seriesId + '\')">x</button>' +
         '</div>' +
-        '<div class="book-record-progress">' + record.progress + '%</div>' +
-        '<div class="book-record-memos">' + memosHtml + '</div>';
-      
+        progressHtml +
+        '<div class="book-record-memos">' + memosHtml + '</div>' +
+        (highlightsHtml ? '<div class="book-record-highlights" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color, #333);">' + highlightsHtml + '</div>' : '');    
       recordsList.appendChild(item);
     });
   });
@@ -2267,6 +2348,26 @@ function deleteMemo(dateStr, seriesId, memoIndex) {
     saveLocalData();
     openBookRecords(seriesId);
     showToast('Memo deleted');
+  }
+}
+function deleteHighlightRecord(dateStr, seriesId, hlIndex) {
+  if (!confirm('Delete this highlight?')) return;
+  
+  var record = calendarData[dateStr].find(function(r) {
+    return r.seriesId === seriesId;
+  });
+  
+  if (record && record.highlights && record.highlights[hlIndex] !== undefined) {
+    record.highlights.splice(hlIndex, 1);
+    
+    // highlights 비었으면 제거
+    if (record.highlights.length === 0) {
+      delete record.highlights;
+    }
+    
+    saveLocalData();
+    openBookRecords(seriesId);
+    showToast('Highlight deleted');
   }
 }
 function addMemoField() {
@@ -2356,3 +2457,4 @@ window.deleteRecord = deleteRecord;
 window.deleteMemo = deleteMemo;
 window.addMemoField = addMemoField;
 window.moveToCompletedById = moveToCompletedById;
+window.deleteHighlightRecord = deleteHighlightRecord;
