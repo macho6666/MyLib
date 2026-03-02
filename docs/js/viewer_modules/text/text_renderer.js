@@ -381,13 +381,13 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     if (!pageData) return;
     
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display: flex; flex-direction: column; height: 100%; box-sizing: border-box;';
+    wrapper.style.cssText = 'position: relative; height: 100%; box-sizing: border-box;';
     
     const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'flex: 1; overflow: hidden; box-sizing: border-box;';
+    contentDiv.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 30px; overflow: hidden; box-sizing: border-box;';
     
     const pageNumDiv = document.createElement('div');
-    pageNumDiv.style.cssText = `height: 30px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); flex-shrink: 0; justify-content: ${side === 'left' ? 'flex-start' : 'flex-end'};`;
+    pageNumDiv.style.cssText = `position: absolute; bottom: 0; left: 0; right: 0; height: 30px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ${side === 'left' ? 'flex-start' : 'flex-end'};`;
     
     switch (pageData.type) {
         case 'cover':
