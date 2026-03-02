@@ -520,7 +520,7 @@ leftPage.id = 'textLeftPage';
 leftPage.style.cssText = `
     flex: 1;
     height: 100%;
-    padding: 40px 50px 40px 40px;
+    padding: 40px 50px 45px 40px;
     overflow: hidden;
     font-size: 17px;
     line-height: 1.85;
@@ -536,7 +536,7 @@ rightPage.id = 'textRightPage';
 rightPage.style.cssText = `
     flex: 1;
     height: 100%;
-    padding: 40px 40px 40px 50px;
+    padding: 40px 40px 45px 50px;
     overflow: hidden;
     font-size: 17px;
     line-height: 1.85;
@@ -548,11 +548,10 @@ rightPage.style.cssText = `
     
 const pageNumStyle = `
     position: absolute;
-    bottom: 20px;
+    bottom: 15px;
     font-size: 12px;
     color: var(--text-tertiary, #666);
-    z-index: 5;
-    pointer-events: none;
+    z-index: 1;
 `;
     
     const leftPageNum = document.createElement('div');
@@ -593,7 +592,7 @@ function splitTextToPages(textContent, metadata) {
     
     const paragraphs = textContent.split(/\n/).filter(line => line.trim());
     
-    const charsPerPage = 300;
+    const charsPerPage = 350;
     let currentPageText = '';
     
     paragraphs.forEach(para => {
@@ -665,7 +664,7 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
     }
     
 const contentDiv = document.createElement('div');
-contentDiv.style.cssText = 'max-height: calc(100% - 60px); overflow: hidden; position: relative; z-index: 1; box-sizing: border-box;';
+contentDiv.style.cssText = 'overflow: hidden; position: relative; z-index: 1; box-sizing: border-box;';
     
     switch (pageData.type) {
         case 'cover':
