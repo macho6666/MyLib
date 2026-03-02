@@ -548,7 +548,7 @@ function renderSinglePage(pageEl, pageData, pageNumEl, pageNumber) {
     }
     
     const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'height: 100%; padding-bottom: 50px; overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
+    contentDiv.style.cssText = 'height: calc(100% - 40px); overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;';
     
     switch (pageData.type) {
         case 'cover':
