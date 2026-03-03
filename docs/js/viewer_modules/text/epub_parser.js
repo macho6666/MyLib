@@ -1,21 +1,14 @@
 /**
  * viewer_modules/text/epub_parser.js
- * EPUB 파일 파싱 (JSZip 기반)
+ * EPUB 파일 파싱 (JSZip 기반) - Lazy Loading 최적화
  */
 
 /**
  * EPUB 파싱 메인 함수
- * @param {Blob} epubBlob - EPUB Blob
+ * @param {JSZip} zip - JSZip 객체 (이미 로드됨)
  * @returns {Promise<Object>} 파싱 결과
  */
-export async function parseEpub(epubBlob) {
-    if (typeof JSZip === 'undefined') {
-        throw new Error('JSZip 라이브러리가 없습니다');
-    }
-
-    const arrayBuffer = await epubBlob.arrayBuffer();
-    const zip = await JSZip.loadAsync(arrayBuffer);
-
+export async function parseEpub(zip) {
     // 1. OPF 파일 경로 찾기
     const opfPath = await findOpfPath(zip);
     const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
@@ -26,13 +19,33 @@ export async function parseEpub(epubBlob) {
     // 3. 목차 파싱 (NCX 또는 NAV)
     const toc = await parseToc(zip, opfDir, manifest);
 
-    // 4. 챕터 HTML 추출 + 이미지 base64 변환
-    const chapters = await extractChapters(zip, opfDir, spine, manifest);
+    // 4. 챕터와 이미지는 경로만 저장 (lazy 로드)
+    const chapterPaths = spine.map(function(item) {
+        return {
+            id: item.id,
+            href: item.href,
+            path: opfDir + item.href
+        };
+    });
+
+    // 이미지 경로 목록
+    const imagePaths = {};
+    for (const id in manifest) {
+        const item = manifest[id];
+        if (item.mediaType && item.mediaType.startsWith('image/')) {
+            imagePaths[item.href] = {
+                path: opfDir + item.href,
+                mediaType: item.mediaType
+            };
+        }
+    }
 
     return {
         metadata,
         toc,
-        chapters,
+        chapterPaths,
+        imagePaths,
+        zip,
         opfDir
     };
 }
@@ -186,129 +199,6 @@ async function parseNcxToc(ncxFile) {
 }
 
 /**
- * 챕터 HTML 추출 + 이미지 base64 변환
- */
-async function extractChapters(zip, opfDir, spine, manifest) {
-    const chapters = [];
-
-    // 이미지 캐시
-    const imageCache = {};
-
-    // 이미지 먼저 base64 변환
-    for (const id in manifest) {
-        const item = manifest[id];
-        if (item.mediaType && item.mediaType.startsWith('image/')) {
-            const imgFile = zip.file(opfDir + item.href);
-            if (imgFile) {
-                try {
-                    const base64 = await imgFile.async('base64');
-                    imageCache[item.href] = 'data:' + item.mediaType + ';base64,' + base64;
-                } catch (e) {
-                    console.warn('Image load failed:', item.href);
-                }
-            }
-        }
-    }
-
-    // 챕터 순서대로 HTML 추출
-    for (const spineItem of spine) {
-        const filePath = opfDir + spineItem.href;
-        const file = zip.file(filePath);
-
-        if (!file) {
-            console.warn('Chapter file not found:', filePath);
-            continue;
-        }
-
-        try {
-            const html = await file.async('string');
-            const content = parseChapterHtml(html, spineItem.href, imageCache, opfDir);
-
-            chapters.push({
-                id: spineItem.id,
-                href: spineItem.href,
-                content: content.html,
-                css: content.css,
-                title: content.title
-            });
-        } catch (e) {
-            console.warn('Chapter parse failed:', spineItem.href, e);
-        }
-    }
-
-    return chapters;
-}
-
-/**
- * 챕터 HTML 파싱
- */
-function parseChapterHtml(html, href, imageCache, opfDir) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'application/xhtml+xml');
-
-    // CSS 추출
-    const cssTexts = [];
-    doc.querySelectorAll('style').forEach(function(style) {
-        cssTexts.push(style.textContent);
-    });
-
-    // 제목 추출
-    const title = doc.querySelector('title') ?
-                  doc.querySelector('title').textContent.trim() : '';
-
-    // body 내용 추출
-    const body = doc.querySelector('body');
-    if (!body) return { html: '', css: cssTexts.join('\n'), title };
-
-    // 이미지 src 교체 (상대경로 → base64)
-    body.querySelectorAll('img').forEach(function(img) {
-        const src = img.getAttribute('src') || '';
-        // 상대경로 정규화
-        const normalizedSrc = normalizePath(href, src);
-        if (imageCache[normalizedSrc]) {
-            img.setAttribute('src', imageCache[normalizedSrc]);
-        }
-    });
-
-    // 배경색/글자색/폰트크기/줄간격 관련 인라인 스타일 처리
-    body.querySelectorAll('[style]').forEach(function(el) {
-        const style = el.getAttribute('style');
-        el.setAttribute('data-epub-style', style);
-    });
-
-    return {
-        html: body.innerHTML,
-        css: cssTexts.join('\n'),
-        title
-    };
-}
-
-/**
- * 상대경로 정규화
- */
-function normalizePath(basePath, relativePath) {
-    if (relativePath.startsWith('http') || relativePath.startsWith('data:')) {
-        return relativePath;
-    }
-
-    const baseDir = basePath.substring(0, basePath.lastIndexOf('/') + 1);
-    const combined = baseDir + relativePath;
-
-    // ../ 처리
-    const parts = combined.split('/');
-    const resolved = [];
-    for (const part of parts) {
-        if (part === '..') {
-            resolved.pop();
-        } else if (part !== '.') {
-            resolved.push(part);
-        }
-    }
-
-    return resolved.join('/');
-}
-
-/**
  * XML/HTML에서 텍스트 추출
  */
 function getXmlText(doc, selector) {
@@ -316,4 +206,4 @@ function getXmlText(doc, selector) {
     return el ? el.textContent.trim() : '';
 }
 
-console.log('✅ EPUB Parser loaded');
+console.log('✅ EPUB Parser loaded (Lazy mode)');
