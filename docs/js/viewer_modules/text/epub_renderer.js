@@ -1,6 +1,6 @@
 /**
  * viewer_modules/text/epub_renderer.js
- * EPUB 렌더링 (txt 뷰어와 동일한 방식)
+ * EPUB 렌더링 (txt 뷰어와 동일한 방식) - Lazy Loading 최적화
  */
 
 import { TextViewerState, setCurrentPage } from './text_state.js';
@@ -18,10 +18,10 @@ let headerAutoCloseTimer = null;
 let currentSpreadIndex = 0;
 let totalSpreads = 0;
 let currentMetadata = null;
-let epubData = null; // 파싱된 epub 데이터
+let epubData = null;
 let tocVisible = false;
 
-export async function renderEpub(epubBlob, metadata) {
+export async function renderEpub(epubResult, metadata) {
     TextViewerState.renderType = 'epub';
     TextViewerState.currentBook = metadata;
     headerVisible = false;
@@ -53,10 +53,9 @@ export async function renderEpub(epubBlob, metadata) {
         viewer.appendChild(container);
     }
 
-    // EPUB 파싱
     try {
-        epubData = await parseEpub(epubBlob);
-        console.log('📘 EPUB parsed:', epubData.chapters.length, 'chapters');
+        epubData = await parseEpub(epubResult.zip);
+        console.log('📘 EPUB parsed:', epubData.chapterPaths.length, 'chapters');
         console.log('📚 TOC:', epubData.toc.length, 'items');
     } catch (e) {
         console.error('EPUB parse failed:', e);
@@ -64,7 +63,7 @@ export async function renderEpub(epubBlob, metadata) {
         return;
     }
 
-    renderContent();
+    await renderContent();
     createToggleButton();
     createHeader(metadata.name);
     createTocPanel();
@@ -83,7 +82,6 @@ export async function renderEpub(epubBlob, metadata) {
 
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
 
-    // 진행률 복원
     const saved = localStorage.getItem('progress_' + metadata.seriesId);
     if (saved) {
         const progressData = JSON.parse(saved);
@@ -100,7 +98,7 @@ export async function renderEpub(epubBlob, metadata) {
     console.log('📖 EPUB Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
 }
 
-function renderContent() {
+async function renderContent() {
     const container = document.getElementById('textViewerContainer');
     if (!container) return;
 
@@ -108,9 +106,9 @@ function renderContent() {
     container.innerHTML = '';
 
     if (pageLayout === '2page') {
-        create2PageContent(container);
+        await create2PageContent(container);
     } else {
-        create1PageContent(container);
+        await create1PageContent(container);
     }
 
     setupInteraction(container);
@@ -126,7 +124,6 @@ function renderContent() {
         apply2PageTheme();
     }
 
-    // 하이라이트 복원
     setTimeout(function() {
         restoreHighlights();
     }, 100);
@@ -195,15 +192,11 @@ function applyContainerStyle(container) {
         '-webkit-user-select: text !important;';
 }
 
-/**
- * 1페이지 모드 콘텐츠 생성
- */
-function create1PageContent(container) {
+async function create1PageContent(container) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     content.style.cssText = 'max-width: 800px; margin: 0 auto; padding: 24px 16px; font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; overflow-x: hidden; width: 100%;';
 
-    // 표지
     if (currentMetadata.coverUrl) {
         content.innerHTML +=
             '<div style="text-align: center; margin-bottom: 32px;">' +
@@ -213,122 +206,143 @@ function create1PageContent(container) {
             '<hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">';
     }
 
-    // 챕터 순서대로 렌더링
-    if (epubData && epubData.chapters) {
-        const useOriginalStyle = localStorage.getItem('epub_use_original_style') === 'true';
+    content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
+    container.appendChild(content);
 
-        epubData.chapters.forEach(function(chapter, index) {
-            // EPUB 원본 CSS 적용 여부
-            if (useOriginalStyle && chapter.css) {
-                const styleEl = document.createElement('style');
-                styleEl.textContent = filterEpubCss(chapter.css);
-                content.appendChild(styleEl);
-            }
+    if (epubData && epubData.chapterPaths) {
+        const initialChapters = Math.min(3, epubData.chapterPaths.length);
+        
+        for (let i = 0; i < initialChapters; i++) {
+            await renderChapter(content, i);
+        }
 
-            const chapterDiv = document.createElement('div');
-            chapterDiv.className = 'epub-chapter';
-            chapterDiv.dataset.chapterIndex = index;
-            chapterDiv.dataset.chapterHref = chapter.href;
-            chapterDiv.style.cssText = 'margin-bottom: 20px;';
+        let loadedChapters = initialChapters;
+        let isLoading = false;
 
-            // 챕터 내용 삽입
-            chapterDiv.innerHTML = chapter.content;
+        container.addEventListener('scroll', async function() {
+            if (isLoading || loadedChapters >= epubData.chapterPaths.length) return;
 
-            // 이미지 스타일 적용
-            chapterDiv.querySelectorAll('img').forEach(function(img) {
-                img.style.cssText = 'max-width: 100%; height: auto; display: block; margin: 16px auto; border-radius: 4px;';
-            });
+            const scrollBottom = container.scrollTop + container.clientHeight;
+            const threshold = container.scrollHeight - 500;
 
-            // EPUB 원본 스타일 미사용 시 인라인 스타일 정리
-            if (!useOriginalStyle) {
-                cleanInlineStyles(chapterDiv);
-            }
-
-            content.appendChild(chapterDiv);
-
-            // 챕터 구분선 (마지막 챕터 제외)
-            if (index < epubData.chapters.length - 1) {
-                const divider = document.createElement('hr');
-                divider.style.cssText = 'border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 40px 0;';
-                content.appendChild(divider);
+            if (scrollBottom > threshold) {
+                isLoading = true;
+                const nextBatch = Math.min(loadedChapters + 2, epubData.chapterPaths.length);
+                
+                for (let i = loadedChapters; i < nextBatch; i++) {
+                    await renderChapter(content, i);
+                }
+                
+                loadedChapters = nextBatch;
+                isLoading = false;
             }
         });
     }
 
-    // 끝
-    content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
-    container.appendChild(content);
-
-    // 목차 앵커 설정
     setupTocAnchors();
 }
 
-/**
- * 2페이지 모드 콘텐츠 생성
- */
-function create2PageContent(container) {
-    // 전체 텍스트 추출
-    const fullText = extractFullText();
-    const pages = splitTextToPages(fullText);
-    totalSpreads = Math.ceil(pages.length / 2);
+async function renderChapter(container, index) {
+    if (!epubData || !epubData.chapterPaths[index]) return;
 
-    const bookWrapper = document.createElement('div');
-    bookWrapper.id = 'textBookWrapper';
-    bookWrapper.style.cssText = 'display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 20px; box-sizing: border-box;';
+    const chapterPath = epubData.chapterPaths[index];
+    const zip = epubData.zip;
 
-    const book = document.createElement('div');
-    book.id = 'textBook';
-    book.style.cssText = 'display: flex; width: calc(100% - 80px); max-width: 1400px; height: calc(100vh - 80px); border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 2px rgba(255,255,255,0.1); overflow: hidden; position: relative;';
+    try {
+        const file = zip.file(chapterPath.path);
+        if (!file) {
+            console.warn('Chapter file not found:', chapterPath.path);
+            return;
+        }
 
-    const leftPage = document.createElement('div');
-    leftPage.id = 'textLeftPage';
-    leftPage.style.cssText = 'flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);';
+        const html = await file.async('string');
+        const useOriginalStyle = localStorage.getItem('epub_use_original_style') === 'true';
 
-    const rightPage = document.createElement('div');
-    rightPage.id = 'textRightPage';
-    rightPage.style.cssText = 'flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;';
-
-    book.appendChild(leftPage);
-    book.appendChild(rightPage);
-    bookWrapper.appendChild(book);
-    container.appendChild(bookWrapper);
-    container._pages = pages;
-
-    renderSpread(0);
-}
-
-/**
- * 전체 텍스트 추출 (2페이지 모드용)
- */
-function extractFullText() {
-    if (!epubData || !epubData.chapters) return '';
-
-    return epubData.chapters.map(function(chapter) {
         const parser = new DOMParser();
-        const doc = parser.parseFromString('<div>' + chapter.content + '</div>', 'text/html');
-        return doc.body.textContent || '';
-    }).join('\n\n');
+        const doc = parser.parseFromString(html, 'application/xhtml+xml');
+        const body = doc.querySelector('body');
+
+        if (!body) return;
+
+        await processImages(body, epubData.zip, epubData.imagePaths, chapterPath.href);
+
+        const chapterDiv = document.createElement('div');
+        chapterDiv.className = 'epub-chapter';
+        chapterDiv.dataset.chapterIndex = index;
+        chapterDiv.dataset.chapterHref = chapterPath.href;
+        chapterDiv.style.cssText = 'margin-bottom: 20px;';
+        chapterDiv.innerHTML = body.innerHTML;
+
+        if (!useOriginalStyle) {
+            cleanInlineStyles(chapterDiv);
+        }
+
+        const endMark = container.querySelector('div:last-child');
+        if (endMark && endMark.textContent.includes('— 끝 —')) {
+            container.insertBefore(chapterDiv, endMark);
+        } else {
+            container.appendChild(chapterDiv);
+        }
+
+        if (index < epubData.chapterPaths.length - 1) {
+            const divider = document.createElement('hr');
+            divider.style.cssText = 'border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 40px 0;';
+            if (endMark) {
+                container.insertBefore(divider, endMark);
+            } else {
+                container.appendChild(divider);
+            }
+        }
+
+    } catch (e) {
+        console.error('Chapter render failed:', chapterPath.path, e);
+    }
 }
 
-/**
- * EPUB CSS 필터링 (색상/폰트크기/줄간격만 허용)
- */
-function filterEpubCss(css) {
-    // 색상, 폰트크기, 줄간격만 통과
-    const lines = css.split('\n');
-    const filtered = lines.filter(function(line) {
-        return line.includes('color') ||
-               line.includes('font-size') ||
-               line.includes('line-height') ||
-               line.includes('{') ||
-               line.includes('}');
-    });
-    return filtered.join('\n');
+async function processImages(bodyEl, zip, imagePaths, chapterHref) {
+    const images = bodyEl.querySelectorAll('img');
+    
+    for (const img of images) {
+        const src = img.getAttribute('src') || '';
+        const normalizedSrc = normalizePath(chapterHref, src);
+        
+        if (imagePaths[normalizedSrc]) {
+            try {
+                const imgFile = zip.file(imagePaths[normalizedSrc].path);
+                if (imgFile) {
+                    const base64 = await imgFile.async('base64');
+                    const dataUrl = 'data:' + imagePaths[normalizedSrc].mediaType + ';base64,' + base64;
+                    img.setAttribute('src', dataUrl);
+                    img.style.cssText = 'max-width: 100%; height: auto; display: block; margin: 16px auto; border-radius: 4px;';
+                }
+            } catch (e) {
+                console.warn('Image load failed:', normalizedSrc);
+            }
+        }
+    }
 }
 
-/**
- * 인라인 스타일 정리 (색상/폰트크기/줄간격 제거)
- */
+function normalizePath(basePath, relativePath) {
+    if (relativePath.startsWith('http') || relativePath.startsWith('data:')) {
+        return relativePath;
+    }
+
+    const baseDir = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+    const combined = baseDir + relativePath;
+
+    const parts = combined.split('/');
+    const resolved = [];
+    for (const part of parts) {
+        if (part === '..') {
+            resolved.pop();
+        } else if (part !== '.') {
+            resolved.push(part);
+        }
+    }
+
+    return resolved.join('/');
+}
+
 function cleanInlineStyles(el) {
     el.querySelectorAll('[style]').forEach(function(node) {
         const style = node.getAttribute('style');
@@ -351,9 +365,6 @@ function cleanInlineStyles(el) {
     });
 }
 
-/**
- * 목차 앵커 설정 (1페이지 모드)
- */
 function setupTocAnchors() {
     if (!epubData || !epubData.toc) return;
 
@@ -365,9 +376,6 @@ function setupTocAnchors() {
     });
 }
 
-/**
- * 목차 패널 생성
- */
 function createTocPanel() {
     const existing = document.getElementById('epubTocPanel');
     if (existing) existing.remove();
@@ -407,10 +415,8 @@ function createTocPanel() {
     panel.innerHTML = tocHtml;
     document.body.appendChild(panel);
 
-    // 닫기 버튼
     document.getElementById('btnCloseToc').onclick = toggleToc;
 
-    // 목차 아이템 클릭
     panel.querySelectorAll('.toc-item').forEach(function(item) {
         item.onclick = function() {
             navigateToTocItem(item.dataset.href);
@@ -419,37 +425,28 @@ function createTocPanel() {
     });
 }
 
-/**
- * 목차 아이템으로 이동
- */
 function navigateToTocItem(href) {
     if (pageLayout === '1page') {
-        // 해당 챕터로 스크롤
         const anchorId = 'epub-toc-' + href.replace(/[^a-zA-Z0-9]/g, '_');
         const el = document.getElementById(anchorId);
         if (el) {
             el.scrollIntoView({ behavior: 'smooth' });
         }
     } else {
-        // 해당 챕터의 페이지로 이동
         if (!epubData) return;
-        const chapterIndex = epubData.chapters.findIndex(function(ch) {
+        const chapterIndex = epubData.chapterPaths.findIndex(function(ch) {
             return ch.href === href;
         });
         if (chapterIndex >= 0) {
             const container = document.getElementById('textViewerContainer');
             if (container && container._pages) {
-                // 챕터 시작 페이지 찾기
-                const targetSpread = Math.floor(chapterIndex * (totalSpreads / epubData.chapters.length));
+                const targetSpread = Math.floor(chapterIndex * (totalSpreads / epubData.chapterPaths.length));
                 renderSpread(Math.max(0, Math.min(targetSpread, totalSpreads - 1)));
             }
         }
     }
 }
 
-/**
- * 목차 패널 토글
- */
 function toggleToc() {
     const panel = document.getElementById('epubTocPanel');
     if (!panel) return;
@@ -458,9 +455,6 @@ function toggleToc() {
     panel.style.left = tocVisible ? '0' : '-300px';
 }
 
-/**
- * 헤더 생성 (txt 뷰어 + 목차 버튼 추가)
- */
 function createHeader(title) {
     const existing = document.getElementById('textViewerHeader');
     if (existing) existing.remove();
@@ -490,20 +484,17 @@ function createHeader(title) {
 
     document.body.appendChild(header);
 
-    // 버튼 이벤트
     document.getElementById('btnHeaderBack').onclick = function() { if (typeof closeViewer === 'function') closeViewer(); };
     document.getElementById('btnHeaderToc').onclick = function() { toggleToc(); };
     document.getElementById('btnHeaderSave').onclick = function() { if (typeof saveTextBookmark === 'function') saveTextBookmark(); };
     document.getElementById('btnHeaderSet').onclick = function() { if (typeof openTextSettings === 'function') openTextSettings(); };
     document.getElementById('btnHeaderClose').onclick = function() { toggleHeader(); };
 
-    // hover 효과
     header.querySelectorAll('.text-header-btn').forEach(function(btn) {
         btn.onmouseenter = function() { this.style.color = '#4a9eff'; };
         btn.onmouseleave = function() { this.style.color = '#888'; };
     });
 
-    // 제목 클릭 펼치기
     var titleEl = document.getElementById('textViewerTitle');
     if (titleEl) {
         titleEl.onclick = function() {
@@ -511,7 +502,6 @@ function createHeader(title) {
         };
     }
 
-    // 헤더 스타일
     if (!document.getElementById('textHeaderStyle')) {
         var headerStyle = document.createElement('style');
         headerStyle.id = 'textHeaderStyle';
@@ -526,9 +516,6 @@ function createHeader(title) {
     }
 }
 
-/**
- * 토글 버튼 생성
- */
 function createToggleButton() {
     const existing = document.getElementById('textToggleBtn');
     if (existing) existing.remove();
@@ -576,7 +563,39 @@ function toggleHeader() {
     }
 }
 
-// ===== 2페이지 모드 (txt 뷰어와 동일) =====
+async function create2PageContent(container) {
+    const fullText = extractFullText();
+    const pages = splitTextToPages(fullText);
+    totalSpreads = Math.ceil(pages.length / 2);
+
+    const bookWrapper = document.createElement('div');
+    bookWrapper.id = 'textBookWrapper';
+    bookWrapper.style.cssText = 'display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 20px; box-sizing: border-box;';
+
+    const book = document.createElement('div');
+    book.id = 'textBook';
+    book.style.cssText = 'display: flex; width: calc(100% - 80px); max-width: 1400px; height: calc(100vh - 80px); border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 2px rgba(255,255,255,0.1); overflow: hidden; position: relative;';
+
+    const leftPage = document.createElement('div');
+    leftPage.id = 'textLeftPage';
+    leftPage.style.cssText = 'flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative; border-right: 1px solid rgba(128,128,128,0.3);';
+
+    const rightPage = document.createElement('div');
+    rightPage.id = 'textRightPage';
+    rightPage.style.cssText = 'flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden; font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; position: relative;';
+
+    book.appendChild(leftPage);
+    book.appendChild(rightPage);
+    bookWrapper.appendChild(book);
+    container.appendChild(bookWrapper);
+    container._pages = pages;
+
+    renderSpread(0);
+}
+
+function extractFullText() {
+    return ''; // 2페이지 모드는 추후 구현
+}
 
 function splitTextToPages(textContent) {
     const pages = [];
@@ -697,8 +716,6 @@ function formatText(text) {
         return '<p style="margin: 0 0 0.8em 0; text-indent: 1em;">' + escapeHtml(trimmed) + '</p>';
     }).join('');
 }
-
-// ===== 인터랙션 (txt 뷰어와 동일) =====
 
 function setupInteraction(container) {
     container.onclick = null;
@@ -835,7 +852,7 @@ function setReadMode(mode) {
     if (window.showToast) window.showToast(readMode === 'scroll' ? 'Scroll Mode' : 'Click Mode');
 }
 
-function setTextLayout(layout) {
+async function setTextLayout(layout) {
     var currentProgress = TextViewerState.scrollProgress || 0;
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
@@ -843,7 +860,7 @@ function setTextLayout(layout) {
     var container = document.getElementById('textViewerContainer');
     if (container) container.style.visibility = 'hidden';
 
-    renderContent();
+    await renderContent();
 
     if (layout === '1page') {
         requestAnimationFrame(function() {
@@ -914,4 +931,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-console.log('✅ EPUB Renderer loaded');
+console.log('✅ EPUB Renderer loaded (Lazy mode)');
