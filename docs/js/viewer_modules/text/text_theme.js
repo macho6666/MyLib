@@ -11,15 +11,30 @@ import { TextViewerState } from './text_state.js';
 const ThemePresets = {
     light: {
         background: '#faf9f5',
-        text: '#2c2c2c'
+        text: '#2c2c2c',
+        textSecondary: '#666',
+        textTertiary: '#999',
+        bgCard: '#fff',
+        bgInput: '#eee',
+        border: '#ddd'
     },
     dark: {
         background: '#1a1a1a',
-        text: '#e8e8e8'
+        text: '#e8e8e8',
+        textSecondary: '#aaa',
+        textTertiary: '#666',
+        bgCard: '#1a1a1a',
+        bgInput: '#222',
+        border: '#2a2a2a'
     },
     sepia: {
         background: '#f4ecd8',
-        text: '#5b4636'
+        text: '#5b4636',
+        textSecondary: '#7a6652',
+        textTertiary: '#9a8672',
+        bgCard: '#e8dcc8',
+        bgInput: '#ddd0b8',
+        border: '#c9b99a'
     }
 };
 
@@ -27,9 +42,18 @@ const ThemePresets = {
  * 테마 적용
  */
 export function applyTheme(mode = null) {
-    console.trace('applyTheme called from:');
     const currentMode = mode || TextViewerState.theme.mode || 'dark';
     const colors = ThemePresets[currentMode] || ThemePresets.dark;
+    
+    // CSS 변수 설정 (전역 적용)
+    const root = document.documentElement;
+    root.style.setProperty('--text-primary', colors.text);
+    root.style.setProperty('--text-secondary', colors.textSecondary);
+    root.style.setProperty('--text-tertiary', colors.textTertiary);
+    root.style.setProperty('--bg-primary', colors.background);
+    root.style.setProperty('--bg-card', colors.bgCard);
+    root.style.setProperty('--bg-input', colors.bgInput);
+    root.style.setProperty('--border-color', colors.border);
     
     // 컨테이너 (바깥)
     const container = document.getElementById('textViewerContainer');
@@ -44,7 +68,6 @@ export function applyTheme(mode = null) {
         content.style.backgroundColor = colors.background;
         content.style.color = colors.text;
         
-        // 안에 있는 모든 p 태그도 변경
         content.querySelectorAll('p').forEach(p => {
             p.style.color = colors.text;
         });
@@ -59,11 +82,7 @@ export function applyTheme(mode = null) {
                 ? 'rgba(244, 236, 216, 0.95)'
                 : 'rgba(250, 249, 245, 0.95)';
         header.style.color = colors.text;
-        
-        // 헤더 안의 버튼, 텍스트도 변경
-        header.querySelectorAll('button, span').forEach(el => {
-            el.style.color = colors.text;
-        });
+        header.style.borderBottomColor = colors.border;
     }
     
     // 토글 버튼
@@ -73,6 +92,13 @@ export function applyTheme(mode = null) {
             ? 'rgba(0, 0, 0, 0.5)'
             : 'rgba(100, 100, 100, 0.3)';
         toggleBtn.style.color = colors.text;
+    }
+    
+    // 설정 패널
+    const settingsPanel = document.getElementById('textViewerSettings');
+    if (settingsPanel) {
+        settingsPanel.style.backgroundColor = colors.bgCard;
+        settingsPanel.style.borderLeftColor = colors.border;
     }
     
     console.log('🎨 Theme applied:', currentMode);
@@ -90,7 +116,6 @@ export function applyTypography() {
         content.style.fontSize = `${fontSize}px`;
         content.style.lineHeight = lineHeight;
         
-        // p 태그에도 적용
         content.querySelectorAll('p').forEach(p => {
             p.style.fontSize = `${fontSize}px`;
             p.style.lineHeight = lineHeight;
