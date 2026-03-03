@@ -425,12 +425,30 @@ function createTocPanel() {
     });
 }
 
-function navigateToTocItem(href) {
+async function navigateToTocItem(href) {
     if (pageLayout === '1page') {
-        const anchorId = 'epub-toc-' + href.replace(/[^a-zA-Z0-9]/g, '_');
-        const el = document.getElementById(anchorId);
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth' });
+        const chapterIndex = epubData.chapterPaths.findIndex(function(ch) {
+            return ch.href === href;
+        });
+        
+        if (chapterIndex >= 0) {
+            const content = document.getElementById('textViewerContent');
+            
+            const start = Math.max(0, chapterIndex - 1);
+            const end = Math.min(epubData.chapterPaths.length - 1, chapterIndex + 1);
+            
+            for (let i = start; i <= end; i++) {
+                const existing = document.querySelector('[data-chapter-index="' + i + '"]');
+                if (!existing) {
+                    await renderChapter(content, i);
+                }
+            }
+            
+            const anchorId = 'epub-toc-' + href.replace(/[^a-zA-Z0-9]/g, '_');
+            const el = document.getElementById(anchorId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+            }
         }
     } else {
         if (!epubData) return;
@@ -446,7 +464,6 @@ function navigateToTocItem(href) {
         }
     }
 }
-
 function toggleToc() {
     const panel = document.getElementById('epubTocPanel');
     if (!panel) return;
