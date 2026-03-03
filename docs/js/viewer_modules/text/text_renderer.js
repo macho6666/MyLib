@@ -239,16 +239,15 @@ if (!document.getElementById('textHeaderStyle')) {
         '.text-header-btn {' +
             'background: none;' +
             'border: none;' +
-            'color: #999;' +
+            'color: #888;' +
             'font-size: 14px;' +
             'cursor: pointer;' +
             'padding: 8px 10px;' +
             'border-radius: 6px;' +
-            'transition: all 0.2s ease;' +
+            'transition: color 0.2s ease;' +
         '}' +
         '.text-header-btn:hover {' +
-            'color: #fff;' +
-            'background: rgba(255,255,255,0.15);' +
+            'color: #4a9eff !important;' +
         '}';
     document.head.appendChild(headerStyle);
 }
