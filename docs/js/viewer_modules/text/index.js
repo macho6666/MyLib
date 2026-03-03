@@ -14,6 +14,7 @@ import { initHighlights } from './text_highlight.js';
 import { applyTheme } from './text_theme.js';
 import { showToast } from '../core/utils.js';
 import { restoreOriginalTheme } from './text_theme.js';
+import { renderEpub, cleanupEpubViewer } from './epub_renderer.js';
 /**
  * 텍스트 뷰어 열기
  * @param {Object} result - fetcher.js 결과 { type, content/blob, ... }
