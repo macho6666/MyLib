@@ -115,9 +115,9 @@ function createSettingsPanel() {
             <input type="range" id="lineHeightSlider" min="1.2" max="2.5" step="0.1" value="1.8" style="width: 100%; cursor: pointer;">
         </div>
         
-        <!-- 📝 Calendar Settings -->
+        <!-- Calendar Settings -->
         <div class="setting-group" style="margin-bottom: 24px;">
-            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">📝 Calendar Settings</label>
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Calendar Settings</label>
             
             <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; cursor: pointer;">
                 <input type="checkbox" id="chkSaveProgress" style="width: 18px; height: 18px; cursor: pointer;">
