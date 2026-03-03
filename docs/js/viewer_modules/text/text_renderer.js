@@ -9,7 +9,7 @@ import { applyTheme, applyTypography } from './text_theme.js';
 import { createCoverPage, createTOCPage } from './text_toc.js';
 import { updateProgress, startAutoSave, stopAutoSave, saveOnClose } from './text_bookmark.js';
 import { openSettings } from './text_controls.js';
-import { initHighlights, cleanupHighlights } from './text_highlight.js';
+import { initHighlights, cleanupHighlights, restoreHighlights } from './text_highlight.js';
 
 let headerVisible = false;
 let readMode = 'scroll';
@@ -114,6 +114,11 @@ function renderContent() {
     if (pageLayout === '2page') {
         apply2PageTheme();
     }
+    
+    // ✅ 하이라이트 복원 추가
+    setTimeout(function() {
+        restoreHighlights();
+    }, 100);
 }
 
 export function onThemeChange() {
