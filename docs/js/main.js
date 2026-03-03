@@ -88,7 +88,18 @@ function loadLocalData() {
         favorites = JSON.parse(localStorage.getItem('mylib_favorites')) || [];
         adultFilterEnabled = localStorage.getItem('mylib_adult_filter') === 'true';
         
-        window.calendarData = calendarData;
+        window.removeCalendarHighlight = function(seriesId, text) {
+            Object.keys(calendarData).forEach(function(date) {
+                calendarData[date].forEach(function(record) {
+                    if (record.seriesId === seriesId && record.highlights) {
+                        record.highlights = record.highlights.filter(function(hl) {
+                            return hl.text !== text;
+                        });
+                    }
+                });
+            });
+            saveLocalData();
+        };
         
         updateAdultToggle();
         updateSidebarTags();
