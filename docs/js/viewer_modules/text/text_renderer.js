@@ -89,7 +89,6 @@ export async function renderTxt(textContent, metadata) {
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
     console.log('📖 TXT Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
 }
-    setTimeout(() => {
 const saved = localStorage.getItem('progress_' + metadata.seriesId);
 if (saved) {
     const progressData = JSON.parse(saved);
