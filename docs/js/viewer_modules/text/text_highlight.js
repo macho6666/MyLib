@@ -105,23 +105,31 @@ function applyHighlightToText(text, color) {
             range.setStart(textNode, index);
             range.setEnd(textNode, index + text.length);
             
-            var mark = document.createElement('mark');
-            mark.style.backgroundColor = color;
-            mark.style.color = '#000';
-            mark.style.padding = '0 1px';
-            mark.style.borderRadius = '2px';
-            mark.dataset.highlighted = 'true';
-            
-            try {
-                range.surroundContents(mark);
-                // surroundContents 성공 시 textNode가 분할되므로 중단
-                break;
-            } catch (e) {
-                console.warn('Highlight apply failed:', e);
-                searchStart = index + text.length;
-            }
+var mark = document.createElement('mark');
+mark.style.backgroundColor = color;
+mark.style.color = '#000';
+mark.style.padding = '0 1px';
+mark.style.borderRadius = '2px';
+mark.style.cursor = 'pointer';
+mark.dataset.highlighted = 'true';
+mark.dataset.text = text;
+
+try {
+    range.surroundContents(mark);
+    
+    // ✅ 여기에 추가
+    mark.onclick = function(e) {
+        e.stopPropagation();
+        if (confirm('이 하이라이트를 삭제하시겠습니까?')) {
+            removeHighlight(mark.dataset.text);
         }
-    });
+    };
+    
+    // surroundContents 성공 시 textNode가 분할되므로 중단
+    break;
+} catch (e) {
+    console.warn('Highlight apply failed:', e);
+    searchStart = index + text.length;
 }
 
 /**
@@ -249,10 +257,22 @@ function applyRangeHighlight(range, color) {
     mark.style.color = '#000';
     mark.style.padding = '0 1px';
     mark.style.borderRadius = '2px';
+    mark.style.cursor = 'pointer';  // ✅ 추가
     mark.dataset.highlighted = 'true';
 
     try {
         range.surroundContents(mark);
+        
+        // ✅ 하이라이트한 텍스트 저장 후 클릭 이벤트 추가
+        var text = mark.textContent;
+        mark.dataset.text = text;
+        mark.onclick = function(e) {
+            e.stopPropagation();
+            if (confirm('이 하이라이트를 삭제하시겠습니까?')) {
+                removeHighlight(text);
+            }
+        };
+        
         var sel = window.getSelection();
         if (sel) sel.removeAllRanges();
     } catch (e) {
@@ -367,7 +387,51 @@ function showMemoDialog(range, text) {
         dialog.remove();
     };
 }
-
+/**
+ * 하이라이트 삭제 (localStorage + 캘린더 + DOM)
+ */
+function removeHighlight(text) {
+    var book = TextViewerState.currentBook;
+    if (!book) return;
+    
+    // 1. localStorage에서 삭제
+    var highlights = loadHighlights(book.seriesId, book.bookId);
+    highlights = highlights.filter(function(hl) { return hl.text !== text; });
+    saveHighlights(book.seriesId, book.bookId, highlights);
+    
+    // 2. 캘린더에서 삭제
+    if (typeof calendarData !== 'undefined') {
+        Object.keys(calendarData).forEach(function(date) {
+            calendarData[date].forEach(function(record) {
+                if (record.seriesId === book.seriesId && record.highlights) {
+                    record.highlights = record.highlights.filter(function(hl) {
+                        return hl.text !== text;
+                    });
+                }
+            });
+        });
+        
+        // main.js의 saveLocalData() 호출
+        if (typeof saveLocalData === 'function') {
+            saveLocalData();
+        }
+    }
+    
+    // 3. DOM에서 제거
+    var marks = document.querySelectorAll('mark[data-highlighted="true"]');
+    marks.forEach(function(mark) {
+        if (mark.dataset.text === text) {
+            var parent = mark.parentNode;
+            while (mark.firstChild) {
+                parent.insertBefore(mark.firstChild, mark);
+            }
+            parent.removeChild(mark);
+            parent.normalize();
+        }
+    });
+    
+    showToast('하이라이트 삭제됨');
+}
 export function cleanupHighlights() {
     if (window._txtHighlightInited) {
         document.removeEventListener('mouseup', handleTxtSelection);
