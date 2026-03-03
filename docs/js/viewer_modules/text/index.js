@@ -100,9 +100,9 @@ async function openTxtFile(textContent, metadata) {
  * @param {Blob} epubBlob - EPUB Blob
  * @param {Object} metadata - 메타데이터
  */
-async function openEpubFile(epubBlob, metadata) {
-    // epub_renderer가 모든 처리 담당
-    await renderEpub(epubBlob, metadata);
+async function openEpubFile(epubResult, metadata) {
+    // ✅ epubResult.zip 전달
+    await renderEpub(epubResult, metadata);
 }
 
 /**
