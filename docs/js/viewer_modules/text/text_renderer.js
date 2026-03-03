@@ -10,6 +10,7 @@ import { createCoverPage, createTOCPage } from './text_toc.js';
 import { updateProgress, startAutoSave, stopAutoSave, saveOnClose } from './text_bookmark.js';
 import { openSettings } from './text_controls.js';
 import { initHighlights } from './text_highlight.js';
+import { initHighlights, cleanupHighlights } from './text_highlight.js';
 
 let headerVisible = false;
 let readMode = 'scroll';
@@ -227,13 +228,33 @@ function createHeader(title) {
         '</div>' +
         '<div style="display: flex; align-items: center; gap: 4px;">' +
             '<span id="textProgressIndicator" style="font-size: 13px; color: var(--text-secondary, #999);">0%</span>' +
-            '<button onclick="saveTextBookmark()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 14px; cursor: pointer; padding: 6px;">Save</button>' +
-            '<button onclick="openTextSettings()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 14px; cursor: pointer; padding: 6px;">Set</button>' +
-            '<button onclick="toggleTextHeader()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 18px; cursor: pointer; padding: 6px;">x</button>' +
+            '<button onclick="saveTextBookmark()" class="text-header-btn">Save</button>' +
+            '<button onclick="openTextSettings()" class="text-header-btn">Set</button>' +
+            '<button onclick="toggleTextHeader()" class="text-header-btn" style="font-size: 18px;">x</button>' +
         '</div>';
     document.body.appendChild(header);
 }
-
+// 헤더 버튼 hover 스타일 (createHeader 밖, 파일 아무 데나)
+if (!document.getElementById('textHeaderStyle')) {
+    var headerStyle = document.createElement('style');
+    headerStyle.id = 'textHeaderStyle';
+    headerStyle.textContent = 
+        '.text-header-btn {' +
+            'background: none;' +
+            'border: none;' +
+            'color: var(--text-secondary, #999);' +
+            'font-size: 14px;' +
+            'cursor: pointer;' +
+            'padding: 6px 8px;' +
+            'border-radius: 4px;' +
+            'transition: all 0.15s ease;' +
+        '}' +
+        '.text-header-btn:hover {' +
+            'color: #fff;' +
+            'background: rgba(255,255,255,0.1);' +
+        '}';
+    document.head.appendChild(headerStyle);
+}
 function toggleHeader() {
     const header = document.getElementById('textViewerHeader');
     const toggleBtn = document.getElementById('textToggleBtn');
@@ -658,6 +679,7 @@ export function scrollToProgress(percent) {
 
 export function cleanupTextRenderer() {
     // ✅ 뷰어 닫을 때 저장
+    cleanupHighlights();
     if (currentMetadata && currentMetadata.seriesId && currentMetadata.bookId) {
         saveOnClose(currentMetadata.seriesId, currentMetadata.bookId);
     }
