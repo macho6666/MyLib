@@ -9,7 +9,7 @@ import { applyTheme, applyTypography } from './text_theme.js';
 import { createCoverPage, createTOCPage } from './text_toc.js';
 import { updateProgress, startAutoSave, stopAutoSave, saveOnClose } from './text_bookmark.js';
 import { openSettings } from './text_controls.js';
-import { initHighlights, cleanupHighlights } from './text_highlight.js'; 
+import { initHighlights, cleanupHighlights } from './text_highlight.js';
 
 let headerVisible = false;
 let readMode = 'scroll';
@@ -60,7 +60,6 @@ export async function renderTxt(textContent, metadata) {
     createHeader(metadata.name);
     setupKeyboardNavigation();
     
-    // ✅ 하이라이트/메모 기능 초기화
     initHighlights();
     
     window.openTextSettings = openSettings;
@@ -72,10 +71,8 @@ export async function renderTxt(textContent, metadata) {
     window.onTextThemeChange = onThemeChange;
     window.scrollToProgress = scrollToProgress;
     
-    // 자동 저장 시작
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
     
-    // 저장된 위치로 복원
     setTimeout(() => {
         const saved = localStorage.getItem('progress_' + metadata.seriesId);
         if (saved) {
@@ -222,18 +219,19 @@ function createHeader(title) {
         'transform: translateY(-100%); transition: transform 0.3s ease;';
     header.innerHTML = 
         '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
-            '<button onclick="closeViewer()" style="background: none; border: none; color: var(--text-primary, #fff); font-size: 20px; cursor: pointer; padding: 8px;">←</button>' +
-            '<span style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(title || 'Text Viewer') + '</span>' +
+            '<button onclick="closeViewer()" class="text-header-btn" style="font-size: 20px;">←</button>' +
+            '<span style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e8e8e8;">' + escapeHtml(title || 'Text Viewer') + '</span>' +
         '</div>' +
         '<div style="display: flex; align-items: center; gap: 4px;">' +
-            '<span id="textProgressIndicator" style="font-size: 13px; color: var(--text-secondary, #999);">0%</span>' +
+            '<span id="textProgressIndicator" style="font-size: 13px; color: #999;">0%</span>' +
             '<button onclick="saveTextBookmark()" class="text-header-btn">Save</button>' +
             '<button onclick="openTextSettings()" class="text-header-btn">Set</button>' +
-            '<button onclick="toggleTextHeader()" class="text-header-btn" style="font-size: 18px;">x</button>' +
+            '<button onclick="toggleTextHeader()" class="text-header-btn" style="font-size: 18px;">×</button>' +
         '</div>';
     document.body.appendChild(header);
 }
-// 헤더 버튼 hover 스타일 (createHeader 밖, 파일 아무 데나)
+
+// 헤더 버튼 스타일 (hover 작동하도록 수정)
 if (!document.getElementById('textHeaderStyle')) {
     var headerStyle = document.createElement('style');
     headerStyle.id = 'textHeaderStyle';
@@ -241,19 +239,20 @@ if (!document.getElementById('textHeaderStyle')) {
         '.text-header-btn {' +
             'background: none;' +
             'border: none;' +
-            'color: var(--text-secondary, #999);' +
+            'color: #999;' +
             'font-size: 14px;' +
             'cursor: pointer;' +
-            'padding: 6px 8px;' +
-            'border-radius: 4px;' +
-            'transition: all 0.15s ease;' +
+            'padding: 8px 10px;' +
+            'border-radius: 6px;' +
+            'transition: all 0.2s ease;' +
         '}' +
         '.text-header-btn:hover {' +
             'color: #fff;' +
-            'background: rgba(255,255,255,0.1);' +
+            'background: rgba(255,255,255,0.15);' +
         '}';
     document.head.appendChild(headerStyle);
 }
+
 function toggleHeader() {
     const header = document.getElementById('textViewerHeader');
     const toggleBtn = document.getElementById('textToggleBtn');
@@ -677,7 +676,6 @@ export function scrollToProgress(percent) {
 }
 
 export function cleanupTextRenderer() {
-    // ✅ 뷰어 닫을 때 저장
     cleanupHighlights();
     if (currentMetadata && currentMetadata.seriesId && currentMetadata.bookId) {
         saveOnClose(currentMetadata.seriesId, currentMetadata.bookId);
