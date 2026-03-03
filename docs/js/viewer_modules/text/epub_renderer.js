@@ -478,7 +478,7 @@ function createHeader(title) {
     header.innerHTML =
         '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
             '<button id="btnHeaderBack" class="text-header-btn back-btn">Back</button>' +
-            '<button id="btnHeaderToc" class="text-header-btn">📚</button>' +
+            '<button id="btnHeaderToc" class="text-header-btn">TOC</button>' +
             '<span id="textViewerTitle" class="header-title">' + escapeHtml(title || 'EPUB Viewer') + '</span>' +
         '</div>' +
         '<div style="display: flex; align-items: center; gap: 4px;">' +
