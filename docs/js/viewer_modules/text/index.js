@@ -6,7 +6,6 @@
 import { TextViewerState, resetViewerState } from './text_state.js';
 import { Events } from '../core/events.js';
 import { renderTxt, cleanupTextRenderer } from './text_renderer.js';
-import { renderEpub, cleanupEpubViewer } from './epub_renderer.js';
 import { loadCover, generateTxtTOC } from './text_toc.js';
 import { loadBookmark, saveOnClose, startAutoSave } from './text_bookmark.js';
 import { initControls, openSettings } from './text_controls.js';
@@ -101,6 +100,7 @@ async function openTxtFile(textContent, metadata) {
  * @param {Object} metadata - 메타데이터
  */
 async function openEpubFile(epubBlob, metadata) {
+    // epub_renderer가 모든 처리 담당
     await renderEpub(epubBlob, metadata);
 }
 
