@@ -158,16 +158,7 @@ function createSettingsPanel() {
                 <span style="font-size: 11px; color: var(--text-tertiary, #666);">(글자색, 폰트크기, 줄간격)</span></span>
             </label>
         </div>
-    // EPUB Style 옵션
-    const chkEpubStyle = document.getElementById('chkEpubOriginalStyle');
-    if (chkEpubStyle) {
-        chkEpubStyle.checked = localStorage.getItem('epub_use_original_style') === 'true';
-        chkEpubStyle.onchange = function() {
-            localStorage.setItem('epub_use_original_style', chkEpubStyle.checked);
-            if (window.setTextLayout) window.setTextLayout(window.getTextLayout ? window.getTextLayout() : '1page');
-            if (window.showToast) window.showToast(chkEpubStyle.checked ? 'EPUB 원본 스타일 적용' : '기본 스타일 적용');
-        };
-    }        
+    
 <!-- 북마크 초기화 -->
         <div class="setting-group" style="margin-bottom: 24px;">
             <button id="btnResetBookmark" class="setting-btn" style="width: 100%;">Reset Bookmark</button>
@@ -308,7 +299,16 @@ if (closeBtn) {
             if (window.showToast) window.showToast('Highlight color changed');
         };
     });
-    
+    // EPUB Style 옵션
+    const chkEpubStyle = document.getElementById('chkEpubOriginalStyle');
+    if (chkEpubStyle) {
+        chkEpubStyle.checked = localStorage.getItem('epub_use_original_style') === 'true';
+        chkEpubStyle.onchange = function() {
+            localStorage.setItem('epub_use_original_style', chkEpubStyle.checked);
+            if (window.setTextLayout) window.setTextLayout(window.getTextLayout ? window.getTextLayout() : '1page');
+            if (window.showToast) window.showToast(chkEpubStyle.checked ? 'EPUB 원본 스타일 적용' : '기본 스타일 적용');
+        };
+    }        
 // 북마크 초기화
 const resetBtn = document.getElementById('btnResetBookmark');
 if (resetBtn) {
