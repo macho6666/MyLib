@@ -22,9 +22,9 @@ let epubData = null;
 let tocVisible = false;
 
 export async function renderEpub(epubResult, metadata) {
-    console.log('📦 epubResult 받음:', epubResult);
-    console.log('📦 epubResult.type:', epubResult.type);
-    console.log('📦 epubResult.zip:', epubResult.zip);
+    console.log('🔍 renderEpub 받은 인자:', epubResult);
+    console.log('🔍 type:', typeof epubResult);
+    console.log('🔍 keys:', Object.keys(epubResult || {}));
     
     TextViewerState.renderType = 'epub';
     TextViewerState.currentBook = metadata;
