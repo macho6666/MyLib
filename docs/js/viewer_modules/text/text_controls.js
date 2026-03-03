@@ -149,6 +149,16 @@ function createSettingsPanel() {
             </div>
         </div>
         
+         <!-- EPUB Style (epub일 때만 표시) -->
+        <div class="setting-group" id="epubStyleGroup" style="margin-bottom: 24px; display: none;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">EPUB Style</label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="chkEpubOriginalStyle" style="width: 18px; height: 18px; cursor: pointer;">
+                <span style="font-size: 13px; color: var(--text-secondary, #aaa);">Use EPUB original style<br>
+                <span style="font-size: 11px; color: var(--text-tertiary, #666);">(글자색, 폰트크기, 줄간격)</span></span>
+            </label>
+        </div>
+        
 <!-- 북마크 초기화 -->
         <div class="setting-group" style="margin-bottom: 24px;">
             <button id="btnResetBookmark" class="setting-btn" style="width: 100%;">Reset Bookmark</button>
