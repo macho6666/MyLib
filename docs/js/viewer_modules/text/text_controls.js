@@ -291,10 +291,20 @@ if (closeBtn) {
     });
     
     // 북마크 초기화
-    const resetBtn = document.getElementById('btnResetBookmark');
-    if (resetBtn) {
-        resetBtn.onclick = resetCurrentBookmark;
-    }
+const resetBtn = document.getElementById('btnResetBookmark');
+if (resetBtn) {
+    resetBtn.onclick = resetCurrentBookmark;
+    resetBtn.onmouseenter = function() { 
+        this.style.background = '#333';
+        this.style.borderColor = '#4a9eff';
+        this.style.color = '#4a9eff';
+    };
+    resetBtn.onmouseleave = function() { 
+        this.style.background = 'var(--bg-input, #222)';
+        this.style.borderColor = 'var(--border-color, #333)';
+        this.style.color = '#888';
+    };
+}
     
     // 초기 상태 업데이트
     updateReadModeUI();
@@ -570,6 +580,7 @@ style.textContent = `
     .color-circle {
         transition: all 0.2s ease;
     }
+    
 `;
 document.head.appendChild(style);
 
