@@ -73,17 +73,29 @@ export function applyTheme(mode = null) {
         });
     }
     
-    // 헤더
-    const header = document.getElementById('textViewerHeader');
-    if (header) {
-        header.style.backgroundColor = currentMode === 'dark' 
-            ? 'rgba(20, 20, 20, 0.95)' 
-            : currentMode === 'sepia'
-                ? 'rgba(244, 236, 216, 0.95)'
-                : 'rgba(250, 249, 245, 0.95)';
-        header.style.color = colors.text;
-        header.style.borderBottomColor = colors.border;
+// 헤더
+const header = document.getElementById('textViewerHeader');
+if (header) {
+    header.style.backgroundColor = currentMode === 'dark' 
+        ? 'rgba(20, 20, 20, 0.95)' 
+        : currentMode === 'sepia'
+            ? 'rgba(244, 236, 216, 0.95)'
+            : 'rgba(250, 249, 245, 0.95)';
+    header.style.color = colors.text;
+    header.style.borderBottomColor = colors.border;
+    
+    // 제목 색상 적용
+    const title = document.getElementById('textViewerTitle');
+    if (title) {
+        title.style.color = colors.text;
     }
+    
+    // 진행률 색상 적용
+    const progress = document.getElementById('textProgressIndicator');
+    if (progress) {
+        progress.style.color = colors.textSecondary;
+    }
+}
     
     // 토글 버튼
     const toggleBtn = document.getElementById('textToggleBtn');
