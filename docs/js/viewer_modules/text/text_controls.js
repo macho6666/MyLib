@@ -151,7 +151,7 @@ function createSettingsPanel() {
         
 <!-- 북마크 초기화 -->
         <div class="setting-group" style="margin-bottom: 24px;">
-            <button id="btnResetBookmark" class="settings-reset-btn">Reset Bookmark</button>
+            <button id="btnResetBookmark" class="setting-btn" style="width: 100%;">Reset Bookmark</button>
         </div>
     `;
     
@@ -290,7 +290,6 @@ if (closeBtn) {
         };
     });
     
-    // 북마크 초기화
 // 북마크 초기화
 const resetBtn = document.getElementById('btnResetBookmark');
 if (resetBtn) {
