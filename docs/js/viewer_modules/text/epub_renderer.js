@@ -207,7 +207,7 @@ async function create1PageContent(container) {
             '<hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">';
     }
 
-    content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
+    // ✅ "— 끝 —" 제거 (나중에 추가)
     container.appendChild(content);
 
     if (epubData && epubData.chapterPaths) {
@@ -217,32 +217,35 @@ async function create1PageContent(container) {
             await renderChapter(content, i);
         }
 
-        let loadedChapters = initialChapters;
-        let isLoading = false;
+        // ✅ 로드된 챕터 추적 변수를 container에 저장
+        container._loadedChapters = initialChapters;
 
         container.addEventListener('scroll', async function() {
-            if (isLoading || loadedChapters >= epubData.chapterPaths.length) return;
+            let loadedChapters = container._loadedChapters || initialChapters;
+            if (loadedChapters >= epubData.chapterPaths.length) return;
 
             const scrollBottom = container.scrollTop + container.clientHeight;
             const threshold = container.scrollHeight - 500;
 
             if (scrollBottom > threshold) {
-                isLoading = true;
                 const nextBatch = Math.min(loadedChapters + 2, epubData.chapterPaths.length);
                 
                 for (let i = loadedChapters; i < nextBatch; i++) {
                     await renderChapter(content, i);
                 }
                 
-                loadedChapters = nextBatch;
-                isLoading = false;
+                container._loadedChapters = nextBatch;
+                
+                // ✅ 모든 챕터 로드 완료 시 끝 표시
+                if (nextBatch >= epubData.chapterPaths.length) {
+                    content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
+                }
             }
         });
     }
 
     setupTocAnchors();
 }
-
 async function renderChapter(container, index) {
     if (!epubData || !epubData.chapterPaths[index]) return;
 
