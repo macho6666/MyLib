@@ -9,8 +9,7 @@ import { applyTheme, applyTypography } from './text_theme.js';
 import { createCoverPage, createTOCPage } from './text_toc.js';
 import { updateProgress, startAutoSave, stopAutoSave, saveOnClose } from './text_bookmark.js';
 import { openSettings } from './text_controls.js';
-import { initHighlights } from './text_highlight.js';
-import { initHighlights, cleanupHighlights } from './text_highlight.js';
+import { initHighlights, cleanupHighlights } from './text_highlight.js'; 
 
 let headerVisible = false;
 let readMode = 'scroll';
