@@ -9,6 +9,8 @@
  * @returns {Promise<Object>} 파싱 결과
  */
 export async function parseEpub(zip) {
+    console.log('🔍 parseEpub 받은 zip:', zip);  // ✅ 추가
+    console.log('🔍 zip type:', typeof zip);  // ✅ 추가
     // 1. OPF 파일 경로 찾기
     const opfPath = await findOpfPath(zip);
     const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
