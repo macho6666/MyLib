@@ -217,17 +217,17 @@ function createHeader(title) {
         'display: flex; align-items: center; justify-content: space-between;' +
         'padding: 0 16px; z-index: 5150; backdrop-filter: blur(10px);' +
         'transform: translateY(-100%); transition: transform 0.3s ease;';
-    header.innerHTML = 
-        '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
-            '<button onclick="closeViewer()" class="text-header-btn" style="font-size: 20px;">←</button>' +
-            '<span style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e8e8e8;">' + escapeHtml(title || 'Text Viewer') + '</span>' +
-        '</div>' +
-        '<div style="display: flex; align-items: center; gap: 4px;">' +
-            '<span id="textProgressIndicator" style="font-size: 13px; color: #999;">0%</span>' +
-            '<button onclick="saveTextBookmark()" class="text-header-btn">Save</button>' +
-            '<button onclick="openTextSettings()" class="text-header-btn">Set</button>' +
-            '<button onclick="toggleTextHeader()" class="text-header-btn" style="font-size: 18px;">×</button>' +
-        '</div>';
+header.innerHTML = 
+    '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
+        '<button onclick="closeViewer()" class="text-header-btn" style="font-size: 20px;">←</button>' +
+        '<span id="textViewerTitle" style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(title || 'Text Viewer') + '</span>' +
+    '</div>' +
+    '<div style="display: flex; align-items: center; gap: 4px;">' +
+        '<span id="textProgressIndicator" style="font-size: 13px; color: #999;">0%</span>' +
+        '<button onclick="saveTextBookmark()" class="text-header-btn">Save</button>' +
+        '<button onclick="openTextSettings()" class="text-header-btn">Set</button>' +
+        '<button onclick="toggleTextHeader()" class="text-header-btn text-header-close">×</button>' +
+    '</div>';
     document.body.appendChild(header);
 }
 
@@ -237,9 +237,9 @@ if (!document.getElementById('textHeaderStyle')) {
     headerStyle.id = 'textHeaderStyle';
     headerStyle.textContent = 
         '.text-header-btn {' +
-            'background: none;' +
-            'border: none;' +
-            'color: #888;' +
+            'background: none !important;' +
+            'border: none !important;' +
+            'color: #888 !important;' +
             'font-size: 14px;' +
             'cursor: pointer;' +
             'padding: 8px 10px;' +
@@ -248,6 +248,10 @@ if (!document.getElementById('textHeaderStyle')) {
         '}' +
         '.text-header-btn:hover {' +
             'color: #4a9eff !important;' +
+            'background: none !important;' +
+        '}' +
+        '.text-header-close {' +
+            'font-size: 18px !important;' +
         '}';
     document.head.appendChild(headerStyle);
 }
