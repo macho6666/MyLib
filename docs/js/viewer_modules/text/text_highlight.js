@@ -45,6 +45,18 @@ export function restoreHighlights() {
     var highlights = loadHighlights(book.seriesId, book.bookId);
     if (highlights.length === 0) return;
     
+    // ✅ 기존 하이라이트 제거 (중복 방지)
+    var existingMarks = document.querySelectorAll('mark[data-highlighted="true"]');
+    existingMarks.forEach(function(mark) {
+        var parent = mark.parentNode;
+        while (mark.firstChild) {
+            parent.insertBefore(mark.firstChild, mark);
+        }
+        parent.removeChild(mark);
+        parent.normalize(); // 텍스트 노드 병합
+    });
+    
+    // ✅ 하이라이트 재적용
     highlights.forEach(function(hl) {
         applyHighlightToText(hl.text, hl.color);
     });
@@ -75,11 +87,20 @@ function applyHighlightToText(text, color) {
         textNodes.push(node);
     }
     
+    // ✅ 모든 일치 항목 찾기
     textNodes.forEach(function(textNode) {
         var content = textNode.textContent;
-        var index = content.indexOf(text);
+        var searchStart = 0;
         
-        if (index >= 0) {
+        while (true) {
+            var index = content.indexOf(text, searchStart);
+            if (index < 0) break;
+            
+            // 이미 하이라이트된 노드는 건너뛰기
+            if (textNode.parentElement && textNode.parentElement.tagName === 'MARK') {
+                break;
+            }
+            
             var range = document.createRange();
             range.setStart(textNode, index);
             range.setEnd(textNode, index + text.length);
@@ -93,8 +114,11 @@ function applyHighlightToText(text, color) {
             
             try {
                 range.surroundContents(mark);
+                // surroundContents 성공 시 textNode가 분할되므로 중단
+                break;
             } catch (e) {
                 console.warn('Highlight apply failed:', e);
+                searchStart = index + text.length;
             }
         }
     });
