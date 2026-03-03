@@ -45,7 +45,7 @@ export function restoreHighlights() {
     var highlights = loadHighlights(book.seriesId, book.bookId);
     if (highlights.length === 0) return;
     
-    // ✅ 기존 하이라이트 제거 (중복 방지)
+    // 기존 하이라이트 제거 (중복 방지)
     var existingMarks = document.querySelectorAll('mark[data-highlighted="true"]');
     existingMarks.forEach(function(mark) {
         var parent = mark.parentNode;
@@ -53,10 +53,10 @@ export function restoreHighlights() {
             parent.insertBefore(mark.firstChild, mark);
         }
         parent.removeChild(mark);
-        parent.normalize(); // 텍스트 노드 병합
+        parent.normalize();
     });
     
-    // ✅ 하이라이트 재적용
+    // 하이라이트 재적용
     highlights.forEach(function(hl) {
         applyHighlightToText(hl.text, hl.color);
     });
@@ -87,49 +87,80 @@ function applyHighlightToText(text, color) {
         textNodes.push(node);
     }
     
-    // ✅ 모든 일치 항목 찾기
     textNodes.forEach(function(textNode) {
         var content = textNode.textContent;
-        var searchStart = 0;
+        var index = content.indexOf(text);
         
-        while (true) {
-            var index = content.indexOf(text, searchStart);
-            if (index < 0) break;
-            
-            // 이미 하이라이트된 노드는 건너뛰기
-            if (textNode.parentElement && textNode.parentElement.tagName === 'MARK') {
-                break;
-            }
-            
+        if (index >= 0 && (!textNode.parentElement || textNode.parentElement.tagName !== 'MARK')) {
             var range = document.createRange();
             range.setStart(textNode, index);
             range.setEnd(textNode, index + text.length);
             
-var mark = document.createElement('mark');
-mark.style.backgroundColor = color;
-mark.style.color = '#000';
-mark.style.padding = '0 1px';
-mark.style.borderRadius = '2px';
-mark.style.cursor = 'pointer';
-mark.dataset.highlighted = 'true';
-mark.dataset.text = text;
-
-try {
-    range.surroundContents(mark);
-    
-    // ✅ 여기에 추가
-    mark.onclick = function(e) {
-        e.stopPropagation();
-        if (confirm('이 하이라이트를 삭제하시겠습니까?')) {
-            removeHighlight(mark.dataset.text);
+            var mark = document.createElement('mark');
+            mark.style.backgroundColor = color;
+            mark.style.color = '#000';
+            mark.style.padding = '0 1px';
+            mark.style.borderRadius = '2px';
+            mark.style.cursor = 'pointer';
+            mark.dataset.highlighted = 'true';
+            mark.dataset.text = text;
+            
+            try {
+                range.surroundContents(mark);
+                
+                mark.onclick = function(e) {
+                    e.stopPropagation();
+                    if (confirm('이 하이라이트를 삭제하시겠습니까?')) {
+                        removeHighlight(mark.dataset.text);
+                    }
+                };
+            } catch (e) {
+                console.warn('Highlight apply failed:', e);
+            }
         }
-    };
+    });
+}
+
+/**
+ * 하이라이트 삭제 (localStorage + 캘린더 + DOM)
+ */
+function removeHighlight(text) {
+    var book = TextViewerState.currentBook;
+    if (!book) return;
     
-    // surroundContents 성공 시 textNode가 분할되므로 중단
-    break;
-} catch (e) {
-    console.warn('Highlight apply failed:', e);
-    searchStart = index + text.length;
+    var highlights = loadHighlights(book.seriesId, book.bookId);
+    highlights = highlights.filter(function(hl) { return hl.text !== text; });
+    saveHighlights(book.seriesId, book.bookId, highlights);
+    
+    if (typeof window.calendarData !== 'undefined') {
+        Object.keys(window.calendarData).forEach(function(date) {
+            window.calendarData[date].forEach(function(record) {
+                if (record.seriesId === book.seriesId && record.highlights) {
+                    record.highlights = record.highlights.filter(function(hl) {
+                        return hl.text !== text;
+                    });
+                }
+            });
+        });
+        
+        if (typeof window.saveLocalData === 'function') {
+            window.saveLocalData();
+        }
+    }
+    
+    var marks = document.querySelectorAll('mark[data-highlighted="true"]');
+    marks.forEach(function(mark) {
+        if (mark.dataset.text === text) {
+            var parent = mark.parentNode;
+            while (mark.firstChild) {
+                parent.insertBefore(mark.firstChild, mark);
+            }
+            parent.removeChild(mark);
+            parent.normalize();
+        }
+    });
+    
+    showToast('하이라이트 삭제됨');
 }
 
 /**
@@ -164,27 +195,27 @@ function handleMobileSelection() {
 }
 
 function checkSelection() {
-    const selection = window.getSelection();
+    var selection = window.getSelection();
     if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
 
-    const text = selection.toString().trim();
+    var text = selection.toString().trim();
     if (!text || text.length < 2) return;
 
-    const container = document.getElementById('textViewerContainer');
+    var container = document.getElementById('textViewerContainer');
     if (!container) return;
     if (!container.contains(selection.anchorNode)) return;
 
     if (document.getElementById('highlightMenu')) return;
 
-    const range = selection.getRangeAt(0);
+    var range = selection.getRangeAt(0);
     showHighlightMenu(range, text);
 }
 
 function showHighlightMenu(range, text) {
-    const existing = document.getElementById('highlightMenu');
+    var existing = document.getElementById('highlightMenu');
     if (existing) existing.remove();
 
-    const menu = document.createElement('div');
+    var menu = document.createElement('div');
     menu.id = 'highlightMenu';
     menu.style.cssText = 
         'position: fixed;' +
@@ -257,19 +288,18 @@ function applyRangeHighlight(range, color) {
     mark.style.color = '#000';
     mark.style.padding = '0 1px';
     mark.style.borderRadius = '2px';
-    mark.style.cursor = 'pointer';  // ✅ 추가
+    mark.style.cursor = 'pointer';
     mark.dataset.highlighted = 'true';
 
     try {
         range.surroundContents(mark);
         
-        // ✅ 하이라이트한 텍스트 저장 후 클릭 이벤트 추가
         var text = mark.textContent;
         mark.dataset.text = text;
         mark.onclick = function(e) {
             e.stopPropagation();
             if (confirm('이 하이라이트를 삭제하시겠습니까?')) {
-                removeHighlight(text);
+                removeHighlight(mark.dataset.text);
             }
         };
         
@@ -299,12 +329,10 @@ function createHighlight(range, text, color, memo) {
 
     applyRangeHighlight(range, color);
 
-    // ✅ localStorage에 저장
     var highlights = loadHighlights(book.seriesId, book.bookId);
     highlights.push(highlightData);
     saveHighlights(book.seriesId, book.bookId, highlights);
 
-    // ✅ 캘린더 연동 (기존 유지)
     if (window.addCalendarHighlightFromViewer) {
         try {
             window.addCalendarHighlightFromViewer({
@@ -337,6 +365,8 @@ function showMemoDialog(range, text) {
         'align-items: center;' +
         'z-index: 5400;';
     
+    var escapedText = text.replace(/'/g, "\\'").substring(0, 80);
+    
     dialog.innerHTML = 
         '<div style="' +
             'background: #1a1a1a;' +
@@ -348,7 +378,7 @@ function showMemoDialog(range, text) {
         '">' +
             '<h3 style="font-size: 16px; margin: 0 0 12px 0; color: #e8e8e8;">Memo</h3>' +
             '<div style="background: #222; padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; color: #aaa; font-size: 13px; max-height: 80px; overflow-y: auto;">' +
-                '"' + text.substring(0, 80) + (text.length > 80 ? '...' : '') + '"' +
+                '"' + escapedText + (text.length > 80 ? '...' : '') + '"' +
             '</div>' +
             '<textarea id="memoText" placeholder="Add your memo..." style="' +
                 'width: 100%;' +
@@ -375,7 +405,10 @@ function showMemoDialog(range, text) {
     var memoInput = dialog.querySelector('#memoText');
     memoInput.focus();
 
-    dialog.querySelector('#btnCancelMemo').onclick = function() { dialog.remove(); };
+    dialog.querySelector('#btnCancelMemo').onclick = function() { 
+        dialog.remove(); 
+    };
+    
     dialog.querySelector('#btnSaveMemo').onclick = function() {
         var memo = memoInput.value.trim();
         if (!memo) {
@@ -387,51 +420,7 @@ function showMemoDialog(range, text) {
         dialog.remove();
     };
 }
-/**
- * 하이라이트 삭제 (localStorage + 캘린더 + DOM)
- */
-function removeHighlight(text) {
-    var book = TextViewerState.currentBook;
-    if (!book) return;
-    
-    // 1. localStorage에서 삭제
-    var highlights = loadHighlights(book.seriesId, book.bookId);
-    highlights = highlights.filter(function(hl) { return hl.text !== text; });
-    saveHighlights(book.seriesId, book.bookId, highlights);
-    
-    // 2. 캘린더에서 삭제
-    if (typeof calendarData !== 'undefined') {
-        Object.keys(calendarData).forEach(function(date) {
-            calendarData[date].forEach(function(record) {
-                if (record.seriesId === book.seriesId && record.highlights) {
-                    record.highlights = record.highlights.filter(function(hl) {
-                        return hl.text !== text;
-                    });
-                }
-            });
-        });
-        
-        // main.js의 saveLocalData() 호출
-        if (typeof saveLocalData === 'function') {
-            saveLocalData();
-        }
-    }
-    
-    // 3. DOM에서 제거
-    var marks = document.querySelectorAll('mark[data-highlighted="true"]');
-    marks.forEach(function(mark) {
-        if (mark.dataset.text === text) {
-            var parent = mark.parentNode;
-            while (mark.firstChild) {
-                parent.insertBefore(mark.firstChild, mark);
-            }
-            parent.removeChild(mark);
-            parent.normalize();
-        }
-    });
-    
-    showToast('하이라이트 삭제됨');
-}
+
 export function cleanupHighlights() {
     if (window._txtHighlightInited) {
         document.removeEventListener('mouseup', handleTxtSelection);
