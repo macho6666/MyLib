@@ -218,31 +218,42 @@ function createHeader(title) {
         'padding: 0 16px; z-index: 5150; backdrop-filter: blur(10px);' +
         'transform: translateY(-100%); transition: transform 0.3s ease;';
     
-    header.innerHTML = 
-        '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
-            '<button id="btnHeaderBack" class="text-header-btn back-btn">Back</button>' +
-            '<span id="textViewerTitle" style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(title || 'Text Viewer') + '</span>' +
-        '</div>' +
-        '<div style="display: flex; align-items: center; gap: 4px;">' +
-            '<span id="textProgressIndicator" style="font-size: 13px; color: #999;">0%</span>' +
-            '<button id="btnHeaderSave" class="text-header-btn">Save</button>' +
-            '<button id="btnHeaderSet" class="text-header-btn">Set</button>' +
-            '<button id="btnHeaderClose" class="text-header-btn" style="font-size: 18px;">×</button>' +
-        '</div>';
-    
-    document.body.appendChild(header);
-    
-    // 버튼 이벤트 바인딩
-    document.getElementById('btnHeaderBack').onclick = function() { if (typeof closeViewer === 'function') closeViewer(); };
-    document.getElementById('btnHeaderSave').onclick = function() { if (typeof saveTextBookmark === 'function') saveTextBookmark(); };
-    document.getElementById('btnHeaderSet').onclick = function() { if (typeof openTextSettings === 'function') openTextSettings(); };
-    document.getElementById('btnHeaderClose').onclick = function() { toggleHeader(); };
-    
-    // hover 효과
-    header.querySelectorAll('.text-header-btn').forEach(function(btn) {
-        btn.onmouseenter = function() { this.style.color = '#4a9eff'; };
-        btn.onmouseleave = function() { this.style.color = '#888'; };
-    });
+   header.innerHTML = 
+    '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
+        '<button id="btnHeaderBack" class="text-header-btn back-btn">Back</button>' +
+        '<span id="textViewerTitle" class="header-title">' + escapeHtml(title || 'Text Viewer') + '</span>' +
+    '</div>' +
+    '<div style="display: flex; align-items: center; gap: 4px;">' +
+        '<span id="textProgressIndicator" style="font-size: 13px; color: #999;">0%</span>' +
+        '<button id="btnHeaderSave" class="text-header-btn">Save</button>' +
+        '<button id="btnHeaderSet" class="text-header-btn">Set</button>' +
+        '<button id="btnHeaderClose" class="text-header-btn" style="font-size: 18px;">×</button>' +
+    '</div>';
+
+document.body.appendChild(header);
+
+// 버튼 이벤트 바인딩
+document.getElementById('btnHeaderBack').onclick = function() { if (typeof closeViewer === 'function') closeViewer(); };
+document.getElementById('btnHeaderSave').onclick = function() { if (typeof saveTextBookmark === 'function') saveTextBookmark(); };
+document.getElementById('btnHeaderSet').onclick = function() { if (typeof openTextSettings === 'function') openTextSettings(); };
+document.getElementById('btnHeaderClose').onclick = function() { toggleHeader(); };
+
+// hover 효과
+header.querySelectorAll('.text-header-btn').forEach(function(btn) {
+    btn.onmouseenter = function() { this.style.color = '#4a9eff'; };
+    btn.onmouseleave = function() { this.style.color = '#888'; };
+});
+
+// 제목 클릭 시 전체 보기
+var titleEl = document.getElementById('textViewerTitle');
+if (titleEl) {
+    titleEl.onclick = function() {
+        if (this.classList.contains('expanded')) {
+            this.classList.remove('expanded');
+        } else {
+            this.classList.add('expanded');
+        }
+    };
 }
 
 // 헤더 버튼 스타일 (hover 작동하도록 수정)
@@ -250,20 +261,6 @@ if (!document.getElementById('textHeaderStyle')) {
     var headerStyle = document.createElement('style');
     headerStyle.id = 'textHeaderStyle';
     headerStyle.textContent = 
-        '.back-btn {' +
-    'display: flex;' +
-    'align-items: center;' +
-    'gap: 4px;' +
-'}' +
-'.back-btn::before {' +
-    'content: "";' +
-    'display: inline-block;' +
-    'width: 8px;' +
-    'height: 8px;' +
-    'border-left: 2px solid currentColor;' +
-    'border-bottom: 2px solid currentColor;' +
-    'transform: rotate(45deg);' +
-'}' +
         '.text-header-btn {' +
             'background: none !important;' +
             'border: none !important;' +
@@ -278,12 +275,45 @@ if (!document.getElementById('textHeaderStyle')) {
             'color: #4a9eff !important;' +
             'background: none !important;' +
         '}' +
-        '.text-header-close {' +
-            'font-size: 18px !important;' +
+        '.back-btn {' +
+            'display: flex !important;' +
+            'align-items: center;' +
+            'gap: 4px;' +
+        '}' +
+        '.back-btn::before {' +
+            'content: "";' +
+            'display: inline-block;' +
+            'width: 8px;' +
+            'height: 8px;' +
+            'border-left: 2px solid currentColor;' +
+            'border-bottom: 2px solid currentColor;' +
+            'transform: rotate(45deg);' +
+        '}' +
+        '.header-title {' +
+            'font-size: 16px;' +
+            'font-weight: 500;' +
+            'white-space: nowrap;' +
+            'overflow: hidden;' +
+            'text-overflow: ellipsis;' +
+            'cursor: pointer;' +
+            'max-width: calc(100vw - 280px);' +
+            'transition: all 0.3s ease;' +
+        '}' +
+        '.header-title.expanded {' +
+            'white-space: normal;' +
+            'overflow: visible;' +
+            'position: absolute;' +
+            'left: 70px;' +
+            'top: 56px;' +
+            'max-width: calc(100vw - 40px);' +
+            'background: rgba(20, 20, 20, 0.95);' +
+            'padding: 12px 16px;' +
+            'border-radius: 8px;' +
+            'box-shadow: 0 4px 12px rgba(0,0,0,0.3);' +
+            'z-index: 5160;' +
         '}';
     document.head.appendChild(headerStyle);
 }
-
 function toggleHeader() {
     const header = document.getElementById('textViewerHeader');
     const toggleBtn = document.getElementById('textToggleBtn');
