@@ -293,7 +293,11 @@ async function renderChapter(container, index) {
                 container.appendChild(divider);
             }
         }
-
+        // ✅ 챕터 렌더 후 하이라이트 복원
+        setTimeout(function() {
+            restoreHighlights();
+        }, 50);
+        
     } catch (e) {
         console.error('Chapter render failed:', chapterPath.path, e);
     }
