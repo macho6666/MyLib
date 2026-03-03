@@ -88,6 +88,8 @@ function loadLocalData() {
         favorites = JSON.parse(localStorage.getItem('mylib_favorites')) || [];
         adultFilterEnabled = localStorage.getItem('mylib_adult_filter') === 'true';
         
+        window.calendarData = calendarData;
+        
         updateAdultToggle();
         updateSidebarTags();
     } catch (e) {
@@ -101,6 +103,7 @@ function saveLocalData() {
     localStorage.setItem('mylib_calendar', JSON.stringify(calendarData));
     localStorage.setItem('mylib_favorites', JSON.stringify(favorites));
     localStorage.setItem('mylib_adult_filter', adultFilterEnabled);
+    window.calendarData = calendarData;
 }
 
 function clearBlobUrls() {
