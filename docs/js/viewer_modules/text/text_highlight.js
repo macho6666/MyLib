@@ -18,9 +18,7 @@ export function initHighlights() {
     if (window._txtHighlightInited) return;
     window._txtHighlightInited = true;
 
-    // PC: mouseup
     document.addEventListener('mouseup', handleTxtSelection);
-    // 모바일: touchend + selectionchange
     document.addEventListener('selectionchange', handleMobileSelection);
 
     console.log('✨ TXT Highlights initialized');
@@ -28,9 +26,6 @@ export function initHighlights() {
 
 let mobileSelectionTimer = null;
 
-/**
- * PC 텍스트 선택 처리
- */
 function handleTxtSelection(event) {
     if (event.target.closest('button, #highlightMenu, #textViewerSettings')) return;
 
@@ -39,9 +34,6 @@ function handleTxtSelection(event) {
     }, 50);
 }
 
-/**
- * 모바일 텍스트 선택 처리
- */
 function handleMobileSelection() {
     if (mobileSelectionTimer) clearTimeout(mobileSelectionTimer);
     
@@ -50,9 +42,6 @@ function handleMobileSelection() {
     }, 300);
 }
 
-/**
- * 선택 확인 및 메뉴 표시
- */
 function checkSelection() {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
@@ -64,16 +53,12 @@ function checkSelection() {
     if (!container) return;
     if (!container.contains(selection.anchorNode)) return;
 
-    // 이미 메뉴가 열려있으면 무시
     if (document.getElementById('highlightMenu')) return;
 
     const range = selection.getRangeAt(0);
     showHighlightMenu(range, text);
 }
 
-/**
- * 하이라이트/메모 메뉴 표시
- */
 function showHighlightMenu(range, text) {
     const existing = document.getElementById('highlightMenu');
     if (existing) existing.remove();
@@ -85,8 +70,8 @@ function showHighlightMenu(range, text) {
         'bottom: 80px;' +
         'left: 50%;' +
         'transform: translateX(-50%);' +
-        'background: rgba(20, 20, 20, 0.95);' +
-        'border: 1px solid var(--border-color, #2a2a2a);' +
+        'background: rgba(30, 30, 30, 0.98);' +
+        'border: 1px solid #444;' +
         'border-radius: 8px;' +
         'padding: 0;' +
         'box-shadow: 0 4px 12px rgba(0,0,0,0.3);' +
@@ -111,7 +96,7 @@ function showHighlightMenu(range, text) {
 
     // 구분선
     var divider = document.createElement('div');
-    divider.style.cssText = 'height: 1px; background: var(--border-color, #2a2a2a);';
+    divider.style.cssText = 'height: 1px; background: #444;';
     menu.appendChild(divider);
 
     // Memo 버튼
@@ -126,14 +111,13 @@ function showHighlightMenu(range, text) {
 
     // 구분선
     var divider2 = document.createElement('div');
-    divider2.style.cssText = 'height: 1px; background: var(--border-color, #2a2a2a);';
+    divider2.style.cssText = 'height: 1px; background: #444;';
     menu.appendChild(divider2);
 
     // Cancel 버튼
     var cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.className = 'hl-menu-btn';
-    cancelBtn.style.color = 'var(--text-tertiary, #666)';
+    cancelBtn.className = 'hl-menu-btn hl-menu-btn-cancel';
     cancelBtn.onclick = function() {
         menu.remove();
         var sel = window.getSelection();
@@ -149,9 +133,6 @@ function showHighlightMenu(range, text) {
     }, 5000);
 }
 
-/**
- * Range에 실제로 <mark>로 색칠 (클릭 이벤트 없음)
- */
 function applyRangeHighlight(range, color) {
     if (!range || range.collapsed) return;
 
@@ -170,9 +151,6 @@ function applyRangeHighlight(range, color) {
     }
 }
 
-/**
- * 하이라이트 생성 + 캘린더 기록
- */
 function createHighlight(range, text, color, memo) {
     var book = TextViewerState.currentBook;
     if (!book) {
@@ -190,10 +168,8 @@ function createHighlight(range, text, color, memo) {
         timestamp: new Date().toISOString()
     };
 
-    // 1) 화면에 색칠
     applyRangeHighlight(range, color);
 
-    // 2) 캘린더에 기록 요청
     if (window.addCalendarHighlightFromViewer) {
         try {
             window.addCalendarHighlightFromViewer({
@@ -215,9 +191,6 @@ function createHighlight(range, text, color, memo) {
     Events.emit('text:highlight', highlightData);
 }
 
-/**
- * 메모 다이얼로그
- */
 function showMemoDialog(range, text) {
     var dialog = document.createElement('div');
     dialog.style.cssText = 
@@ -231,25 +204,25 @@ function showMemoDialog(range, text) {
     
     dialog.innerHTML = 
         '<div style="' +
-            'background: var(--bg-card, #1a1a1a);' +
+            'background: #1a1a1a;' +
             'border-radius: 12px;' +
             'padding: 24px;' +
             'max-width: 420px;' +
             'width: 90%;' +
             'box-shadow: 0 12px 40px rgba(0,0,0,0.6);' +
         '">' +
-            '<h3 style="font-size: 16px; margin: 0 0 12px 0; color: var(--text-primary, #e8e8e8);">Memo</h3>' +
-            '<div style="background: var(--bg-input, #222); padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; color: var(--text-secondary, #aaa); font-size: 13px; max-height: 80px; overflow-y: auto;">' +
+            '<h3 style="font-size: 16px; margin: 0 0 12px 0; color: #e8e8e8;">Memo</h3>' +
+            '<div style="background: #222; padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; color: #aaa; font-size: 13px; max-height: 80px; overflow-y: auto;">' +
                 '"' + text.substring(0, 80) + (text.length > 80 ? '...' : '') + '"' +
             '</div>' +
             '<textarea id="memoText" placeholder="Add your memo..." style="' +
                 'width: 100%;' +
                 'min-height: 100px;' +
-                'background: var(--bg-input, #222);' +
-                'border: 1px solid var(--border-color, #2a2a2a);' +
+                'background: #222;' +
+                'border: 1px solid #333;' +
                 'border-radius: 8px;' +
                 'padding: 10px 12px;' +
-                'color: var(--text-primary, #e8e8e8);' +
+                'color: #e8e8e8;' +
                 'font-size: 14px;' +
                 'font-family: inherit;' +
                 'resize: vertical;' +
@@ -257,8 +230,8 @@ function showMemoDialog(range, text) {
                 'box-sizing: border-box;' +
             '"></textarea>' +
             '<div style="display: flex; gap: 8px; justify-content: flex-end;">' +
-                '<button id="btnCancelMemo" class="hl-dialog-btn" style="color: var(--text-secondary, #999);">Cancel</button>' +
-                '<button id="btnSaveMemo" class="hl-dialog-btn" style="background: var(--accent, #4a9eff); color: white;">Save</button>' +
+                '<button id="btnCancelMemo" class="hl-dialog-btn">Cancel</button>' +
+                '<button id="btnSaveMemo" class="hl-dialog-btn hl-dialog-btn-save">Save</button>' +
             '</div>' +
         '</div>';
 
@@ -280,9 +253,6 @@ function showMemoDialog(range, text) {
     };
 }
 
-/**
- * 하이라이트 cleanup (뷰어 닫을 때)
- */
 export function cleanupHighlights() {
     if (window._txtHighlightInited) {
         document.removeEventListener('mouseup', handleTxtSelection);
@@ -297,7 +267,7 @@ export function cleanupHighlights() {
     if (menu) menu.remove();
 }
 
-// CSS
+// CSS - 고정 색상으로 변경
 var hlStyle = document.createElement('style');
 hlStyle.textContent = 
     '@keyframes hlSlideUp {' +
@@ -307,30 +277,46 @@ hlStyle.textContent =
     '.hl-menu-btn {' +
         'display: block;' +
         'width: 100%;' +
-        'padding: 10px 16px;' +
+        'padding: 12px 16px;' +
         'background: none;' +
         'border: none;' +
-        'color: var(--text-primary, #e8e8e8);' +
+        'color: #e8e8e8;' +
         'font-size: 14px;' +
         'cursor: pointer;' +
         'text-align: left;' +
         'transition: all 0.15s ease;' +
     '}' +
     '.hl-menu-btn:hover {' +
-        'background: rgba(255,255,255,0.1);' +
+        'background: rgba(255,255,255,0.15);' +
         'color: #fff;' +
     '}' +
+    '.hl-menu-btn-cancel {' +
+        'color: #888;' +
+    '}' +
+    '.hl-menu-btn-cancel:hover {' +
+        'color: #ccc;' +
+    '}' +
     '.hl-dialog-btn {' +
-        'padding: 8px 16px;' +
-        'background: var(--bg-input, #222);' +
-        'border: 1px solid var(--border-color, #2a2a2a);' +
+        'padding: 10px 18px;' +
+        'background: #333;' +
+        'border: 1px solid #444;' +
         'border-radius: 8px;' +
+        'color: #aaa;' +
         'cursor: pointer;' +
         'font-size: 13px;' +
         'transition: all 0.15s ease;' +
     '}' +
     '.hl-dialog-btn:hover {' +
-        'opacity: 0.85;' +
+        'background: #444;' +
+        'color: #fff;' +
+    '}' +
+    '.hl-dialog-btn-save {' +
+        'background: #4a9eff;' +
+        'border-color: #4a9eff;' +
+        'color: #fff;' +
+    '}' +
+    '.hl-dialog-btn-save:hover {' +
+        'background: #3a8eef;' +
     '}';
 document.head.appendChild(hlStyle);
 
