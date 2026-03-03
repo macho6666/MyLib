@@ -90,16 +90,17 @@ export async function renderTxt(textContent, metadata) {
     console.log('📖 TXT Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
 }
     setTimeout(() => {
-        const saved = localStorage.getItem('progress_' + metadata.seriesId);
-        if (saved) {
-            const progressData = JSON.parse(saved);
-            const bookProgress = progressData[metadata.bookId];
-            if (bookProgress && bookProgress.progress > 0) {
-                scrollToProgress(bookProgress.progress);
-                console.log('📖 Restored to ' + bookProgress.progress + '%');
-            }
-        }
-    }, 200);
+const saved = localStorage.getItem('progress_' + metadata.seriesId);
+if (saved) {
+    const progressData = JSON.parse(saved);
+    const bookProgress = progressData[metadata.bookId];
+    if (bookProgress && bookProgress.progress > 0) {
+        requestAnimationFrame(function() {
+            scrollToProgress(bookProgress.progress);
+            console.log('📖 Restored to ' + bookProgress.progress + '%');
+        });
+    }
+}
     
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
     console.log('📖 TXT Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
@@ -134,7 +135,7 @@ function renderContent() {
     // ✅ 하이라이트 복원 추가
     setTimeout(function() {
         restoreHighlights();
-    }, 100);
+    }, 50);
 }
 
 export function onThemeChange() {
