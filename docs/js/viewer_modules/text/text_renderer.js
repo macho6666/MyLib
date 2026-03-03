@@ -313,8 +313,8 @@ if (!document.getElementById('textHeaderStyle')) {
             'z-index: 5160;' +
         '}';
     document.head.appendChild(headerStyle);
-}
     }
+}
 function toggleHeader() {
     const header = document.getElementById('textViewerHeader');
     const toggleBtn = document.getElementById('textToggleBtn');
