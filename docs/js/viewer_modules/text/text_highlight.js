@@ -68,59 +68,63 @@ export function restoreHighlights() {
  * 텍스트에 하이라이트 표시 (DOM 탐색)
  */
 function applyHighlightToText(text, color) {
-    var container = document.getElementById('textViewerContent') || 
-                    document.getElementById('textLeftPage') || 
-                    document.getElementById('textRightPage');
+    // ✅ 모든 가능한 컨테이너에 적용
+    var containers = [
+        document.getElementById('textViewerContent'),
+        document.getElementById('textLeftPage'),
+        document.getElementById('textRightPage')
+    ].filter(function(c) { return c !== null; });
     
-    if (!container) return;
+    if (containers.length === 0) return;
     
-    var walker = document.createTreeWalker(
-        container,
-        NodeFilter.SHOW_TEXT,
-        null,
-        false
-    );
-    
-    var textNodes = [];
-    var node;
-    while (node = walker.nextNode()) {
-        textNodes.push(node);
-    }
-    
-    textNodes.forEach(function(textNode) {
-        var content = textNode.textContent;
-        var index = content.indexOf(text);
+    containers.forEach(function(container) {
+        var walker = document.createTreeWalker(
+            container,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
         
-        if (index >= 0 && (!textNode.parentElement || textNode.parentElement.tagName !== 'MARK')) {
-            var range = document.createRange();
-            range.setStart(textNode, index);
-            range.setEnd(textNode, index + text.length);
-            
-            var mark = document.createElement('mark');
-            mark.style.backgroundColor = color;
-            mark.style.color = '#000';
-            mark.style.padding = '0 1px';
-            mark.style.borderRadius = '2px';
-            mark.style.cursor = 'pointer';
-            mark.dataset.highlighted = 'true';
-            mark.dataset.text = text;
-            
-            try {
-                range.surroundContents(mark);
-                
-                mark.onclick = function(e) {
-                    e.stopPropagation();
-                    if (confirm('이 하이라이트를 삭제하시겠습니까?')) {
-                        removeHighlight(mark.dataset.text);
-                    }
-                };
-            } catch (e) {
-                console.warn('Highlight apply failed:', e);
-            }
+        var textNodes = [];
+        var node;
+        while (node = walker.nextNode()) {
+            textNodes.push(node);
         }
+        
+        textNodes.forEach(function(textNode) {
+            var content = textNode.textContent;
+            var index = content.indexOf(text);
+            
+            if (index >= 0 && (!textNode.parentElement || textNode.parentElement.tagName !== 'MARK')) {
+                var range = document.createRange();
+                range.setStart(textNode, index);
+                range.setEnd(textNode, index + text.length);
+                
+                var mark = document.createElement('mark');
+                mark.style.backgroundColor = color;
+                mark.style.color = '#000';
+                mark.style.padding = '0 1px';
+                mark.style.borderRadius = '2px';
+                mark.style.cursor = 'pointer';
+                mark.dataset.highlighted = 'true';
+                mark.dataset.text = text;
+                
+                try {
+                    range.surroundContents(mark);
+                    
+                    mark.onclick = function(e) {
+                        e.stopPropagation();
+                        if (confirm('이 하이라이트를 삭제하시겠습니까?')) {
+                            removeHighlight(mark.dataset.text);
+                        }
+                    };
+                } catch (e) {
+                    console.warn('Highlight apply failed:', e);
+                }
+            }
+        });
     });
 }
-
 /**
  * 하이라이트 삭제 (localStorage + 캘린더 + DOM)
  */
@@ -128,26 +132,17 @@ function removeHighlight(text) {
     var book = TextViewerState.currentBook;
     if (!book) return;
     
+    // 1. localStorage에서 삭제
     var highlights = loadHighlights(book.seriesId, book.bookId);
     highlights = highlights.filter(function(hl) { return hl.text !== text; });
     saveHighlights(book.seriesId, book.bookId, highlights);
     
-    if (typeof window.calendarData !== 'undefined') {
-        Object.keys(window.calendarData).forEach(function(date) {
-            window.calendarData[date].forEach(function(record) {
-                if (record.seriesId === book.seriesId && record.highlights) {
-                    record.highlights = record.highlights.filter(function(hl) {
-                        return hl.text !== text;
-                    });
-                }
-            });
-        });
-        
-        if (typeof window.saveLocalData === 'function') {
-            window.saveLocalData();
-        }
+    // 2. ✅ 캘린더에서 삭제 (window 함수 호출)
+    if (typeof window.removeCalendarHighlight === 'function') {
+        window.removeCalendarHighlight(book.seriesId, text);
     }
     
+    // 3. DOM에서 제거
     var marks = document.querySelectorAll('mark[data-highlighted="true"]');
     marks.forEach(function(mark) {
         if (mark.dataset.text === text) {
@@ -162,7 +157,6 @@ function removeHighlight(text) {
     
     showToast('하이라이트 삭제됨');
 }
-
 /**
  * TXT 하이라이트 초기화
  */
