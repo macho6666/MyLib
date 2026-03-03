@@ -205,6 +205,8 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName = ''
 
     if (isEpub) {
         console.log("📘 EPUB Detected");
+        console.log("🔍 zip 객체:", zip);  // ✅ 추가
+        console.log("🔍 zip.files:", zip.files);  // ✅ 추가
         
         // ✅ zip 객체 자체를 반환 (Blob 대신)
         return { 
