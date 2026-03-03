@@ -14,7 +14,7 @@ import { initNavigation, cleanupNavigation } from './text_navigation.js';
 import { initHighlights } from './text_highlight.js';
 import { applyTheme } from './text_theme.js';
 import { showToast } from '../core/utils.js';
-
+import { restoreOriginalTheme } from './text_theme.js';
 /**
  * 텍스트 뷰어 열기
  * @param {Object} result - fetcher.js 결과 { type, content/blob, ... }
@@ -117,6 +117,9 @@ export function closeTextViewer() {
             TextViewerState.currentBook.bookId
         );
     }
+    
+    // 원래 테마 복원
+    restoreOriginalTheme();
     
     // 네비게이션 정리
     cleanupNavigation();
