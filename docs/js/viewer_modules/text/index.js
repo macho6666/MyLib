@@ -38,7 +38,7 @@ export async function openTextViewer(result, metadata) {
             await openTxtFile(result.content, metadata);
         } else if (result.type === 'epub') {
             // EPUB 파일
-            await openEpubFile(result.blob, metadata);
+            await openEpubFile(result, metadata); 
         } else {
             throw new Error('Unsupported file type: ' + result.type);
         }
