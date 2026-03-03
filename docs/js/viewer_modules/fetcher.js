@@ -193,6 +193,8 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName = ''
     }
     
     const zip = await JSZip.loadAsync(combinedBytes);
+    console.log('🔍 zip 로드 완료');  // ✅ 추가
+    console.log('🔍 zip.files 목록:', Object.keys(zip.files));  // ✅ 추가
     
     const files = Object.keys(zip.files).sort((a, b) => {
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -202,7 +204,7 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName = ''
     const isEpub = zip.file("OEBPS/content.opf") || 
                    zip.file("OPS/content.opf") || 
                    zip.file("mimetype");
-
+        console.log('🔍 isEpub:', isEpub);  // ✅ 추가
     if (isEpub) {
         console.log("📘 EPUB Detected");
         console.log("🔍 zip 객체:", zip);  // ✅ 추가
