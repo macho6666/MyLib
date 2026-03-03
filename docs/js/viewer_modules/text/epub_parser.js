@@ -155,23 +155,33 @@ async function parseNavToc(navFile) {
     const doc = parser.parseFromString(navXml, 'application/xhtml+xml');
 
     const toc = [];
-    const navPoints = doc.querySelectorAll('nav[epub\\:type="toc"] a, nav a');
-
-    navPoints.forEach(function(a) {
-        const href = a.getAttribute('href') || '';
-        const text = a.textContent.trim();
-        if (text && href) {
-            toc.push({
-                label: text,
-                href: href.split('#')[0],
-                anchor: href.includes('#') ? href.split('#')[1] : null
-            });
+    // ✅ 더 정확한 선택자
+    const navEl = doc.querySelector('nav[epub\\:type="toc"], nav[role="doc-toc"], nav');
+    
+    if (navEl) {
+        // ✅ li > a 구조 먼저 시도
+        let navPoints = navEl.querySelectorAll('li > a');
+        
+        // 없으면 모든 a 태그
+        if (navPoints.length === 0) {
+            navPoints = navEl.querySelectorAll('a');
         }
-    });
+        
+        navPoints.forEach(function(a) {
+            const href = a.getAttribute('href') || '';
+            const text = a.textContent.trim();
+            if (text && href) {
+                toc.push({
+                    label: text,
+                    href: href.split('#')[0],
+                    anchor: href.includes('#') ? href.split('#')[1] : null
+                });
+            }
+        });
+    }
 
     return toc;
 }
-
 /**
  * NCX 목차 파싱 (EPUB2)
  */
