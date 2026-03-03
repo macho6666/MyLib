@@ -1,6 +1,6 @@
 /**
  * viewer_modules/text/text_highlight.js
- * TXT 하이라이트/메모 + 캘린더 연동
+ * TXT 하이라이트/메모 + 캘린더 연동 + localStorage 저장
  */
 
 import { TextViewerState } from './text_state.js';
@@ -9,6 +9,95 @@ import { Events } from '../core/events.js';
 
 function getHighlightColor() {
     return localStorage.getItem('text_highlight_color') || '#ffeb3b';
+}
+
+/**
+ * 하이라이트 localStorage 키 생성
+ */
+function getHighlightKey(seriesId, bookId) {
+    return 'highlights_' + seriesId + '_' + bookId;
+}
+
+/**
+ * 하이라이트 저장
+ */
+function saveHighlights(seriesId, bookId, highlights) {
+    var key = getHighlightKey(seriesId, bookId);
+    localStorage.setItem(key, JSON.stringify(highlights));
+}
+
+/**
+ * 하이라이트 불러오기
+ */
+function loadHighlights(seriesId, bookId) {
+    var key = getHighlightKey(seriesId, bookId);
+    var saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : [];
+}
+
+/**
+ * 저장된 하이라이트를 텍스트에 복원
+ */
+export function restoreHighlights() {
+    var book = TextViewerState.currentBook;
+    if (!book) return;
+    
+    var highlights = loadHighlights(book.seriesId, book.bookId);
+    if (highlights.length === 0) return;
+    
+    highlights.forEach(function(hl) {
+        applyHighlightToText(hl.text, hl.color);
+    });
+    
+    console.log('✨ Restored ' + highlights.length + ' highlights');
+}
+
+/**
+ * 텍스트에 하이라이트 표시 (DOM 탐색)
+ */
+function applyHighlightToText(text, color) {
+    var container = document.getElementById('textViewerContent') || 
+                    document.getElementById('textLeftPage') || 
+                    document.getElementById('textRightPage');
+    
+    if (!container) return;
+    
+    var walker = document.createTreeWalker(
+        container,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+    
+    var textNodes = [];
+    var node;
+    while (node = walker.nextNode()) {
+        textNodes.push(node);
+    }
+    
+    textNodes.forEach(function(textNode) {
+        var content = textNode.textContent;
+        var index = content.indexOf(text);
+        
+        if (index >= 0) {
+            var range = document.createRange();
+            range.setStart(textNode, index);
+            range.setEnd(textNode, index + text.length);
+            
+            var mark = document.createElement('mark');
+            mark.style.backgroundColor = color;
+            mark.style.color = '#000';
+            mark.style.padding = '0 1px';
+            mark.style.borderRadius = '2px';
+            mark.dataset.highlighted = 'true';
+            
+            try {
+                range.surroundContents(mark);
+            } catch (e) {
+                console.warn('Highlight apply failed:', e);
+            }
+        }
+    });
 }
 
 /**
@@ -83,7 +172,6 @@ function showHighlightMenu(range, text) {
         'animation: hlSlideUp 0.2s ease;' +
         'overflow: hidden;';
 
-    // Highlight 버튼
     var hlBtn = document.createElement('button');
     hlBtn.textContent = 'Highlight';
     hlBtn.className = 'hl-menu-btn';
@@ -94,12 +182,10 @@ function showHighlightMenu(range, text) {
     };
     menu.appendChild(hlBtn);
 
-    // 구분선
     var divider = document.createElement('div');
     divider.style.cssText = 'height: 1px; background: #444;';
     menu.appendChild(divider);
 
-    // Memo 버튼
     var memoBtn = document.createElement('button');
     memoBtn.textContent = 'Memo';
     memoBtn.className = 'hl-menu-btn';
@@ -109,12 +195,10 @@ function showHighlightMenu(range, text) {
     };
     menu.appendChild(memoBtn);
 
-    // 구분선
     var divider2 = document.createElement('div');
     divider2.style.cssText = 'height: 1px; background: #444;';
     menu.appendChild(divider2);
 
-    // Cancel 버튼
     var cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Cancel';
     cancelBtn.className = 'hl-menu-btn hl-menu-btn-cancel';
@@ -141,6 +225,7 @@ function applyRangeHighlight(range, color) {
     mark.style.color = '#000';
     mark.style.padding = '0 1px';
     mark.style.borderRadius = '2px';
+    mark.dataset.highlighted = 'true';
 
     try {
         range.surroundContents(mark);
@@ -170,6 +255,12 @@ function createHighlight(range, text, color, memo) {
 
     applyRangeHighlight(range, color);
 
+    // ✅ localStorage에 저장
+    var highlights = loadHighlights(book.seriesId, book.bookId);
+    highlights.push(highlightData);
+    saveHighlights(book.seriesId, book.bookId, highlights);
+
+    // ✅ 캘린더 연동 (기존 유지)
     if (window.addCalendarHighlightFromViewer) {
         try {
             window.addCalendarHighlightFromViewer({
@@ -267,7 +358,6 @@ export function cleanupHighlights() {
     if (menu) menu.remove();
 }
 
-// CSS - 고정 색상으로 변경
 var hlStyle = document.createElement('style');
 hlStyle.textContent = 
     '@keyframes hlSlideUp {' +
