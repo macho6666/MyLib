@@ -5,6 +5,9 @@
 
 import { TextViewerState } from './text_state.js';
 
+// 원래 테마 저장용
+let originalThemeVars = null;
+
 /**
  * 테마 프리셋
  */
@@ -39,9 +42,52 @@ const ThemePresets = {
 };
 
 /**
+ * 원래 테마 저장
+ */
+function saveOriginalTheme() {
+    if (originalThemeVars) return; // 이미 저장됨
+    
+    const root = document.documentElement;
+    const computedStyle = getComputedStyle(root);
+    
+    originalThemeVars = {
+        '--text-primary': computedStyle.getPropertyValue('--text-primary').trim(),
+        '--text-secondary': computedStyle.getPropertyValue('--text-secondary').trim(),
+        '--text-tertiary': computedStyle.getPropertyValue('--text-tertiary').trim(),
+        '--bg-primary': computedStyle.getPropertyValue('--bg-primary').trim(),
+        '--bg-card': computedStyle.getPropertyValue('--bg-card').trim(),
+        '--bg-input': computedStyle.getPropertyValue('--bg-input').trim(),
+        '--border-color': computedStyle.getPropertyValue('--border-color').trim()
+    };
+}
+
+/**
+ * 원래 테마 복원
+ */
+export function restoreOriginalTheme() {
+    if (!originalThemeVars) return;
+    
+    const root = document.documentElement;
+    
+    Object.keys(originalThemeVars).forEach(key => {
+        if (originalThemeVars[key]) {
+            root.style.setProperty(key, originalThemeVars[key]);
+        } else {
+            root.style.removeProperty(key);
+        }
+    });
+    
+    originalThemeVars = null;
+    console.log('🎨 Original theme restored');
+}
+
+/**
  * 테마 적용
  */
 export function applyTheme(mode = null) {
+    // 원래 테마 저장 (최초 1회)
+    saveOriginalTheme();
+    
     const currentMode = mode || TextViewerState.theme.mode || 'dark';
     const colors = ThemePresets[currentMode] || ThemePresets.dark;
     
@@ -73,29 +119,29 @@ export function applyTheme(mode = null) {
         });
     }
     
-// 헤더
-const header = document.getElementById('textViewerHeader');
-if (header) {
-    header.style.backgroundColor = currentMode === 'dark' 
-        ? 'rgba(20, 20, 20, 0.95)' 
-        : currentMode === 'sepia'
-            ? 'rgba(244, 236, 216, 0.95)'
-            : 'rgba(250, 249, 245, 0.95)';
-    header.style.color = colors.text;
-    header.style.borderBottomColor = colors.border;
-    
-    // 제목 색상 적용
-    const title = document.getElementById('textViewerTitle');
-    if (title) {
-        title.style.color = colors.text;
+    // 헤더
+    const header = document.getElementById('textViewerHeader');
+    if (header) {
+        header.style.backgroundColor = currentMode === 'dark' 
+            ? 'rgba(20, 20, 20, 0.95)' 
+            : currentMode === 'sepia'
+                ? 'rgba(244, 236, 216, 0.95)'
+                : 'rgba(250, 249, 245, 0.95)';
+        header.style.color = colors.text;
+        header.style.borderBottomColor = colors.border;
+        
+        // 제목 색상 적용
+        const title = document.getElementById('textViewerTitle');
+        if (title) {
+            title.style.color = colors.text;
+        }
+        
+        // 진행률 색상 적용
+        const progress = document.getElementById('textProgressIndicator');
+        if (progress) {
+            progress.style.color = colors.textSecondary;
+        }
     }
-    
-    // 진행률 색상 적용
-    const progress = document.getElementById('textProgressIndicator');
-    if (progress) {
-        progress.style.color = colors.textSecondary;
-    }
-}
     
     // 토글 버튼
     const toggleBtn = document.getElementById('textToggleBtn');
