@@ -405,7 +405,6 @@ function resetCurrentBookmark() {
     
     if (!confirm('Reset bookmark for this book?')) return;
     
-    // progress_ 키 사용 (bookmark_ → progress_ 통합됨)
     const key = `progress_${book.seriesId}`;
     const progressData = JSON.parse(localStorage.getItem(key) || '{}');
     
@@ -416,6 +415,13 @@ function resetCurrentBookmark() {
     } else {
         if (window.showToast) window.showToast('No bookmark found');
     }
+    
+    // ✅ 맨 위로 이동 추가
+    if (typeof window.scrollToProgress === 'function') {
+        window.scrollToProgress(0);
+    }
+    
+    closeSettings();
 }
 
 /**
