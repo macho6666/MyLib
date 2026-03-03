@@ -464,9 +464,15 @@ export function openSettings() {
         updateThemeUI();
         updateFontUI();
         updateCalendarUI();
+        // ✅ 여기에 추가
+        // EPUB일 때만 EPUB Style 그룹 표시
+        const epubStyleGroup = document.getElementById('epubStyleGroup');
+        if (epubStyleGroup) {
+            const isEpub = TextViewerState.renderType === 'epub';
+            epubStyleGroup.style.display = isEpub ? 'block' : 'none';
+        }
     }
 }
-
 /**
  * Calendar 설정 UI 업데이트
  */
