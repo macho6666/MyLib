@@ -149,18 +149,9 @@ function createSettingsPanel() {
             </div>
         </div>
         
-        <!-- 북마크 초기화 -->
+<!-- 북마크 초기화 -->
         <div class="setting-group" style="margin-bottom: 24px;">
-            <button id="btnResetBookmark" style="
-                width: 100%;
-                padding: 12px;
-                background: var(--bg-input, #222);
-                border: 1px solid var(--border-color, #333);
-                color: var(--text-secondary, #999);
-                border-radius: 8px;
-                cursor: pointer;
-                font-size: 13px;
-            ">Reset Bookmark</button>
+            <button id="btnResetBookmark" class="settings-reset-btn">Reset Bookmark</button>
         </div>
     `;
     
@@ -432,10 +423,15 @@ function resetCurrentBookmark() {
  */
 export function openSettings() {
     const panel = document.getElementById('textViewerSettings');
+    const toggleBtn = document.getElementById('textToggleBtn');
+    
     if (panel) {
         panel.style.right = '0';
         TextViewerState.ui = TextViewerState.ui || {};
         TextViewerState.ui.settingsOpen = true;
+        
+        // 토글 버튼 숨김
+        if (toggleBtn) toggleBtn.style.display = 'none';
         
         // 현재 상태 반영
         updateReadModeUI();
@@ -479,14 +475,18 @@ function updateCalendarUI() {
  */
 export function closeSettings() {
     const panel = document.getElementById('textViewerSettings');
+    const toggleBtn = document.getElementById('textToggleBtn');
+    
     if (panel) {
         panel.style.right = '-320px';
         if (TextViewerState.ui) {
             TextViewerState.ui.settingsOpen = false;
         }
+        
+        // 토글 버튼 다시 표시
+        if (toggleBtn) toggleBtn.style.display = 'flex';
     }
 }
-
 /**
  * 설정 패널 토글
  */
