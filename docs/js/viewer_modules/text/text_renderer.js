@@ -217,18 +217,32 @@ function createHeader(title) {
         'display: flex; align-items: center; justify-content: space-between;' +
         'padding: 0 16px; z-index: 5150; backdrop-filter: blur(10px);' +
         'transform: translateY(-100%); transition: transform 0.3s ease;';
-header.innerHTML = 
-    '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
-        '<button onclick="closeViewer()" class="text-header-btn" style="font-size: 20px;">←</button>' +
-        '<span id="textViewerTitle" style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(title || 'Text Viewer') + '</span>' +
-    '</div>' +
-    '<div style="display: flex; align-items: center; gap: 4px;">' +
-        '<span id="textProgressIndicator" style="font-size: 13px; color: #999;">0%</span>' +
-        '<button onclick="saveTextBookmark()" class="text-header-btn">Save</button>' +
-        '<button onclick="openTextSettings()" class="text-header-btn">Set</button>' +
-        '<button onclick="toggleTextHeader()" class="text-header-btn text-header-close">×</button>' +
-    '</div>';
+    
+    header.innerHTML = 
+        '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
+            '<button id="btnHeaderBack" class="text-header-btn" style="font-size: 20px;">←</button>' +
+            '<span id="textViewerTitle" style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(title || 'Text Viewer') + '</span>' +
+        '</div>' +
+        '<div style="display: flex; align-items: center; gap: 4px;">' +
+            '<span id="textProgressIndicator" style="font-size: 13px; color: #999;">0%</span>' +
+            '<button id="btnHeaderSave" class="text-header-btn">Save</button>' +
+            '<button id="btnHeaderSet" class="text-header-btn">Set</button>' +
+            '<button id="btnHeaderClose" class="text-header-btn" style="font-size: 18px;">×</button>' +
+        '</div>';
+    
     document.body.appendChild(header);
+    
+    // 버튼 이벤트 바인딩
+    document.getElementById('btnHeaderBack').onclick = function() { if (typeof closeViewer === 'function') closeViewer(); };
+    document.getElementById('btnHeaderSave').onclick = function() { if (typeof saveTextBookmark === 'function') saveTextBookmark(); };
+    document.getElementById('btnHeaderSet').onclick = function() { if (typeof openTextSettings === 'function') openTextSettings(); };
+    document.getElementById('btnHeaderClose').onclick = function() { toggleHeader(); };
+    
+    // hover 효과
+    header.querySelectorAll('.text-header-btn').forEach(function(btn) {
+        btn.onmouseenter = function() { this.style.color = '#4a9eff'; };
+        btn.onmouseleave = function() { this.style.color = '#888'; };
+    });
 }
 
 // 헤더 버튼 스타일 (hover 작동하도록 수정)
