@@ -23,9 +23,7 @@ import { renderEpub, cleanupEpubViewer } from './epub_renderer.js';
 export async function openTextViewer(result, metadata) {
     try {
         console.log('📖 Opening Text Viewer:', metadata.name);
-        console.log('🔍 result:', result);  // ✅ 추가
-        console.log('🔍 result.type:', result.type);  // ✅ 추가
-        
+      
         // 상태 초기화
         resetViewerState();
         TextViewerState.currentBook = metadata;
@@ -39,7 +37,6 @@ export async function openTextViewer(result, metadata) {
             // TXT 파일
             await openTxtFile(result.content, metadata);
         } else if (result.type === 'epub') {
-        console.log('🔍 epub 분기 진입, result:', result);  // ✅ 추가
             // EPUB 파일
             await openEpubFile(result.blob, metadata);
         } else {
