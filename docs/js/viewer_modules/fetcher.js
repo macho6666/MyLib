@@ -206,11 +206,13 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName = ''
     if (isEpub) {
         console.log("📘 EPUB Detected");
         
-        // EPUB Blob 반환
-        const epubBlob = new Blob([combinedBytes], { type: 'application/epub+zip' });
-        return { type: 'epub', blob: epubBlob };
+        // ✅ zip 객체 자체를 반환 (Blob 대신)
+        return { 
+            type: 'epub', 
+            zip: zip,  // JSZip 객체 전달
+            blob: new Blob([combinedBytes], { type: 'application/epub+zip' }) // 혹시 필요할 수도
+        };
     }
-
     // 이미지 추출 (CBZ/ZIP)
     const imageUrls = [];
     for (const filename of files) {
