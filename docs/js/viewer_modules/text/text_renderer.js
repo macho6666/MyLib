@@ -284,16 +284,16 @@ function toggleHeader() {
     
     if (headerVisible) {
         header.style.transform = 'translateY(0)';
-        if (toggleBtn) toggleBtn.style.opacity = '0';
+        if (toggleBtn) toggleBtn.style.display = 'none';  // ← 숨김
         headerAutoCloseTimer = setTimeout(function() {
             headerVisible = false;
             header.style.transform = 'translateY(-100%)';
-            if (toggleBtn) toggleBtn.style.opacity = '1';
+            if (toggleBtn) toggleBtn.style.display = 'flex';  // ← 다시 표시
             headerAutoCloseTimer = null;
         }, 3000);
     } else {
         header.style.transform = 'translateY(-100%)';
-        if (toggleBtn) toggleBtn.style.opacity = '1';
+        if (toggleBtn) toggleBtn.style.display = 'flex';  // ← 다시 표시
     }
 }
 
