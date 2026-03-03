@@ -175,10 +175,12 @@ function createSettingsPanel() {
  */
 function setupControlEvents() {
     // 닫기
-    const closeBtn = document.getElementById('btnCloseSettings');
-    if (closeBtn) {
-        closeBtn.onclick = closeSettings;
-    }
+const closeBtn = document.getElementById('btnCloseSettings');
+if (closeBtn) {
+    closeBtn.onclick = closeSettings;
+    closeBtn.onmouseenter = function() { this.style.color = '#4a9eff'; };
+    closeBtn.onmouseleave = function() { this.style.color = '#888'; };
+}
     
     // 읽기 모드
     const scrollBtn = document.getElementById('btnModeScroll');
