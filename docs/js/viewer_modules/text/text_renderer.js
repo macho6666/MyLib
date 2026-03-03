@@ -314,6 +314,7 @@ if (!document.getElementById('textHeaderStyle')) {
         '}';
     document.head.appendChild(headerStyle);
 }
+    }
 function toggleHeader() {
     const header = document.getElementById('textViewerHeader');
     const toggleBtn = document.getElementById('textToggleBtn');
