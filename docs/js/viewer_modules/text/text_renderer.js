@@ -72,7 +72,23 @@ export async function renderTxt(textContent, metadata) {
     window.scrollToProgress = scrollToProgress;
     
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
+        // ✅ 즉시 진행률 복원 (기존 setTimeout 제거)
+    const saved = localStorage.getItem('progress_' + metadata.seriesId);
+    if (saved) {
+        const progressData = JSON.parse(saved);
+        const bookProgress = progressData[metadata.bookId];
+        if (bookProgress && bookProgress.progress > 0) {
+            // DOM 렌더 완료 후 바로 복원
+            requestAnimationFrame(function() {
+                scrollToProgress(bookProgress.progress);
+                console.log('📖 Restored to ' + bookProgress.progress + '%');
+            });
+        }
+    }
     
+    Events.emit('text:open', { bookId: metadata.bookId, metadata });
+    console.log('📖 TXT Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
+}
     setTimeout(() => {
         const saved = localStorage.getItem('progress_' + metadata.seriesId);
         if (saved) {
@@ -512,6 +528,10 @@ function renderSpread(spreadIndex) {
     currentSpreadIndex = spreadIndex;
     const progress = totalSpreads > 1 ? Math.round((spreadIndex / (totalSpreads - 1)) * 100) : 100;
     updateProgressIndicator(progress);
+        // ✅ 하이라이트 복원 추가
+    setTimeout(function() {
+        restoreHighlights();
+    }, 50);
 }
 
 function renderSinglePage(pageEl, pageData, pageNumber, side) {
