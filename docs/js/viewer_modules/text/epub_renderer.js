@@ -55,8 +55,6 @@ export async function renderEpub(epubResult, metadata) {
     }
 
     try {
-        console.log('🔍 epubResult:', epubResult);  // ✅ 추가
-        console.log('🔍 epubResult.zip:', epubResult.zip);  // ✅ 추가
         epubData = await parseEpub(epubResult.zip);
         console.log('📘 EPUB parsed:', epubData.chapterPaths.length, 'chapters');
         console.log('📚 TOC:', epubData.toc.length, 'items');
