@@ -220,7 +220,7 @@ function createHeader(title) {
     
     header.innerHTML = 
         '<div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">' +
-            '<button id="btnHeaderBack" class="text-header-btn" style="font-size: 20px;">←</button>' +
+            '<button id="btnHeaderBack" class="text-header-btn back-btn">Back</button>' +
             '<span id="textViewerTitle" style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(title || 'Text Viewer') + '</span>' +
         '</div>' +
         '<div style="display: flex; align-items: center; gap: 4px;">' +
@@ -250,6 +250,20 @@ if (!document.getElementById('textHeaderStyle')) {
     var headerStyle = document.createElement('style');
     headerStyle.id = 'textHeaderStyle';
     headerStyle.textContent = 
+        '.back-btn {' +
+    'display: flex;' +
+    'align-items: center;' +
+    'gap: 4px;' +
+'}' +
+'.back-btn::before {' +
+    'content: "";' +
+    'display: inline-block;' +
+    'width: 8px;' +
+    'height: 8px;' +
+    'border-left: 2px solid currentColor;' +
+    'border-bottom: 2px solid currentColor;' +
+    'transform: rotate(45deg);' +
+'}' +
         '.text-header-btn {' +
             'background: none !important;' +
             'border: none !important;' +
