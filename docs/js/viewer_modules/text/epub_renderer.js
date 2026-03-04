@@ -57,12 +57,8 @@ export async function renderEpub(epubResult, metadata) {
     try {
         epubData = await parseEpub(epubResult.zip);
          // ✅ 여기에 추가
-    console.log('🔍 첫 5개 챕터 href:', epubData.chapterPaths.slice(0, 5).map(c => c.href));
-    console.log('🔍 첫 5개 TOC href:', epubData.toc.slice(0, 5).map(t => t.href));
         console.log('📘 EPUB parsed:', epubData.chapterPaths.length, 'chapters');
         console.log('📚 TOC:', epubData.toc.length, 'items');
-     console.log('🔍 첫 5개 챕터 href:', epubData.chapterPaths.slice(0, 5).map(c => c.href));
-console.log('🔍 첫 5개 TOC href:', epubData.toc.slice(0, 5).map(t => t.href));
     } catch (e) {
         console.error('EPUB parse failed:', e);
         container.innerHTML = '<div style="color:#e8e8e8; padding: 40px; text-align:center;">EPUB 파싱 실패: ' + e.message + '</div>';
