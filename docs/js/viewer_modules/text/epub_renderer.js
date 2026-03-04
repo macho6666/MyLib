@@ -194,7 +194,11 @@ function applyContainerStyle(container) {
     const paddingBottom = is2Page ? '0' : (localStorage.getItem('text_padding_bottom') || '24');
     
     container.style.cssText =
-        'position: fixed; top: 0; left: 0; right: 0; bottom: 0;' +
+        'position: fixed;' +
+        'top: ' + paddingTop + 'px;' +           // ✅ padding 대신 top
+        'left: 0;' +
+        'right: 0;' +
+        'bottom: ' + paddingBottom + 'px;' +     // ✅ padding 대신 bottom
         'background: var(--bg-primary, #0d0d0d);' +
         'color: var(--text-primary, #e8e8e8);' +
         'overflow-x: hidden;' +
@@ -206,8 +210,6 @@ function applyContainerStyle(container) {
         'justify-content: ' + (is2Page ? 'center' : 'stretch') + ';' +
         'user-select: text !important;' +
         '-webkit-user-select: text !important;' +
-        'padding-top: ' + paddingTop + 'px;' +
-        'padding-bottom: ' + paddingBottom + 'px;' +
         'box-sizing: border-box;';
 }
 
