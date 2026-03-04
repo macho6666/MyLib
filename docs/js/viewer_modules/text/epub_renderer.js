@@ -499,18 +499,13 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
     const testDiv = createTestPageElement();
 
     for (const child of children) {
-        const childHtml = child.outerHTML; // ✅ 원본 (이미지 포함)
-        
-        // ✅ 테스트용: 이미지 src 제거해서 404 방지
-        const testHtml = childHtml.replace(/<img[^>]*>/gi, '<span style="display:block;height:200px;"></span>');
-        
-        const currentTestHtml = currentHtml.replace(/<img[^>]*>/gi, '<span style="display:block;height:200px;"></span>');
-        testDiv.innerHTML = currentTestHtml + testHtml;
+        const childHtml = child.outerHTML;
+        testDiv.innerHTML = currentHtml + childHtml;
 
         if (testDiv.scrollHeight > maxHeight && currentHtml) {
             chunks.push({
                 type: 'html',
-                content: currentHtml, // ✅ 원본 저장
+                content: currentHtml,
                 chapterIndex: chapterIdx
             });
             currentHtml = childHtml;
@@ -529,6 +524,7 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
 
     document.body.removeChild(testDiv);
 
+    // 빈 청크 방지
     if (chunks.length === 0 && body.textContent.trim()) {
         chunks.push({
             type: 'html',
@@ -539,6 +535,7 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
 
     return chunks;
 }
+
 function createTestPageElement() {
     const testPage = document.createElement('div');
     testPage.style.cssText =
