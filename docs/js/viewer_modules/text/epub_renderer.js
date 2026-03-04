@@ -57,12 +57,8 @@ export async function renderEpub(epubResult, metadata) {
     try {
         epubData = await parseEpub(epubResult.zip);
              // ✅ 디버깅 추가
-        console.log('🔍 첫 5개 챕터 href:', epubData.chapterPaths.slice(0, 5).map(c => c.href));
-        console.log('🔍 첫 5개 TOC href:', epubData.toc.slice(0, 5).map(t => t.href));
         console.log('📘 EPUB parsed:', epubData.chapterPaths.length, 'chapters');
         console.log('📚 TOC:', epubData.toc.length, 'items');
-        console.log('🔍 첫 5개 챕터 href:', epubData.chapterPaths.slice(0, 5).map(c => c.href));
-        console.log('🔍 첫 5개 TOC href:', epubData.toc.slice(0, 5).map(t => t.href));
     } catch (e) {
         console.error('EPUB parse failed:', e);
         container.innerHTML = '<div style="color:#e8e8e8; padding: 40px; text-align:center;">EPUB 파싱 실패: ' + e.message + '</div>';
@@ -594,7 +590,8 @@ function toggleHeader() {
 }
 
 async function create2PageContent(container) {
-    const fullText = extractFullText();
+    // ✅ 수정: 모든 챕터 로드 후 텍스트 추출
+    const fullText = await extractFullText();
     const pages = splitTextToPages(fullText);
     totalSpreads = Math.ceil(pages.length / 2);
 
@@ -623,10 +620,36 @@ async function create2PageContent(container) {
     renderSpread(0);
 }
 
-function extractFullText() {
-    return ''; // 2페이지 모드는 추후 구현
+// ✅ 수정: 실제 EPUB 텍스트 추출
+async function extractFullText() {
+    if (!epubData || !epubData.chapterPaths) return '';
+    
+    const textParts = [];
+    const parser = new DOMParser();
+    
+    for (const chapter of epubData.chapterPaths) {
+        try {
+            const file = epubData.zip.file(chapter.path);
+            if (!file) continue;
+            
+            const html = await file.async('string');
+            const doc = parser.parseFromString(html, 'application/xhtml+xml');
+            const body = doc.querySelector('body');
+            
+            if (body) {
+                // HTML 태그 제거하고 텍스트만 추출
+                const text = body.textContent || body.innerText || '';
+                if (text.trim()) {
+                    textParts.push(text.trim());
+                }
+            }
+        } catch (e) {
+            console.warn('Chapter text extract failed:', chapter.path);
+        }
+    }
+    
+    return textParts.join('\n\n');
 }
-
 function splitTextToPages(textContent) {
     const pages = [];
 
