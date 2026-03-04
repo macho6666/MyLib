@@ -190,6 +190,9 @@ function isLightColor(color) {
 
 function applyContainerStyle(container) {
     const is2Page = pageLayout === '2page';
+    const paddingTop = is2Page ? '0' : (localStorage.getItem('text_padding_top') || '24');
+    const paddingBottom = is2Page ? '0' : (localStorage.getItem('text_padding_bottom') || '24');
+    
     container.style.cssText =
         'position: fixed; top: 0; left: 0; right: 0; bottom: 0;' +
         'background: var(--bg-primary, #0d0d0d);' +
@@ -202,7 +205,10 @@ function applyContainerStyle(container) {
         'align-items: ' + (is2Page ? 'center' : 'stretch') + ';' +
         'justify-content: ' + (is2Page ? 'center' : 'stretch') + ';' +
         'user-select: text !important;' +
-        '-webkit-user-select: text !important;';
+        '-webkit-user-select: text !important;' +
+        'padding-top: ' + paddingTop + 'px;' +
+        'padding-bottom: ' + paddingBottom + 'px;' +
+        'box-sizing: border-box;';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -210,19 +216,14 @@ function applyContainerStyle(container) {
 // ═══════════════════════════════════════════════════════════
 
 async function create1PageContent(container) {
-    // ✅ 저장된 여백 로드
-    const paddingTop = localStorage.getItem('text_padding_top') || '24';
-    const paddingBottom = localStorage.getItem('text_padding_bottom') || '24';
-    
     const content = document.createElement('div');
     content.id = 'textViewerContent';
     content.style.cssText =
         'max-width: 800px; margin: 0 auto;' +
-        'padding: ' + paddingTop + 'px 16px ' + paddingBottom + 'px 16px;' +  // ✅ 동적 패딩
+        'padding: 0 16px;' +  // ✅ 좌우만 (상하는 컨테이너에서 처리)
         'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
     
-    // ... 나머지 동일
     container.appendChild(content);
 
     if (epubData && epubData.chapterPaths) {
