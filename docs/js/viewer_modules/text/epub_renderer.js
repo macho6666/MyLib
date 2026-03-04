@@ -78,7 +78,8 @@ export async function renderEpub(epubResult, metadata) {
     window.setTextReadMode = setReadMode;
     window.getTextReadMode = function () { return readMode; };
     window.setTextLayout = setTextLayout;
-    window.getTextLayout = getTextLayout;
+    
+    window.getTextLayout = function() { return pageLayout; };
     window.onTextThemeChange = onThemeChange;
     window.scrollToProgress = scrollToProgress;
 
