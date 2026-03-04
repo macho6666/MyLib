@@ -285,6 +285,29 @@ async function renderChapter(container, index) {
         if (!body) return;
 
         await processImages(body, epubData.zip, epubData.imagePaths, chapterPath.href);
+    // ✅ 추가: 남아있는 문제 이미지 제거
+    body.querySelectorAll('img').forEach(function(img) {
+        var src = img.getAttribute('src') || '';
+        if (!src.startsWith('data:') && !src.startsWith('http')) {
+            img.removeAttribute('src');
+            img.style.display = 'none';
+        }
+    });
+
+    // ✅ 추가: SVG image 제거
+    body.querySelectorAll('svg image').forEach(function(img) {
+        var href = img.getAttribute('href') || img.getAttribute('xlink:href') || '';
+        if (!href.startsWith('data:') && !href.startsWith('http')) {
+            var svg = img.closest('svg');
+            if (svg) svg.remove();
+            else img.remove();
+        }
+    });
+
+    // ✅ 추가: CSS 링크 제거
+    body.querySelectorAll('link[rel="stylesheet"]').forEach(function(link) {
+        link.remove();
+    });
 
         const chapterDiv = document.createElement('div');
         chapterDiv.className = 'epub-chapter';
