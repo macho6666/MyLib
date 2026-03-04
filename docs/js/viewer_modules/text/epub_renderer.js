@@ -285,7 +285,7 @@ async function renderChapter(container, index) {
         if (!body) return;
 
         await processImages(body, epubData.zip, epubData.imagePaths, chapterPath.href);
-    // ✅ 추가: 남아있는 문제 이미지 제거
+      // ✅ 추가: 남아있는 문제 이미지 제거
     body.querySelectorAll('img').forEach(function(img) {
         var src = img.getAttribute('src') || '';
         if (!src.startsWith('data:') && !src.startsWith('http')) {
@@ -308,8 +308,7 @@ async function renderChapter(container, index) {
     body.querySelectorAll('link[rel="stylesheet"]').forEach(function(link) {
         link.remove();
     });
-
-        const chapterDiv = document.createElement('div');
+         const chapterDiv = document.createElement('div');
         chapterDiv.className = 'epub-chapter';
         chapterDiv.dataset.chapterIndex = index;
         chapterDiv.dataset.chapterHref = chapterPath.href;
