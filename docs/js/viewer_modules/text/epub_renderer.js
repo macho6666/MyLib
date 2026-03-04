@@ -502,9 +502,13 @@ async function extractPagesWithImages() {
 body.querySelectorAll('svg image').forEach(function(img) {
     var href = img.getAttribute('href') || img.getAttribute('xlink:href') || '';
     if (!href.startsWith('data:') && !href.startsWith('http')) {
-        img.removeAttribute('href');
-        img.removeAttribute('xlink:href');
-        img.style.display = 'none';
+        // ✅ SVG 전체 제거
+        var svg = img.closest('svg');
+        if (svg) {
+            svg.remove();
+        } else {
+            img.remove();
+        }
     }
 });
             const chunks = splitHtmlToChunks(body, maxHeight, chapterIdx);
@@ -668,14 +672,17 @@ case 'html':
     pageNumDiv.textContent = pageNumber;
     
     // ✅ 깨진 img 숨김
-    contentDiv.querySelectorAll('img').forEach(function(img) {
-        var src = img.getAttribute('src') || '';
-        if (!src.startsWith('data:') && !src.startsWith('http')) {
-            img.removeAttribute('src');
-            img.style.display = 'none';
+contentDiv.querySelectorAll('svg image').forEach(function(img) {
+    var href = img.getAttribute('href') || img.getAttribute('xlink:href') || '';
+    if (!href.startsWith('data:') && !href.startsWith('http')) {
+        var svg = img.closest('svg');
+        if (svg) {
+            svg.remove();
+        } else {
+            img.remove();
         }
-    });
-    
+    }
+});
     // ✅ 추가: SVG image 태그도 숨김
     contentDiv.querySelectorAll('svg image').forEach(function(img) {
         var href = img.getAttribute('href') || img.getAttribute('xlink:href') || '';
