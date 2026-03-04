@@ -1124,6 +1124,7 @@ function setReadMode(mode) {
 }
 
 // ✅ 수정: 모드 전환 시 현재 챕터 + 챕터 내 진행률 유지
+// ✅ 수정: 모드 전환 시 현재 챕터 + 챕터 내 진행률 유지
 async function setTextLayout(layout) {
     if (window.innerWidth < 1024 && layout === '2page') {
         if (window.showToast) window.showToast('2페이지는 PC에서만 가능');
@@ -1160,7 +1161,6 @@ async function setTextLayout(layout) {
             if (page && page.chapterIndex !== undefined) {
                 currentChapterIndex = page.chapterIndex;
                 
-                // 챕터 내 진행률 계산
                 let chapterPages = [];
                 for (let i = 0; i < container._pages.length; i++) {
                     if (container._pages[i].chapterIndex === currentChapterIndex) {
@@ -1181,41 +1181,49 @@ async function setTextLayout(layout) {
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
 
-    // 재렌더링
+    // ✅ renderContent 완료까지 대기
     await renderContent();
 
-    // ✅ 위치 복원
-    requestAnimationFrame(function() {
+    // ✅ DOM 완전히 준비된 후 복원 (setTimeout으로 확실히 대기)
+    setTimeout(async function() {
         if (pageLayout === '2page') {
             scrollToChapterIn2Page(currentChapterIndex, chapterProgress);
+            console.log('✅ 2page 복원 완료: ch=' + currentChapterIndex + ', progress=' + chapterProgress.toFixed(2));
         } else {
-            scrollToChapter(currentChapterIndex, chapterProgress);
+            await scrollToChapter(currentChapterIndex, chapterProgress);
+            console.log('✅ 1page 복원 완료: ch=' + currentChapterIndex + ', progress=' + chapterProgress.toFixed(2));
         }
-    });
+    }, 200);
 
     if (window.showToast) window.showToast(layout === '2page' ? '2페이지 모드' : '1페이지 모드');
 }
-
-// ✅ 새 함수: 1page 모드에서 챕터로 스크롤
+// ✅ 수정: 챕터 내 진행률 정확히 복원
 async function scrollToChapter(chapterIndex, progress) {
     const container = document.getElementById('textViewerContainer');
     const content = document.getElementById('textViewerContent');
     if (!container || !content) return;
 
-    // 필요한 챕터까지 로드
+    // 필요한 챕터까지 로드 + 다음 챕터 1개 더 로드 (높이 계산 정확도)
+    const loadTarget = Math.min(chapterIndex + 1, epubData.chapterPaths.length - 1);
     const loadedChapters = container._loadedChapters || 0;
-    if (chapterIndex >= loadedChapters) {
-        for (let i = loadedChapters; i <= chapterIndex; i++) {
+    if (loadTarget >= loadedChapters) {
+        for (let i = loadedChapters; i <= loadTarget; i++) {
             await renderChapter(content, i);
         }
-        container._loadedChapters = chapterIndex + 1;
+        container._loadedChapters = loadTarget + 1;
     }
+
+    // ✅ DOM 레이아웃 강제 갱신
+    await new Promise(function(resolve) { setTimeout(resolve, 100); });
 
     // 챕터 위치로 스크롤
     const chapterEl = document.querySelector('[data-chapter-index="' + chapterIndex + '"]');
     if (chapterEl) {
-        const targetScroll = chapterEl.offsetTop + (chapterEl.offsetHeight * progress);
-        container.scrollTop = targetScroll - container.clientHeight / 2;
+        const chapterTop = chapterEl.offsetTop;
+        const chapterHeight = chapterEl.offsetHeight;
+        const targetScroll = chapterTop + (chapterHeight * progress);
+        container.scrollTop = Math.max(0, targetScroll - container.clientHeight * 0.3);
+        console.log('📜 스크롤 복원: top=' + chapterTop + ', height=' + chapterHeight + ', progress=' + progress.toFixed(2) + ', scrollTo=' + container.scrollTop);
     }
 }
 
