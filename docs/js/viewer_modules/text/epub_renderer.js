@@ -88,10 +88,21 @@ const saved = localStorage.getItem('progress_' + metadata.seriesId);
 if (saved) {
     const progressData = JSON.parse(saved);
     const bookProgress = progressData[metadata.bookId];
-    if (bookProgress && bookProgress.progress > 0) {
-        requestAnimationFrame(function () {
-            scrollToProgress(bookProgress.progress);
-            console.log('📖 Restored to ' + bookProgress.progress + '%');
+    if (bookProgress) {
+        requestAnimationFrame(async function () {
+            // ✅ 챕터 기반 복원 (있으면)
+            if (bookProgress.chapterIndex !== undefined && bookProgress.chapterIndex > 0) {
+                if (pageLayout === '2page') {
+                    scrollToChapterIn2Page(bookProgress.chapterIndex);
+                    console.log('📖 Restored to chapter ' + bookProgress.chapterIndex + ' (2page)');
+                } else {
+                    await scrollToChapter(bookProgress.chapterIndex, bookProgress.chapterProgress || 0);
+                    console.log('📖 Restored to chapter ' + bookProgress.chapterIndex + ' (1page)');
+                }
+            } else if (bookProgress.progress > 0) {
+                scrollToProgress(bookProgress.progress);
+                console.log('📖 Restored to ' + bookProgress.progress + '%');
+            }
         });
     }
 }
