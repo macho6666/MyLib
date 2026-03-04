@@ -18,8 +18,6 @@ export async function parseEpub(zip) {
     const chapterPaths = [];
     for (const item of spine) {
         let finalPath = opfDir + item.href;
-            // ✅ 디버깅 추가
-    console.log('🔍 체크:', item.href, '→ zip에 존재?', !!zip.file(item.href), !!zip.file(opfDir + item.href));
         // 파일이 없으면 href 그대로 사용
         if (!zip.file(finalPath) && zip.file(item.href)) {
             finalPath = item.href;
