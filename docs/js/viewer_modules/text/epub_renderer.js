@@ -92,7 +92,7 @@ if (saved) {
     if (bookProgress) {
         requestAnimationFrame(async function () {
             // ✅ 챕터 기반 복원
-            if (bookProgress.chapterIndex !== undefined && bookProgress.chapterIndex > 0) {
+            if (bookProgress.chapterIndex !== undefined) {
 if (pageLayout === '2page') {
     scrollToChapterIn2Page(bookProgress.chapterIndex, bookProgress.chapterProgress);
     console.log('📖 Restored to chapter ' + bookProgress.chapterIndex + ' (2page)');
