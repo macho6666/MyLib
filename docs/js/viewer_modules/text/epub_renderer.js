@@ -499,13 +499,18 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
     const testDiv = createTestPageElement();
 
     for (const child of children) {
-        const childHtml = child.outerHTML;
-        testDiv.innerHTML = currentHtml + childHtml;
+        const childHtml = child.outerHTML; // ✅ 원본 (이미지 포함)
+        
+        // ✅ 테스트용: 이미지 src 제거해서 404 방지
+        const testHtml = childHtml.replace(/<img[^>]*>/gi, '<span style="display:block;height:200px;"></span>');
+        
+        const currentTestHtml = currentHtml.replace(/<img[^>]*>/gi, '<span style="display:block;height:200px;"></span>');
+        testDiv.innerHTML = currentTestHtml + testHtml;
 
         if (testDiv.scrollHeight > maxHeight && currentHtml) {
             chunks.push({
                 type: 'html',
-                content: currentHtml,
+                content: currentHtml, // ✅ 원본 저장
                 chapterIndex: chapterIdx
             });
             currentHtml = childHtml;
@@ -513,6 +518,27 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
             currentHtml += childHtml;
         }
     }
+
+    if (currentHtml) {
+        chunks.push({
+            type: 'html',
+            content: currentHtml,
+            chapterIndex: chapterIdx
+        });
+    }
+
+    document.body.removeChild(testDiv);
+
+    if (chunks.length === 0 && body.textContent.trim()) {
+        chunks.push({
+            type: 'html',
+            content: body.innerHTML,
+            chapterIndex: chapterIdx
+        });
+    }
+
+    return chunks;
+}
 
     if (currentHtml) {
         chunks.push({
