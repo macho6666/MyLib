@@ -45,7 +45,7 @@ const ThemePresets = {
  * 원래 테마 저장
  */
 function saveOriginalTheme() {
-    if (originalThemeVars) return; // 이미 저장됨
+    if (originalThemeVars) return;
     
     const root = document.documentElement;
     const computedStyle = getComputedStyle(root);
@@ -85,13 +85,11 @@ export function restoreOriginalTheme() {
  * 테마 적용
  */
 export function applyTheme(mode = null) {
-    // 원래 테마 저장 (최초 1회)
     saveOriginalTheme();
     
     const currentMode = mode || TextViewerState.theme.mode || 'dark';
     const colors = ThemePresets[currentMode] || ThemePresets.dark;
     
-    // CSS 변수 설정 (전역 적용)
     const root = document.documentElement;
     root.style.setProperty('--text-primary', colors.text);
     root.style.setProperty('--text-secondary', colors.textSecondary);
@@ -101,14 +99,12 @@ export function applyTheme(mode = null) {
     root.style.setProperty('--bg-input', colors.bgInput);
     root.style.setProperty('--border-color', colors.border);
     
-    // 컨테이너 (바깥)
     const container = document.getElementById('textViewerContainer');
     if (container) {
         container.style.backgroundColor = colors.background;
         container.style.color = colors.text;
     }
     
-    // 콘텐츠 (본문) - p 태그도 변경!
     const content = document.getElementById('textViewerContent');
     if (content) {
         content.style.backgroundColor = colors.background;
@@ -119,7 +115,6 @@ export function applyTheme(mode = null) {
         });
     }
     
-    // 헤더
     const header = document.getElementById('textViewerHeader');
     if (header) {
         header.style.backgroundColor = currentMode === 'dark' 
@@ -130,20 +125,17 @@ export function applyTheme(mode = null) {
         header.style.color = colors.text;
         header.style.borderBottomColor = colors.border;
         
-        // 제목 색상 적용
         const title = document.getElementById('textViewerTitle');
         if (title) {
             title.style.color = colors.text;
         }
         
-        // 진행률 색상 적용
         const progress = document.getElementById('textProgressIndicator');
         if (progress) {
             progress.style.color = colors.textSecondary;
         }
     }
     
-    // 토글 버튼
     const toggleBtn = document.getElementById('textToggleBtn');
     if (toggleBtn) {
         toggleBtn.style.backgroundColor = currentMode === 'dark'
@@ -152,7 +144,6 @@ export function applyTheme(mode = null) {
         toggleBtn.style.color = colors.text;
     }
     
-    // 설정 패널
     const settingsPanel = document.getElementById('textViewerSettings');
     if (settingsPanel) {
         settingsPanel.style.backgroundColor = colors.bgCard;
@@ -179,6 +170,30 @@ export function applyTypography() {
             p.style.lineHeight = lineHeight;
         });
     }
+}
+
+/**
+ * ✅ 여백 적용 (상단/하단 패딩)
+ */
+export function applyPadding() {
+    const paddingTop = localStorage.getItem('text_padding_top') || '24';
+    const paddingBottom = localStorage.getItem('text_padding_bottom') || '24';
+    
+    const content = document.getElementById('textViewerContent');
+    if (content) {
+        content.style.paddingTop = paddingTop + 'px';
+        content.style.paddingBottom = paddingBottom + 'px';
+    }
+}
+
+/**
+ * ✅ 저장된 여백 가져오기
+ */
+export function getSavedPadding() {
+    return {
+        top: parseInt(localStorage.getItem('text_padding_top') || '24'),
+        bottom: parseInt(localStorage.getItem('text_padding_bottom') || '24')
+    };
 }
 
 console.log('✅ Text Theme loaded');
