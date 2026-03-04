@@ -3,38 +3,32 @@
  * EPUB 파일 파싱 (JSZip 기반) - Lazy Loading 최적화
  */
 
-/**
- * EPUB 파싱 메인 함수
- * @param {JSZip} zip - JSZip 객체 (이미 로드됨)
- * @returns {Promise<Object>} 파싱 결과
- */
 export async function parseEpub(zip) {
-    // 1. OPF 파일 경로 찾기
     const opfPath = await findOpfPath(zip);
     const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
 
-    // 2. OPF 파싱 → 챕터 순서, 매니페스트
     const { spine, manifest, metadata } = await parseOpf(zip, opfPath);
 
-    // 3. 목차 파싱 (NCX 또는 NAV)
+    // ✅ 수정: TOC 파싱 시 opfDir 전달
     const toc = await parseToc(zip, opfDir, manifest);
 
-    // 4. 챕터와 이미지는 경로만 저장 (lazy 로드)
+    // ✅ 수정: 챕터 경로 정규화
     const chapterPaths = spine.map(function(item) {
+        const fullPath = opfDir + item.href;
         return {
             id: item.id,
-            href: item.href,
-            path: opfDir + item.href
+            href: fullPath,  // ✅ 전체 경로로 통일
+            path: fullPath
         };
     });
 
-    // 이미지 경로 목록
     const imagePaths = {};
     for (const id in manifest) {
         const item = manifest[id];
         if (item.mediaType && item.mediaType.startsWith('image/')) {
-            imagePaths[item.href] = {
-                path: opfDir + item.href,
+            const fullPath = opfDir + item.href;
+            imagePaths[fullPath] = {  // ✅ 키도 전체 경로
+                path: fullPath,
                 mediaType: item.mediaType
             };
         }
@@ -50,9 +44,6 @@ export async function parseEpub(zip) {
     };
 }
 
-/**
- * OPF 파일 경로 찾기 (container.xml 파싱)
- */
 async function findOpfPath(zip) {
     const containerFile = zip.file('META-INF/container.xml');
     if (!containerFile) {
@@ -71,9 +62,6 @@ async function findOpfPath(zip) {
     return rootfile.getAttribute('full-path');
 }
 
-/**
- * OPF 파일 파싱
- */
 async function parseOpf(zip, opfPath) {
     const opfFile = zip.file(opfPath);
     if (!opfFile) throw new Error('OPF 파일 없음: ' + opfPath);
@@ -82,14 +70,12 @@ async function parseOpf(zip, opfPath) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(opfXml, 'application/xml');
 
-    // 메타데이터
     const metadata = {
         title: getXmlText(doc, 'dc\\:title, title') || '',
         author: getXmlText(doc, 'dc\\:creator, creator') || '',
         language: getXmlText(doc, 'dc\\:language, language') || '',
     };
 
-    // 매니페스트 (id → href, media-type 매핑)
     const manifest = {};
     doc.querySelectorAll('manifest item').forEach(function(item) {
         manifest[item.getAttribute('id')] = {
@@ -98,7 +84,6 @@ async function parseOpf(zip, opfPath) {
         };
     });
 
-    // 스파인 (읽기 순서)
     const spine = [];
     doc.querySelectorAll('spine itemref').forEach(function(itemref) {
         const idref = itemref.getAttribute('idref');
@@ -115,31 +100,33 @@ async function parseOpf(zip, opfPath) {
 }
 
 /**
- * 목차 파싱 (NAV 또는 NCX)
+ * ✅ 수정: TOC href도 전체 경로로 정규화
  */
 async function parseToc(zip, opfDir, manifest) {
-    // NAV 파일 먼저 시도 (EPUB3)
     const navItem = Object.values(manifest).find(function(item) {
         return item.mediaType === 'application/xhtml+xml' &&
                item.href.includes('nav');
     });
 
     if (navItem) {
-        const navFile = zip.file(opfDir + navItem.href);
+        const navPath = opfDir + navItem.href;
+        const navDir = navPath.substring(0, navPath.lastIndexOf('/') + 1);
+        const navFile = zip.file(navPath);
         if (navFile) {
-            return await parseNavToc(navFile);
+            return await parseNavToc(navFile, navDir);
         }
     }
 
-    // NCX 파일 시도 (EPUB2)
     const ncxItem = Object.values(manifest).find(function(item) {
         return item.mediaType === 'application/x-dtbncx+xml';
     });
 
     if (ncxItem) {
-        const ncxFile = zip.file(opfDir + ncxItem.href);
+        const ncxPath = opfDir + ncxItem.href;
+        const ncxDir = ncxPath.substring(0, ncxPath.lastIndexOf('/') + 1);
+        const ncxFile = zip.file(ncxPath);
         if (ncxFile) {
-            return await parseNcxToc(ncxFile);
+            return await parseNcxToc(ncxFile, ncxDir);
         }
     }
 
@@ -147,22 +134,18 @@ async function parseToc(zip, opfDir, manifest) {
 }
 
 /**
- * NAV 목차 파싱 (EPUB3)
+ * ✅ 수정: NAV 목차 - 전체 경로 반환
  */
-async function parseNavToc(navFile) {
+async function parseNavToc(navFile, navDir) {
     const navXml = await navFile.async('string');
     const parser = new DOMParser();
     const doc = parser.parseFromString(navXml, 'application/xhtml+xml');
 
     const toc = [];
-    // ✅ 더 정확한 선택자
     const navEl = doc.querySelector('nav[epub\\:type="toc"], nav[role="doc-toc"], nav');
     
     if (navEl) {
-        // ✅ li > a 구조 먼저 시도
         let navPoints = navEl.querySelectorAll('li > a');
-        
-        // 없으면 모든 a 태그
         if (navPoints.length === 0) {
             navPoints = navEl.querySelectorAll('a');
         }
@@ -171,9 +154,11 @@ async function parseNavToc(navFile) {
             const href = a.getAttribute('href') || '';
             const text = a.textContent.trim();
             if (text && href) {
+                // ✅ 상대경로를 전체경로로 변환
+                const fullHref = resolveHref(navDir, href.split('#')[0]);
                 toc.push({
                     label: text,
-                    href: href.split('#')[0],
+                    href: fullHref,
                     anchor: href.includes('#') ? href.split('#')[1] : null
                 });
             }
@@ -182,10 +167,11 @@ async function parseNavToc(navFile) {
 
     return toc;
 }
+
 /**
- * NCX 목차 파싱 (EPUB2)
+ * ✅ 수정: NCX 목차 - 전체 경로 반환
  */
-async function parseNcxToc(ncxFile) {
+async function parseNcxToc(ncxFile, ncxDir) {
     const ncxXml = await ncxFile.async('string');
     const parser = new DOMParser();
     const doc = parser.parseFromString(ncxXml, 'application/xml');
@@ -197,9 +183,11 @@ async function parseNcxToc(ncxFile) {
 
         if (label && content) {
             const src = content.getAttribute('src') || '';
+            // ✅ 상대경로를 전체경로로 변환
+            const fullHref = resolveHref(ncxDir, src.split('#')[0]);
             toc.push({
                 label: label.textContent.trim(),
-                href: src.split('#')[0],
+                href: fullHref,
                 anchor: src.includes('#') ? src.split('#')[1] : null
             });
         }
@@ -209,8 +197,27 @@ async function parseNcxToc(ncxFile) {
 }
 
 /**
- * XML/HTML에서 텍스트 추출
+ * ✅ 새로 추가: 상대경로 → 절대경로 변환
  */
+function resolveHref(baseDir, relativePath) {
+    if (!relativePath) return '';
+    if (relativePath.startsWith('/')) return relativePath.substring(1);
+    
+    const combined = baseDir + relativePath;
+    const parts = combined.split('/');
+    const resolved = [];
+    
+    for (const part of parts) {
+        if (part === '..') {
+            resolved.pop();
+        } else if (part !== '.' && part !== '') {
+            resolved.push(part);
+        }
+    }
+    
+    return resolved.join('/');
+}
+
 function getXmlText(doc, selector) {
     const el = doc.querySelector(selector);
     return el ? el.textContent.trim() : '';
