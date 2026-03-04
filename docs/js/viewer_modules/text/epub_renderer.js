@@ -665,7 +665,8 @@ function renderSpread(spreadIndex) {
     renderSinglePage(rightPage, pages[rightIdx], rightIdx + 1, 'right');
 
     currentSpreadIndex = spreadIndex;
-    TextViewerState.currentSpreadIndex = spreadIndex;
+    TextViewerState.currentSpreadIndex = spreadIndex;  // ✅ 추가!
+    
     const progress = totalSpreads > 1 ? Math.round((spreadIndex / (totalSpreads - 1)) * 100) : 100;
     updateProgressIndicator(progress);
 
