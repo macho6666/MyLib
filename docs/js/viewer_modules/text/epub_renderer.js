@@ -323,8 +323,13 @@ async function processImages(bodyEl, zip, imagePaths, chapterHref) {
 
     for (const img of images) {
         const src = img.getAttribute('src') || '';
+        
+        // 이미 data URL이면 스킵
+        if (src.startsWith('data:')) continue;
+        
         const normalizedSrc = normalizePath(chapterHref, src);
-
+        
+        // ✅ imagePaths에 있는 이미지만 로드
         if (imagePaths[normalizedSrc]) {
             try {
                 const imgFile = zip.file(imagePaths[normalizedSrc].path);
@@ -335,8 +340,15 @@ async function processImages(bodyEl, zip, imagePaths, chapterHref) {
                     img.style.cssText = 'max-width: 100%; height: auto; display: block; margin: 16px auto; border-radius: 4px;';
                 }
             } catch (e) {
-                console.warn('Image load failed:', normalizedSrc);
+                console.warn('Image load failed:', normalizedSrc, e);
+                img.removeAttribute('src');
+                img.style.display = 'none';
             }
+        } else {
+            // ✅ imagePaths에 없으면 숨김 (404 방지)
+            console.warn('Image not in manifest:', src, '→', normalizedSrc);
+            img.removeAttribute('src');
+            img.style.display = 'none';
         }
     }
 }
