@@ -55,15 +55,6 @@ export async function parseEpub(zip) {
         opfDir
     };
 }
-    return {
-        metadata,
-        toc,
-        chapterPaths,
-        imagePaths,
-        zip,
-        opfDir
-    };
-}
 
 async function findOpfPath(zip) {
     const containerFile = zip.file('META-INF/container.xml');
@@ -120,9 +111,6 @@ async function parseOpf(zip, opfPath) {
     return { spine, manifest, metadata };
 }
 
-/**
- * ✅ 수정: TOC href도 전체 경로로 정규화
- */
 async function parseToc(zip, opfDir, manifest) {
     const navItem = Object.values(manifest).find(function(item) {
         return item.mediaType === 'application/xhtml+xml' &&
@@ -154,9 +142,6 @@ async function parseToc(zip, opfDir, manifest) {
     return [];
 }
 
-/**
- * ✅ 수정: NAV 목차 - 전체 경로 반환
- */
 async function parseNavToc(navFile, navDir) {
     const navXml = await navFile.async('string');
     const parser = new DOMParser();
@@ -175,7 +160,6 @@ async function parseNavToc(navFile, navDir) {
             const href = a.getAttribute('href') || '';
             const text = a.textContent.trim();
             if (text && href) {
-                // ✅ 상대경로를 전체경로로 변환
                 const fullHref = resolveHref(navDir, href.split('#')[0]);
                 toc.push({
                     label: text,
@@ -189,9 +173,6 @@ async function parseNavToc(navFile, navDir) {
     return toc;
 }
 
-/**
- * ✅ 수정: NCX 목차 - 전체 경로 반환
- */
 async function parseNcxToc(ncxFile, ncxDir) {
     const ncxXml = await ncxFile.async('string');
     const parser = new DOMParser();
@@ -204,7 +185,6 @@ async function parseNcxToc(ncxFile, ncxDir) {
 
         if (label && content) {
             const src = content.getAttribute('src') || '';
-            // ✅ 상대경로를 전체경로로 변환
             const fullHref = resolveHref(ncxDir, src.split('#')[0]);
             toc.push({
                 label: label.textContent.trim(),
@@ -217,9 +197,6 @@ async function parseNcxToc(ncxFile, ncxDir) {
     return toc;
 }
 
-/**
- * ✅ 새로 추가: 상대경로 → 절대경로 변환
- */
 function resolveHref(baseDir, relativePath) {
     if (!relativePath) return '';
     if (relativePath.startsWith('/')) return relativePath.substring(1);
