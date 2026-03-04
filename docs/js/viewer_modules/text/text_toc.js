@@ -9,11 +9,27 @@ import { TextViewerState } from './text_state.js';
  * 표지 이미지 로드 (cover.jpg)
  * @param {string} seriesId - 시리즈 ID
  * @param {string} bookId - 책 ID
+ * @param {Object} metadata - 파일 메타데이터 (선택)
  * @returns {Promise<string|null>} 표지 URL 또는 null
  */
-export async function loadCover(seriesId, bookId) {
+export async function loadCover(seriesId, bookId, metadata = null) {
+    // ✅ EPUB은 내부에 커버가 포함되어 있으므로 외부 로드 스킵
+    if (metadata) {
+        const fileName = metadata.name || metadata.fileName || '';
+        if (fileName.toLowerCase().endsWith('.epub')) {
+            console.log('📘 EPUB: 외부 커버 로드 스킵 (내부 커버 사용)');
+            return null;
+        }
+    }
+    
+    // ✅ TextViewerState에서 renderType 체크
+    if (TextViewerState.renderType === 'epub') {
+        console.log('📘 EPUB: 외부 커버 로드 스킵 (내부 커버 사용)');
+        return null;
+    }
+    
     try {
-        // GAS API: 같은 폴더의 cover.jpg 검색
+        // GAS API: 같은 폴더의 cover.jpg 검색 (TXT 전용)
         const result = await API.request('get_sibling_file', {
             currentFileId: bookId,
             fileName: 'cover.jpg'
