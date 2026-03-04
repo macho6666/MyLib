@@ -381,22 +381,18 @@ function hideClickGuide() {
 }
 
 function create1PageContent(container, textContent, metadata) {
+    // ✅ 저장된 여백 로드
+    const paddingTop = localStorage.getItem('text_padding_top') || '24';
+    const paddingBottom = localStorage.getItem('text_padding_bottom') || '24';
+    
     const content = document.createElement('div');
     content.id = 'textViewerContent';
-content.style.cssText = 
-    if (metadata.coverUrl) {
-        content.innerHTML += 
-            '<div style="text-align: center; margin-bottom: 32px;">' +
-                '<img src="' + metadata.coverUrl + '" alt="cover" style="max-width: 180px; max-height: 260px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
-                '<h1 style="margin-top: 16px; font-size: 20px; font-weight: 600;">' + escapeHtml(metadata.name || '') + '</h1>' +
-            '</div>' +
-            '<hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">';
-    }
-    content.innerHTML += formatText(textContent);
-    content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
-    container.appendChild(content);
-}
-
+    content.style.cssText = 
+        'max-width: 800px; margin: 0 auto;' +
+        'padding: ' + paddingTop + 'px 16px ' + paddingBottom + 'px 16px;' +  // ✅ 동적 패딩
+        'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
+        'box-sizing: border-box; overflow-x: hidden; width: 100%;';
+    
 function create2PageContent(container, textContent, metadata) {
     const pages = splitTextToPages(textContent, metadata);
     totalSpreads = Math.ceil(pages.length / 2);
