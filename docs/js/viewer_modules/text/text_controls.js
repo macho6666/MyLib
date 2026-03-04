@@ -4,7 +4,7 @@
  */
 
 import { TextViewerState, setLayout, setTheme, setFontSize, setLineHeight } from './text_state.js';
-import { applyTheme, applyTypography } from './text_theme.js';
+import { applyTheme, applyTypography, applyPadding } from './text_theme.js';
 import { showToast } from '../core/utils.js';
 import { Events } from '../core/events.js';
 
@@ -40,6 +40,10 @@ function createSettingsPanel() {
         padding: 20px;
         box-sizing: border-box;
     `;
+    
+    // 저장된 여백값 로드
+    const savedPaddingTop = localStorage.getItem('text_padding_top') || '24';
+    const savedPaddingBottom = localStorage.getItem('text_padding_bottom') || '24';
     
     panel.innerHTML = `
         <div class="settings-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
@@ -115,6 +119,24 @@ function createSettingsPanel() {
             <input type="range" id="lineHeightSlider" min="1.2" max="2.5" step="0.1" value="1.8" style="width: 100%; cursor: pointer;">
         </div>
         
+        <!-- ✅ 상단 여백 -->
+        <div class="setting-group" style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">
+                Top Padding: <span id="paddingTopValue">${savedPaddingTop}px</span>
+            </label>
+            <input type="range" id="paddingTopSlider" min="0" max="150" step="5" value="${savedPaddingTop}" style="width: 100%; cursor: pointer;">
+            <p style="font-size: 11px; color: var(--text-tertiary, #666); margin-top: 6px;">상단 글자 잘리면 늘리세요</p>
+        </div>
+        
+        <!-- ✅ 하단 여백 -->
+        <div class="setting-group" style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">
+                Bottom Padding: <span id="paddingBottomValue">${savedPaddingBottom}px</span>
+            </label>
+            <input type="range" id="paddingBottomSlider" min="0" max="150" step="5" value="${savedPaddingBottom}" style="width: 100%; cursor: pointer;">
+            <p style="font-size: 11px; color: var(--text-tertiary, #666); margin-top: 6px;">하단 글자 잘리면 늘리세요</p>
+        </div>
+        
         <!-- Calendar Settings -->
         <div class="setting-group" style="margin-bottom: 24px;">
             <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Calendar Settings</label>
@@ -159,7 +181,7 @@ function createSettingsPanel() {
             </label>
         </div>
     
-<!-- 북마크 초기화 -->
+        <!-- 북마크 초기화 -->
         <div class="setting-group" style="margin-bottom: 24px;">
             <button id="btnResetBookmark" class="setting-btn" style="width: 100%;">Reset Bookmark</button>
         </div>
@@ -176,12 +198,12 @@ function createSettingsPanel() {
  */
 function setupControlEvents() {
     // 닫기
-const closeBtn = document.getElementById('btnCloseSettings');
-if (closeBtn) {
-    closeBtn.onclick = closeSettings;
-    closeBtn.onmouseenter = function() { this.style.color = '#4a9eff'; };
-    closeBtn.onmouseleave = function() { this.style.color = '#888'; };
-}
+    const closeBtn = document.getElementById('btnCloseSettings');
+    if (closeBtn) {
+        closeBtn.onclick = closeSettings;
+        closeBtn.onmouseenter = function() { this.style.color = '#4a9eff'; };
+        closeBtn.onmouseleave = function() { this.style.color = '#888'; };
+    }
     
     // 읽기 모드
     const scrollBtn = document.getElementById('btnModeScroll');
@@ -253,6 +275,28 @@ if (closeBtn) {
         };
     }
     
+    // ✅ 상단 여백
+    const paddingTopSlider = document.getElementById('paddingTopSlider');
+    if (paddingTopSlider) {
+        paddingTopSlider.oninput = (e) => {
+            const value = parseInt(e.target.value);
+            document.getElementById('paddingTopValue').innerText = value + 'px';
+            localStorage.setItem('text_padding_top', value);
+            applyPadding();
+        };
+    }
+    
+    // ✅ 하단 여백
+    const paddingBottomSlider = document.getElementById('paddingBottomSlider');
+    if (paddingBottomSlider) {
+        paddingBottomSlider.oninput = (e) => {
+            const value = parseInt(e.target.value);
+            document.getElementById('paddingBottomValue').innerText = value + 'px';
+            localStorage.setItem('text_padding_bottom', value);
+            applyPadding();
+        };
+    }
+    
     // Calendar Settings - 진행도 저장 체크박스
     const chkSaveProgress = document.getElementById('chkSaveProgress');
     if (chkSaveProgress) {
@@ -299,6 +343,7 @@ if (closeBtn) {
             if (window.showToast) window.showToast('Highlight color changed');
         };
     });
+    
     // EPUB Style 옵션
     const chkEpubStyle = document.getElementById('chkEpubOriginalStyle');
     if (chkEpubStyle) {
@@ -309,17 +354,19 @@ if (closeBtn) {
             if (window.showToast) window.showToast(chkEpubStyle.checked ? 'EPUB 원본 스타일 적용' : '기본 스타일 적용');
         };
     }        
-// 북마크 초기화
-const resetBtn = document.getElementById('btnResetBookmark');
-if (resetBtn) {
-    resetBtn.onclick = resetCurrentBookmark;
-}
+
+    // 북마크 초기화
+    const resetBtn = document.getElementById('btnResetBookmark');
+    if (resetBtn) {
+        resetBtn.onclick = resetCurrentBookmark;
+    }
     
     // 초기 상태 업데이트
     updateReadModeUI();
     updateLayoutUI();
     updateThemeUI();
     updateFontUI();
+    updatePaddingUI();
 }
 
 /**
@@ -381,6 +428,24 @@ function updateFontUI() {
     if (lineValue) {
         lineValue.innerText = lineHeight.toFixed(1);
     }
+}
+
+/**
+ * ✅ 여백 UI 업데이트
+ */
+function updatePaddingUI() {
+    const paddingTop = localStorage.getItem('text_padding_top') || '24';
+    const paddingBottom = localStorage.getItem('text_padding_bottom') || '24';
+    
+    const topSlider = document.getElementById('paddingTopSlider');
+    const topValue = document.getElementById('paddingTopValue');
+    const bottomSlider = document.getElementById('paddingBottomSlider');
+    const bottomValue = document.getElementById('paddingBottomValue');
+    
+    if (topSlider) topSlider.value = paddingTop;
+    if (topValue) topValue.innerText = paddingTop + 'px';
+    if (bottomSlider) bottomSlider.value = paddingBottom;
+    if (bottomValue) bottomValue.innerText = paddingBottom + 'px';
 }
 
 /**
@@ -463,8 +528,9 @@ export function openSettings() {
         updateLayoutUI();
         updateThemeUI();
         updateFontUI();
+        updatePaddingUI();
         updateCalendarUI();
-        // ✅ 여기에 추가
+        
         // EPUB일 때만 EPUB Style 그룹 표시
         const epubStyleGroup = document.getElementById('epubStyleGroup');
         if (epubStyleGroup) {
@@ -473,6 +539,7 @@ export function openSettings() {
         }
     }
 }
+
 /**
  * Calendar 설정 UI 업데이트
  */
@@ -518,6 +585,7 @@ export function closeSettings() {
         if (toggleBtn) toggleBtn.style.display = 'flex';
     }
 }
+
 /**
  * 설정 패널 토글
  */
@@ -585,7 +653,9 @@ style.textContent = `
         color: #4a9eff;
     }
     
-    #lineHeightSlider {
+    #lineHeightSlider,
+    #paddingTopSlider,
+    #paddingBottomSlider {
         -webkit-appearance: none;
         appearance: none;
         height: 6px;
@@ -593,7 +663,9 @@ style.textContent = `
         border-radius: 3px;
         outline: none;
     }
-    #lineHeightSlider::-webkit-slider-thumb {
+    #lineHeightSlider::-webkit-slider-thumb,
+    #paddingTopSlider::-webkit-slider-thumb,
+    #paddingBottomSlider::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
         width: 18px;
@@ -602,7 +674,9 @@ style.textContent = `
         border-radius: 50%;
         cursor: pointer;
     }
-    #lineHeightSlider::-moz-range-thumb {
+    #lineHeightSlider::-moz-range-thumb,
+    #paddingTopSlider::-moz-range-thumb,
+    #paddingBottomSlider::-moz-range-thumb {
         width: 18px;
         height: 18px;
         background: var(--accent, #4a9eff);
