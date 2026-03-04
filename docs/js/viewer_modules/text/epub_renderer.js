@@ -539,29 +539,6 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
 
     return chunks;
 }
-
-    if (currentHtml) {
-        chunks.push({
-            type: 'html',
-            content: currentHtml,
-            chapterIndex: chapterIdx
-        });
-    }
-
-    document.body.removeChild(testDiv);
-
-    // 빈 청크 방지
-    if (chunks.length === 0 && body.textContent.trim()) {
-        chunks.push({
-            type: 'html',
-            content: body.innerHTML,
-            chapterIndex: chapterIdx
-        });
-    }
-
-    return chunks;
-}
-
 function createTestPageElement() {
     const testPage = document.createElement('div');
     testPage.style.cssText =
