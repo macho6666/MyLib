@@ -498,7 +498,15 @@ async function extractPagesWithImages() {
             body.querySelectorAll('link[rel="stylesheet"]').forEach(function(link) {
                 link.remove();
             });
-
+// ✅ SVG image 추가! ←←←
+body.querySelectorAll('svg image').forEach(function(img) {
+    var href = img.getAttribute('href') || img.getAttribute('xlink:href') || '';
+    if (!href.startsWith('data:') && !href.startsWith('http')) {
+        img.removeAttribute('href');
+        img.removeAttribute('xlink:href');
+        img.style.display = 'none';
+    }
+});
             const chunks = splitHtmlToChunks(body, maxHeight, chapterIdx);
             pages.push.apply(pages, chunks);
 
@@ -654,18 +662,30 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
                 '<h1 style="margin-top: 24px; font-size: 22px; font-weight: 600;">' + escapeHtml(pageData.title || '') + '</h1>' +
                 '</div>';
             break;
-        case 'html':
-            contentDiv.innerHTML = pageData.content;
-            contentDiv.dataset.chapterIndex = pageData.chapterIndex;
-            pageNumDiv.textContent = pageNumber;
-                contentDiv.querySelectorAll('img').forEach(function(img) {
+case 'html':
+    contentDiv.innerHTML = pageData.content;
+    contentDiv.dataset.chapterIndex = pageData.chapterIndex;
+    pageNumDiv.textContent = pageNumber;
+    
+    // ✅ 깨진 img 숨김
+    contentDiv.querySelectorAll('img').forEach(function(img) {
         var src = img.getAttribute('src') || '';
         if (!src.startsWith('data:') && !src.startsWith('http')) {
             img.removeAttribute('src');
             img.style.display = 'none';
-               }
+        }
     });
-            break;
+    
+    // ✅ 추가: SVG image 태그도 숨김
+    contentDiv.querySelectorAll('svg image').forEach(function(img) {
+        var href = img.getAttribute('href') || img.getAttribute('xlink:href') || '';
+        if (!href.startsWith('data:') && !href.startsWith('http')) {
+            img.removeAttribute('href');
+            img.removeAttribute('xlink:href');
+            img.style.display = 'none';
+        }
+    });
+    break;
         case 'text':
             contentDiv.innerHTML = formatText(pageData.content);
             pageNumDiv.textContent = pageNumber;
