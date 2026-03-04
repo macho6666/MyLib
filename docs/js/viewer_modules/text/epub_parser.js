@@ -6,37 +6,55 @@
 export async function parseEpub(zip) {
     const opfPath = await findOpfPath(zip);
     const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
-        // ✅ 디버깅 추가
+    
     console.log('🔍 OPF 경로:', opfPath);
     console.log('🔍 OPF 디렉토리:', opfDir);
 
     const { spine, manifest, metadata } = await parseOpf(zip, opfPath);
 
-    // ✅ 수정: TOC 파싱 시 opfDir 전달
     const toc = await parseToc(zip, opfDir, manifest);
 
-    // ✅ 수정: 챕터 경로 정규화
-    const chapterPaths = spine.map(function(item) {
-        const fullPath = opfDir + item.href;
-        return {
+    // ✅ 수정: 실제 파일 존재 여부로 경로 결정
+    const chapterPaths = [];
+    for (const item of spine) {
+        let finalPath = opfDir + item.href;
+        
+        // 파일이 없으면 href 그대로 사용
+        if (!zip.file(finalPath) && zip.file(item.href)) {
+            finalPath = item.href;
+        }
+        
+        chapterPaths.push({
             id: item.id,
-            href: fullPath,  // ✅ 전체 경로로 통일
-            path: fullPath
-        };
-    });
+            href: finalPath,
+            path: finalPath
+        });
+    }
 
     const imagePaths = {};
     for (const id in manifest) {
         const item = manifest[id];
         if (item.mediaType && item.mediaType.startsWith('image/')) {
-            const fullPath = opfDir + item.href;
-            imagePaths[fullPath] = {  // ✅ 키도 전체 경로
+            let fullPath = opfDir + item.href;
+            if (!zip.file(fullPath) && zip.file(item.href)) {
+                fullPath = item.href;
+            }
+            imagePaths[fullPath] = {
                 path: fullPath,
                 mediaType: item.mediaType
             };
         }
     }
 
+    return {
+        metadata,
+        toc,
+        chapterPaths,
+        imagePaths,
+        zip,
+        opfDir
+    };
+}
     return {
         metadata,
         toc,
