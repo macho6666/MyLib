@@ -495,37 +495,68 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
     const chunks = [];
     const children = Array.from(body.children);
 
-    let currentHtml = '';
-    const testDiv = createTestPageElement();
+    let currentElements = [];
+    
+    // ✅ 실제 측정용 div 생성
+    const measureDiv = document.createElement('div');
+    measureDiv.style.cssText =
+        'position: absolute; left: -9999px; top: 0;' +
+        'width: 700px;' + // 실제 페이지 너비와 동일하게
+        'padding: 40px 40px 20px 40px;' + // 실제 패딩과 동일
+        'font-size: 17px; line-height: 1.85;' +
+        'word-break: keep-all; letter-spacing: 0.3px;' +
+        'box-sizing: border-box; visibility: hidden;';
+    document.body.appendChild(measureDiv);
 
     for (const child of children) {
-        const childHtml = child.outerHTML;
-        testDiv.innerHTML = currentHtml + childHtml;
+        // ✅ 측정용 클론 (이미지는 placeholder)
+        const testClone = child.cloneNode(true);
+        testClone.querySelectorAll('img').forEach(img => {
+            const placeholder = document.createElement('div');
+            placeholder.style.cssText = 'height: 200px; margin: 16px auto;';
+            img.replaceWith(placeholder);
+        });
 
-        if (testDiv.scrollHeight > maxHeight && currentHtml) {
+        // ✅ 현재 누적 + 새 요소를 measureDiv에 넣고 높이 측정
+        measureDiv.innerHTML = '';
+        currentElements.forEach(el => {
+            const clone = el.cloneNode(true);
+            clone.querySelectorAll('img').forEach(img => {
+                const ph = document.createElement('div');
+                ph.style.cssText = 'height: 200px; margin: 16px auto;';
+                img.replaceWith(ph);
+            });
+            measureDiv.appendChild(clone);
+        });
+        measureDiv.appendChild(testClone);
+
+        const currentHeight = measureDiv.scrollHeight; // ✅ 실제 높이
+
+        if (currentHeight > maxHeight && currentElements.length > 0) {
+            // 페이지 넘침 → 현재까지 저장
             chunks.push({
                 type: 'html',
-                content: currentHtml,
+                content: currentElements.map(el => el.outerHTML).join(''),
                 chapterIndex: chapterIdx
             });
-            currentHtml = childHtml;
+            currentElements = [child]; // 원본 저장
         } else {
-            currentHtml += childHtml;
+            currentElements.push(child); // 원본 저장
         }
     }
 
-    if (currentHtml) {
+    // 남은 요소 저장
+    if (currentElements.length > 0) {
         chunks.push({
             type: 'html',
-            content: currentHtml,
+            content: currentElements.map(el => el.outerHTML).join(''),
             chapterIndex: chapterIdx
         });
     }
 
-    document.body.removeChild(testDiv);
+    document.body.removeChild(measureDiv);
 
-    // 빈 청크 방지
-    if (chunks.length === 0 && body.textContent.trim()) {
+    if (chunks.length === 0 && body.innerHTML.trim()) {
         chunks.push({
             type: 'html',
             content: body.innerHTML,
