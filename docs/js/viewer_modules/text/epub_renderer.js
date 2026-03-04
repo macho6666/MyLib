@@ -462,7 +462,6 @@ async function extractPagesWithImages() {
         return pages;
     }
 
-    // 커버 페이지
     if (currentMetadata && currentMetadata.coverUrl) {
         pages.push({ type: 'cover', coverUrl: currentMetadata.coverUrl, title: currentMetadata.name });
         pages.push({ type: 'empty' });
@@ -486,7 +485,20 @@ async function extractPagesWithImages() {
             // 이미지 처리
             await processImages(body, epubData.zip, epubData.imagePaths, chapter.href);
 
-            // HTML을 청크로 분할
+            // ✅ 추가: 남아있는 문제 이미지 완전 제거
+            body.querySelectorAll('img').forEach(function(img) {
+                const src = img.getAttribute('src') || '';
+                if (!src.startsWith('data:')) {
+                    img.removeAttribute('src');
+                    img.style.display = 'none';
+                }
+            });
+
+            // ✅ 추가: CSS 링크 제거
+            body.querySelectorAll('link[rel="stylesheet"]').forEach(function(link) {
+                link.remove();
+            });
+
             const chunks = splitHtmlToChunks(body, maxHeight, chapterIdx);
             pages.push.apply(pages, chunks);
 
@@ -501,7 +513,6 @@ async function extractPagesWithImages() {
     console.log('📄 2Page 모드: 총', pages.length, '페이지 생성');
     return pages;
 }
-
 // ✅ HTML을 페이지 높이에 맞게 분할
 function splitHtmlToChunks(body, maxHeight, chapterIdx) {
     const chunks = [];
@@ -647,6 +658,13 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
             contentDiv.innerHTML = pageData.content;
             contentDiv.dataset.chapterIndex = pageData.chapterIndex;
             pageNumDiv.textContent = pageNumber;
+                contentDiv.querySelectorAll('img').forEach(function(img) {
+        var src = img.getAttribute('src') || '';
+        if (!src.startsWith('data:') && !src.startsWith('http')) {
+            img.removeAttribute('src');
+            img.style.display = 'none';
+               }
+    });
             break;
         case 'text':
             contentDiv.innerHTML = formatText(pageData.content);
