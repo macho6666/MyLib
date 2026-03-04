@@ -768,20 +768,37 @@ function createTocPanel() {
         '<div id="tocList" style="padding: 12px 0;">';
 
     if (epubData && epubData.toc && epubData.toc.length > 0) {
-        epubData.toc.forEach(function (item, index) {
+
+        
             // 📝 TODO: "권" 구분 스타일 추가 예정
             // const isVolume = /^\d+권|제\d+권|Volume\s*\d/i.test(item.label);
             // if (isVolume) → 금색 #d4af37, 폰트 크기 16px, font-weight: 600
 
-            tocHtml +=
-                '<div class="toc-item" data-toc-index="' + index + '" data-href="' + item.href + '" style="' +
-                'padding: 12px 20px; cursor: pointer; font-size: 14px;' +
-                'color: var(--text-secondary, #aaa); transition: all 0.2s;' +
-                'border-left: 3px solid transparent;" ' +
-                'onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'; this.style.color=\'#e8e8e8\';" ' +
-                'onmouseout="this.style.background=\'transparent\'; this.style.color=\'var(--text-secondary, #aaa)\';">' +
-                escapeHtml(item.label) +
-                '</div>';
+        
+         epubData.toc.forEach(function (item, index) {
+            var isVolume = /^\d+권|제\d+권|Volume\s*\d/i.test(item.label.trim());
+
+            if (isVolume) {
+                tocHtml +=
+                    '<div class="toc-item toc-volume" data-toc-index="' + index + '" data-href="' + item.href + '" style="' +
+                    'padding: 14px 20px; cursor: pointer; font-size: 16px; font-weight: 600;' +
+                    'color: #d4af37; transition: all 0.2s;' +
+                    'border-left: 3px solid #d4af37; margin-top: 8px;" ' +
+                    'onmouseover="this.style.background=\'rgba(212,175,55,0.1)\'; this.style.color=\'#e8c84a\';" ' +
+                    'onmouseout="this.style.background=\'transparent\'; this.style.color=\'#d4af37\';">' +
+                    '📖 ' + escapeHtml(item.label) +
+                    '</div>';
+            } else {
+                tocHtml +=
+                    '<div class="toc-item" data-toc-index="' + index + '" data-href="' + item.href + '" style="' +
+                    'padding: 12px 20px; cursor: pointer; font-size: 14px;' +
+                    'color: var(--text-secondary, #aaa); transition: all 0.2s;' +
+                    'border-left: 3px solid transparent;" ' +
+                    'onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'; this.style.color=\'#e8e8e8\';" ' +
+                    'onmouseout="this.style.background=\'transparent\'; this.style.color=\'var(--text-secondary, #aaa)\';">' +
+                    escapeHtml(item.label) +
+                    '</div>';
+            }
         });
     } else {
         tocHtml += '<div style="padding: 20px; color: var(--text-tertiary, #666); font-size: 13px;">목차 없음</div>';
