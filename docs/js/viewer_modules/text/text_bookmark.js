@@ -20,7 +20,7 @@ export function updateProgress(seriesId, bookId, isManual = false) {
     
     const container = document.getElementById('textViewerContainer');
     if (container) {
-        // 1page 모드
+        // 1page 모드: 현재 보이는 챕터 찾기
         const chapters = container.querySelectorAll('.epub-chapter');
         if (chapters.length > 0) {
             const scrollTop = container.scrollTop;
@@ -36,10 +36,10 @@ export function updateProgress(seriesId, bookId, isManual = false) {
             }
         }
         
-        // 2page 모드
-        if (container._pages) {
+        // 2page 모드: 현재 페이지에서 챕터 찾기
+        if (container._pages && TextViewerState.currentSpreadIndex !== undefined) {
             const pages = container._pages;
-            const leftIdx = (TextViewerState.currentSpreadIndex || 0) * 2;
+            const leftIdx = TextViewerState.currentSpreadIndex * 2;
             if (pages[leftIdx] && pages[leftIdx].chapterIndex !== undefined) {
                 chapterIndex = pages[leftIdx].chapterIndex;
             }
@@ -67,7 +67,6 @@ export function updateProgress(seriesId, bookId, isManual = false) {
         markAsRead(seriesId, bookId);
     }
 }
-
 /**
  * 책갈피 저장 (자동 저장용 - updateProgress 호출)
  */
