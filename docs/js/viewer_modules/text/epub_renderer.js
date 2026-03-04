@@ -90,7 +90,7 @@ if (saved) {
     const bookProgress = progressData[metadata.bookId];
     if (bookProgress) {
         requestAnimationFrame(async function () {
-            // ✅ 챕터 기반 복원 (있으면)
+            // ✅ 챕터 기반 복원
             if (bookProgress.chapterIndex !== undefined && bookProgress.chapterIndex > 0) {
                 if (pageLayout === '2page') {
                     scrollToChapterIn2Page(bookProgress.chapterIndex);
@@ -106,7 +106,6 @@ if (saved) {
         });
     }
 }
-
     Events.emit('text:open', { bookId: metadata.bookId, metadata: metadata });
     console.log('📖 EPUB Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
 }
