@@ -509,55 +509,61 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
 
     let currentElements = [];
     
-    // ✅ 실제 측정용 div 생성
     const measureDiv = document.createElement('div');
     measureDiv.style.cssText =
         'position: absolute; left: -9999px; top: 0;' +
-        'width: 700px;' + // 실제 페이지 너비와 동일하게
-        'padding: 40px 40px 20px 40px;' + // 실제 패딩과 동일
+        'width: 700px; padding: 40px 40px 20px 40px;' +
         'font-size: 17px; line-height: 1.85;' +
         'word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; visibility: hidden;';
     document.body.appendChild(measureDiv);
 
     for (const child of children) {
-        // ✅ 측정용 클론 (이미지는 placeholder)
         const testClone = child.cloneNode(true);
+        
+        // ✅ 이미지 제거 (404 방지)
         testClone.querySelectorAll('img').forEach(img => {
             const placeholder = document.createElement('div');
             placeholder.style.cssText = 'height: 200px; margin: 16px auto;';
-            img.replaceWith(placeholder);
+            img.parentNode.replaceChild(placeholder, img);
+        });
+        
+        // ✅ CSS 링크 제거 (404 방지)
+        testClone.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+            link.remove();
         });
 
-        // ✅ 현재 누적 + 새 요소를 measureDiv에 넣고 높이 측정
         measureDiv.innerHTML = '';
+        
         currentElements.forEach(el => {
             const clone = el.cloneNode(true);
+            // ✅ 누적 요소도 이미지/CSS 제거
             clone.querySelectorAll('img').forEach(img => {
                 const ph = document.createElement('div');
                 ph.style.cssText = 'height: 200px; margin: 16px auto;';
-                img.replaceWith(ph);
+                img.parentNode.replaceChild(ph, img);
+            });
+            clone.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+                link.remove();
             });
             measureDiv.appendChild(clone);
         });
+        
         measureDiv.appendChild(testClone);
-
-        const currentHeight = measureDiv.scrollHeight; // ✅ 실제 높이
+        const currentHeight = measureDiv.scrollHeight;
 
         if (currentHeight > maxHeight && currentElements.length > 0) {
-            // 페이지 넘침 → 현재까지 저장
             chunks.push({
                 type: 'html',
                 content: currentElements.map(el => el.outerHTML).join(''),
                 chapterIndex: chapterIdx
             });
-            currentElements = [child]; // 원본 저장
+            currentElements = [child]; // ✅ 원본 유지
         } else {
-            currentElements.push(child); // 원본 저장
+            currentElements.push(child);
         }
     }
 
-    // 남은 요소 저장
     if (currentElements.length > 0) {
         chunks.push({
             type: 'html',
@@ -578,7 +584,6 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
 
     return chunks;
 }
-
 function createTestPageElement() {
     const testPage = document.createElement('div');
     testPage.style.cssText =
