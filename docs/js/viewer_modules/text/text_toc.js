@@ -6,7 +6,7 @@
 import { TextViewerState } from './text_state.js';
 
 /**
- * 표지 이미지 로드 (cover.jpg)
+ * 표지 이미지 로드 (cover.jpg 또는 image.jpg)
  * @param {string} seriesId - 시리즈 ID
  * @param {string} bookId - 책 ID
  * @param {Object} metadata - 파일 메타데이터 (선택)
@@ -22,36 +22,35 @@ export async function loadCover(seriesId, bookId, metadata = null) {
         }
     }
     
-    // ✅ TextViewerState에서 renderType 체크
     if (TextViewerState.renderType === 'epub') {
         console.log('📘 EPUB: 외부 커버 로드 스킵 (내부 커버 사용)');
         return null;
     }
     
-    try {
-        // GAS API: 같은 폴더의 cover.jpg 검색 (TXT 전용)
-        const result = await API.request('get_sibling_file', {
-            currentFileId: bookId,
-            fileName: 'cover.jpg'
-        });
-        
-        if (result && result.thumbnailLink) {
-            TextViewerState.coverUrl = result.thumbnailLink;
-            return result.thumbnailLink;
+    // ✅ TXT: 외부 이미지 로드 시도 (순서대로)
+    const imageNames = ['image.jpg', 'image.png', 'cover.jpg', 'cover.png'];
+    
+    for (const fileName of imageNames) {
+        try {
+            const result = await API.request('get_sibling_file', {
+                currentFileId: bookId,
+                fileName: fileName
+            });
+            
+            if (result && result.thumbnailLink) {
+                console.log('📷 TXT 커버 로드 성공:', fileName);
+                TextViewerState.coverUrl = result.thumbnailLink;
+                return result.thumbnailLink;
+            }
+        } catch (e) {
+            // 다음 파일명 시도
+            continue;
         }
-        
-        // cover.png도 시도
-        const pngResult = await API.request('get_sibling_file', {
-            currentFileId: bookId,
-            fileName: 'cover.png'
-        });
-        
-        if (pngResult && pngResult.thumbnailLink) {
-            TextViewerState.coverUrl = pngResult.thumbnailLink;
-            return pngResult.thumbnailLink;
-        }
-        
-        return null;
+    }
+    
+    console.log('📷 TXT 커버 없음');
+    return null;
+}
         
     } catch (e) {
         console.warn('Cover image not found:', e);
