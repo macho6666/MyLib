@@ -93,7 +93,7 @@ if (saved) {
             // ✅ 챕터 기반 복원
             if (bookProgress.chapterIndex !== undefined && bookProgress.chapterIndex > 0) {
                 if (pageLayout === '2page') {
-                    scrollToChapterIn2Page(bookProgress.chapterIndex);
+                    scrollToChapterIn2Page(currentChapterIndex, chapterProgress);
                     console.log('📖 Restored to chapter ' + bookProgress.chapterIndex + ' (2page)');
                 } else {
                     await scrollToChapter(bookProgress.chapterIndex, bookProgress.chapterProgress || 0);
@@ -1203,37 +1203,34 @@ async function scrollToChapter(chapterIndex, progress) {
 }
 
 // ✅ 새 함수: 2page 모드에서 챕터로 이동
-function scrollToChapterIn2Page(chapterIndex) {
+function scrollToChapterIn2Page(chapterIndex, chapterProgress) {
     const container = document.getElementById('textViewerContainer');
     if (!container || !container._pages) return;
 
-    // 해당 챕터의 첫 페이지 찾기
+    // 해당 챕터의 페이지들 찾기
+    let chapterPages = [];
     for (let i = 0; i < container._pages.length; i++) {
         const page = container._pages[i];
         if (page.chapterIndex === chapterIndex) {
-            const spreadIndex = Math.floor(i / 2);
-            renderSpread(spreadIndex);
-            return;
+            chapterPages.push(i);
         }
     }
-}
-
-function getTextLayout() {
-    return pageLayout;
-}
-
-export function scrollToProgress(percent) {
-    if (pageLayout === '2page') {
-        var spreadIndex = Math.round((percent / 100) * (totalSpreads - 1));
-        renderSpread(Math.max(0, Math.min(spreadIndex, totalSpreads - 1)));
+    
+    if (chapterPages.length === 0) return;
+    
+    // ✅ chapterProgress로 챕터 내 위치 계산
+    let targetPageIndex;
+    if (chapterProgress !== undefined && chapterProgress > 0) {
+        const pageOffset = Math.floor(chapterPages.length * chapterProgress);
+        targetPageIndex = chapterPages[Math.min(pageOffset, chapterPages.length - 1)];
     } else {
-        var container = document.getElementById('textViewerContainer');
-        if (container) {
-            container.scrollTop = (percent / 100) * (container.scrollHeight - container.clientHeight);
-        }
+        targetPageIndex = chapterPages[0];
     }
+    
+    const spreadIndex = Math.floor(targetPageIndex / 2);
+    renderSpread(spreadIndex);
+    console.log('📖 Moved to chapter ' + chapterIndex + ', page ' + targetPageIndex + ' (spread ' + spreadIndex + ')');
 }
-
 // ═══════════════════════════════════════════════════════════
 // 클린업
 // ═══════════════════════════════════════════════════════════
