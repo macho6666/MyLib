@@ -14,11 +14,45 @@ import { showToast } from '../core/utils.js';
 export function updateProgress(seriesId, bookId, isManual = false) {
     const progress = TextViewerState.scrollProgress || 0;
     
+    // ✅ 현재 챕터 정보 저장
+    let chapterIndex = 0;
+    let chapterProgress = 0;
+    
+    const container = document.getElementById('textViewerContainer');
+    if (container) {
+        // 1page 모드
+        const chapters = container.querySelectorAll('.epub-chapter');
+        if (chapters.length > 0) {
+            const scrollTop = container.scrollTop;
+            const viewportHeight = container.clientHeight;
+            const viewCenter = scrollTop + viewportHeight / 2;
+            
+            for (const ch of chapters) {
+                if (ch.offsetTop <= viewCenter && ch.offsetTop + ch.offsetHeight > viewCenter) {
+                    chapterIndex = parseInt(ch.dataset.chapterIndex) || 0;
+                    chapterProgress = (viewCenter - ch.offsetTop) / ch.offsetHeight;
+                    break;
+                }
+            }
+        }
+        
+        // 2page 모드
+        if (container._pages) {
+            const pages = container._pages;
+            const leftIdx = (TextViewerState.currentSpreadIndex || 0) * 2;
+            if (pages[leftIdx] && pages[leftIdx].chapterIndex !== undefined) {
+                chapterIndex = pages[leftIdx].chapterIndex;
+            }
+        }
+    }
+    
     const key = `progress_${seriesId}`;
     const progressData = JSON.parse(localStorage.getItem(key) || '{}');
     
     progressData[bookId] = {
         progress: progress,
+        chapterIndex: chapterIndex,
+        chapterProgress: chapterProgress,
         page: TextViewerState.currentPage,
         totalPages: TextViewerState.totalPages,
         timestamp: new Date().toISOString(),
