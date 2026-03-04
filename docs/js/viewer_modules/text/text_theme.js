@@ -181,8 +181,8 @@ export function applyPadding() {
     
     const container = document.getElementById('textViewerContainer');
     if (container) {
-        container.style.paddingTop = paddingTop + 'px';
-        container.style.paddingBottom = paddingBottom + 'px';
+        container.style.top = paddingTop + 'px';
+        container.style.bottom = paddingBottom + 'px';
     }
 }
 
