@@ -1,12 +1,12 @@
 /**
  * viewer_modules/text/text_toc.js
- * 목차 + 표지(cover.jpg) 처리
+ * 목차 + 표지(cover.jpg/image.jpg) 처리
  */
 
 import { TextViewerState } from './text_state.js';
 
 /**
- * 표지 이미지 로드 (cover.jpg 또는 image.jpg)
+ * 표지 이미지 로드 (image.jpg, cover.jpg 순서로 시도)
  * @param {string} seriesId - 시리즈 ID
  * @param {string} bookId - 책 ID
  * @param {Object} metadata - 파일 메타데이터 (선택)
@@ -30,15 +30,15 @@ export async function loadCover(seriesId, bookId, metadata = null) {
     // ✅ TXT: 외부 이미지 로드 시도 (순서대로)
     const imageNames = ['image.jpg', 'image.png', 'cover.jpg', 'cover.png'];
     
-    for (const fileName of imageNames) {
+    for (const imgName of imageNames) {
         try {
             const result = await API.request('get_sibling_file', {
                 currentFileId: bookId,
-                fileName: fileName
+                fileName: imgName
             });
             
             if (result && result.thumbnailLink) {
-                console.log('📷 TXT 커버 로드 성공:', fileName);
+                console.log('📷 TXT 커버 로드 성공:', imgName);
                 TextViewerState.coverUrl = result.thumbnailLink;
                 return result.thumbnailLink;
             }
@@ -50,12 +50,6 @@ export async function loadCover(seriesId, bookId, metadata = null) {
     
     console.log('📷 TXT 커버 없음');
     return null;
-}
-        
-    } catch (e) {
-        console.warn('Cover image not found:', e);
-        return null;
-    }
 }
 
 /**
@@ -104,7 +98,6 @@ export function generateTxtTOC(textContent) {
     ];
     
     const lines = textContent.split('\n');
-    let currentPage = 0;
     const linesPerPage = 30; // 임시 기준 (실제는 렌더링 후 계산)
     
     lines.forEach((line, index) => {
