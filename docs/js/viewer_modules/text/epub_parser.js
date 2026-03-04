@@ -6,6 +6,9 @@
 export async function parseEpub(zip) {
     const opfPath = await findOpfPath(zip);
     const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
+        // ✅ 디버깅 추가
+    console.log('🔍 OPF 경로:', opfPath);
+    console.log('🔍 OPF 디렉토리:', opfDir);
 
     const { spine, manifest, metadata } = await parseOpf(zip, opfPath);
 
