@@ -211,12 +211,7 @@ function applyContainerStyle(container) {
 async function create1PageContent(container) {
     const content = document.createElement('div');
     content.id = 'textViewerContent';
-    content.style.cssText =
-        'max-width: 800px; margin: 0 auto;' +
-        'padding: 24px 16px 100px 16px;' +  // ✅ 하단 패딩 100px 추가
-        'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
-        'box-sizing: border-box; overflow-x: hidden; width: 100%;';
-
+   content.style.cssText =
     if (currentMetadata.coverUrl) {
         content.innerHTML +=
             '<div style="text-align: center; margin-bottom: 32px;">' +
