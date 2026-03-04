@@ -536,6 +536,16 @@ export function openSettings() {
         if (epubStyleGroup) {
             const isEpub = TextViewerState.renderType === 'epub';
             epubStyleGroup.style.display = isEpub ? 'block' : 'none';
+            const paddingTopGroup = document.getElementById('paddingTopSlider')?.parentElement;
+const paddingBottomGroup = document.getElementById('paddingBottomSlider')?.parentElement;
+const currentLayout = window.getTextLayout ? window.getTextLayout() : '1page';
+
+if (paddingTopGroup) {
+    paddingTopGroup.style.display = currentLayout === '2page' ? 'none' : 'block';
+}
+if (paddingBottomGroup) {
+    paddingBottomGroup.style.display = currentLayout === '2page' ? 'none' : 'block';
+}
         }
     }
 }
