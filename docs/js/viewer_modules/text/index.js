@@ -28,14 +28,10 @@ export async function openTextViewer(result, metadata) {
         resetViewerState();
         TextViewerState.currentBook = metadata;
         
-        // ✅ 수정: metadata 전달
+        // 표지 로드 시도
         const coverUrl = await loadCover(metadata.seriesId, metadata.bookId, metadata);
         metadata.coverUrl = coverUrl;
 
-        // 표지 로드 시도
-        const coverUrl = await loadCover(metadata.seriesId, metadata.bookId);
-        metadata.coverUrl = coverUrl;
-        
         // 타입에 따라 렌더링
         if (result.type === 'text' || result.type === 'txt') {
             // TXT 파일
