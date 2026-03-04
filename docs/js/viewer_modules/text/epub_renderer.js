@@ -495,37 +495,52 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
     const chunks = [];
     const children = Array.from(body.children);
 
-    let currentHtml = '';
-    const testDiv = createTestPageElement();
+    let currentElements = [];
+    let currentHeight = 0;
+    
+    const measureDiv = document.createElement('div');
+    measureDiv.style.cssText =
+        'position: absolute; left: -9999px; top: 0; width: 700px;' +
+        'padding: 40px; font-size: 17px; line-height: 1.85; visibility: hidden;';
+    document.body.appendChild(measureDiv);
 
     for (const child of children) {
-        const childHtml = child.outerHTML;
-        testDiv.innerHTML = currentHtml + childHtml;
+        // ✅ 높이 측정용 클론 (이미지 제거)
+        const measureClone = child.cloneNode(true);
+        measureClone.querySelectorAll('img').forEach(img => img.remove());
+        
+        measureDiv.innerHTML = '';
+        measureDiv.appendChild(measureClone);
+        const childHeight = measureDiv.offsetHeight;
 
-        if (testDiv.scrollHeight > maxHeight && currentHtml) {
+        if (currentHeight + childHeight > maxHeight && currentElements.length > 0) {
+            // 현재 페이지 저장
             chunks.push({
                 type: 'html',
-                content: currentHtml,
+                content: currentElements.map(el => el.outerHTML).join(''),
                 chapterIndex: chapterIdx
             });
-            currentHtml = childHtml;
+            currentElements = [child];
+            currentHeight = childHeight;
         } else {
-            currentHtml += childHtml;
+            currentElements.push(child);
+            currentHeight += childHeight;
         }
     }
 
-    if (currentHtml) {
+    // 마지막 페이지
+    if (currentElements.length > 0) {
         chunks.push({
             type: 'html',
-            content: currentHtml,
+            content: currentElements.map(el => el.outerHTML).join(''),
             chapterIndex: chapterIdx
         });
     }
 
-    document.body.removeChild(testDiv);
+    document.body.removeChild(measureDiv);
 
     // 빈 청크 방지
-    if (chunks.length === 0 && body.textContent.trim()) {
+    if (chunks.length === 0 && body.innerHTML.trim()) {
         chunks.push({
             type: 'html',
             content: body.innerHTML,
