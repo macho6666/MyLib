@@ -179,10 +179,10 @@ export function applyPadding() {
     const paddingTop = localStorage.getItem('text_padding_top') || '24';
     const paddingBottom = localStorage.getItem('text_padding_bottom') || '24';
     
-    const content = document.getElementById('textViewerContent');
-    if (content) {
-        content.style.paddingTop = paddingTop + 'px';
-        content.style.paddingBottom = paddingBottom + 'px';
+    const container = document.getElementById('textViewerContainer');
+    if (container) {
+        container.style.paddingTop = paddingTop + 'px';
+        container.style.paddingBottom = paddingBottom + 'px';
     }
 }
 
