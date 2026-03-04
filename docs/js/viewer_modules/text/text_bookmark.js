@@ -14,34 +14,47 @@ import { showToast } from '../core/utils.js';
 export function updateProgress(seriesId, bookId, isManual = false) {
     const progress = TextViewerState.scrollProgress || 0;
     
-    // ✅ 현재 챕터 정보 저장
     let chapterIndex = 0;
     let chapterProgress = 0;
     
     const container = document.getElementById('textViewerContainer');
     if (container) {
-        // 1page 모드: 현재 보이는 챕터 찾기
-        const chapters = container.querySelectorAll('.epub-chapter');
-        if (chapters.length > 0) {
-            const scrollTop = container.scrollTop;
-            const viewportHeight = container.clientHeight;
-            const viewCenter = scrollTop + viewportHeight / 2;
-            
-            for (const ch of chapters) {
-                if (ch.offsetTop <= viewCenter && ch.offsetTop + ch.offsetHeight > viewCenter) {
-                    chapterIndex = parseInt(ch.dataset.chapterIndex) || 0;
-                    chapterProgress = (viewCenter - ch.offsetTop) / ch.offsetHeight;
-                    break;
-                }
-            }
-        }
-        
-        // 2page 모드: 현재 페이지에서 챕터 찾기
+        // ✅ 2page 모드 먼저 체크
         if (container._pages && TextViewerState.currentSpreadIndex !== undefined) {
             const pages = container._pages;
             const leftIdx = TextViewerState.currentSpreadIndex * 2;
             if (pages[leftIdx] && pages[leftIdx].chapterIndex !== undefined) {
                 chapterIndex = pages[leftIdx].chapterIndex;
+                
+                // 챕터 내 진행률 계산
+                let chapterStart = -1;
+                let chapterEnd = -1;
+                for (let i = 0; i < pages.length; i++) {
+                    if (pages[i].chapterIndex === chapterIndex) {
+                        if (chapterStart === -1) chapterStart = i;
+                        chapterEnd = i;
+                    }
+                }
+                if (chapterStart >= 0) {
+                    chapterProgress = (leftIdx - chapterStart) / (chapterEnd - chapterStart + 1);
+                }
+            }
+        }
+        // 1page 모드
+        else {
+            const chapters = container.querySelectorAll('.epub-chapter');
+            if (chapters.length > 0) {
+                const scrollTop = container.scrollTop;
+                const viewportHeight = container.clientHeight;
+                const viewCenter = scrollTop + viewportHeight / 2;
+                
+                for (const ch of chapters) {
+                    if (ch.offsetTop <= viewCenter && ch.offsetTop + ch.offsetHeight > viewCenter) {
+                        chapterIndex = parseInt(ch.dataset.chapterIndex) || 0;
+                        chapterProgress = (viewCenter - ch.offsetTop) / ch.offsetHeight;
+                        break;
+                    }
+                }
             }
         }
     }
