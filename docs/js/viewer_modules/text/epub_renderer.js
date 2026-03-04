@@ -1125,61 +1125,6 @@ function setReadMode(mode) {
 
 // ✅ 수정: 모드 전환 시 현재 챕터 + 챕터 내 진행률 유지
 async function setTextLayout(layout) {
-    // 현재 챕터 인덱스와 챕터 내 진행률 저장
-    let currentChapterIndex = 0;
-    let chapterProgress = 0;
-
-    if (pageLayout === '1page') {
-        // 1page에서 현재 보이는 챕터 찾기
-        const container = document.getElementById('textViewerContainer');
-        if (container) {
-            const chapters = container.querySelectorAll('.epub-chapter');
-            const scrollTop = container.scrollTop;
-            const viewportHeight = container.clientHeight;
-            const viewCenter = scrollTop + viewportHeight / 2;
-
-            for (const ch of chapters) {
-                if (ch.offsetTop <= viewCenter && ch.offsetTop + ch.offsetHeight > viewCenter) {
-                    currentChapterIndex = parseInt(ch.dataset.chapterIndex) || 0;
-                    chapterProgress = (viewCenter - ch.offsetTop) / ch.offsetHeight;
-                    break;
-                }
-            }
-        }
-    } else {
-        // 2page에서 현재 챕터 찾기
-        const container = document.getElementById('textViewerContainer');
-        if (container && container._pages) {
-            const leftIdx = currentSpreadIndex * 2;
-            const pageData = container._pages[leftIdx];
-            if (pageData && pageData.chapterIndex !== undefined) {
-                currentChapterIndex = pageData.chapterIndex;
-            }
-        }
-    }
-
-    pageLayout = layout;
-    localStorage.setItem('text_layout', layout);
-
-    var container = document.getElementById('textViewerContainer');
-    if (container) container.style.visibility = 'hidden';
-
-    await renderContent();
-
-    // ✅ 위치 복원
-    if (layout === '1page') {
-        requestAnimationFrame(async function () {
-            await scrollToChapter(currentChapterIndex, chapterProgress);
-            if (container) container.style.visibility = 'visible';
-        });
-    } else {
-        scrollToChapterIn2Page(currentChapterIndex);
-        if (container) container.style.visibility = 'visible';
-    }
-
-    if (window.showToast) window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
-}
-
 // ✅ 새 함수: 1page 모드에서 챕터로 스크롤
 async function scrollToChapter(chapterIndex, progress) {
     const container = document.getElementById('textViewerContainer');
@@ -1205,10 +1150,15 @@ async function scrollToChapter(chapterIndex, progress) {
 
 // ✅ 새 함수: 2page 모드에서 챕터로 이동
 function scrollToChapterIn2Page(chapterIndex, chapterProgress) {
+    console.log('📖 scrollToChapterIn2Page 호출: ch=' + chapterIndex + ', progress=' + (chapterProgress || 0).toFixed(2));
+    
     const container = document.getElementById('textViewerContainer');
-    if (!container || !container._pages) return;
+    if (!container || !container._pages) {
+        console.warn('❌ container 또는 _pages 없음');
+        return;
+    }
 
-    // 해당 챕터의 페이지들 찾기
+    // 해당 챕터의 모든 페이지 인덱스 찾기
     let chapterPages = [];
     for (let i = 0; i < container._pages.length; i++) {
         const page = container._pages[i];
@@ -1217,20 +1167,27 @@ function scrollToChapterIn2Page(chapterIndex, chapterProgress) {
         }
     }
     
-    if (chapterPages.length === 0) return;
+    console.log('📄 챕터 ' + chapterIndex + '의 페이지: ' + chapterPages.length + '개');
     
-    // ✅ chapterProgress로 챕터 내 위치 계산
+    if (chapterPages.length === 0) {
+        console.warn('⚠️ 챕터 ' + chapterIndex + ' 페이지 없음');
+        return;
+    }
+    
+    // 챕터 내 위치 계산
     let targetPageIndex;
     if (chapterProgress !== undefined && chapterProgress > 0) {
         const pageOffset = Math.floor(chapterPages.length * chapterProgress);
         targetPageIndex = chapterPages[Math.min(pageOffset, chapterPages.length - 1)];
+        console.log('📍 offset ' + pageOffset + ' → pageIdx ' + targetPageIndex);
     } else {
         targetPageIndex = chapterPages[0];
+        console.log('📍 첫 페이지: ' + targetPageIndex);
     }
     
     const spreadIndex = Math.floor(targetPageIndex / 2);
+    console.log('📖 스프레드로 이동: ' + spreadIndex + ' (총 ' + totalSpreads + ')');
     renderSpread(spreadIndex);
-    console.log('📖 Moved to chapter ' + chapterIndex + ', page ' + targetPageIndex + ' (spread ' + spreadIndex + ')');
 }
 // ═══════════════════════════════════════════════════════════
 // 클린업
