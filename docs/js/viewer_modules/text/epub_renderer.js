@@ -1291,7 +1291,17 @@ export function cleanupEpubViewer() {
     delete window.onTextThemeChange;
     delete window.scrollToProgress;
 }
-
+function scrollToProgress(percent) {
+    if (pageLayout === '2page') {
+        var spreadIndex = Math.round((percent / 100) * (totalSpreads - 1));
+        renderSpread(Math.max(0, Math.min(spreadIndex, totalSpreads - 1)));
+    } else {
+        var container = document.getElementById('textViewerContainer');
+        if (container) {
+            container.scrollTop = (percent / 100) * (container.scrollHeight - container.clientHeight);
+        }
+    }
+}
 // ═══════════════════════════════════════════════════════════
 // 유틸
 // ═══════════════════════════════════════════════════════════
