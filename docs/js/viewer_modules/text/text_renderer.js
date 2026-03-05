@@ -169,8 +169,16 @@ function isLightColor(color) {
 
 function applyContainerStyle(container) {
     const is2Page = pageLayout === '2page';
-    container.style.cssText = 
-        'position: fixed; top: 0; left: 0; right: 0; bottom: 0;' +
+    const marginTop = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_top') || '24');
+    const marginBottom = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_bottom') || '24');
+    const totalMargin = marginTop + marginBottom;
+
+    container.style.cssText =
+        'position: fixed;' +
+        'top: ' + marginTop + 'px;' +
+        'left: 0;' +
+        'right: 0;' +
+        'height: calc(100vh - ' + totalMargin + 'px);' +
         'background: var(--bg-primary, #0d0d0d);' +
         'color: var(--text-primary, #e8e8e8);' +
         'overflow-x: hidden;' +
@@ -181,7 +189,8 @@ function applyContainerStyle(container) {
         'align-items: ' + (is2Page ? 'center' : 'stretch') + ';' +
         'justify-content: ' + (is2Page ? 'center' : 'stretch') + ';' +
         'user-select: text !important;' +
-        '-webkit-user-select: text !important;';
+        '-webkit-user-select: text !important;' +
+        'box-sizing: border-box;';
 }
 
 function createToggleButton() {
