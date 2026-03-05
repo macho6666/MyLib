@@ -89,7 +89,13 @@ export function applyTheme(mode = null) {
     
     const currentMode = mode || TextViewerState.theme.mode || 'dark';
     const colors = ThemePresets[currentMode] || ThemePresets.dark;
-    document.body.style.backgroundColor = colors.background;
+    
+    // ✅ 여백 영역 배경색 (viewerOverlay)
+    const viewerOverlay = document.getElementById('viewerOverlay');
+    if (viewerOverlay) {
+        viewerOverlay.style.backgroundColor = colors.background;
+    }
+    
     const root = document.documentElement;
     root.style.setProperty('--text-primary', colors.text);
     root.style.setProperty('--text-secondary', colors.textSecondary);
@@ -98,9 +104,6 @@ export function applyTheme(mode = null) {
     root.style.setProperty('--bg-card', colors.bgCard);
     root.style.setProperty('--bg-input', colors.bgInput);
     root.style.setProperty('--border-color', colors.border);
-    
-    // ✅ 여백 영역 배경색 (body)
-    document.body.style.backgroundColor = colors.background;
     
     const container = document.getElementById('textViewerContainer');
     if (container) {
