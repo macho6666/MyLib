@@ -173,7 +173,7 @@ export function applyTypography() {
 }
 
 /**
- * ✅ 여백 적용 (상단/하단 패딩)
+ * ✅ 여백 적용 (상단/하단)
  */
 export function applyPadding() {
     const paddingTop = parseInt(localStorage.getItem('text_padding_top') || '24');
@@ -181,11 +181,9 @@ export function applyPadding() {
     
     const container = document.getElementById('textViewerContainer');
     if (container) {
-        container.style.top = '0';
-        container.style.height = '100vh';
-        container.style.paddingTop = paddingTop + 'px';
-        container.style.paddingBottom = paddingBottom + 'px';
-        container.style.boxSizing = 'border-box';
+        container.style.top = paddingTop + 'px';
+        container.style.bottom = paddingBottom + 'px';
+        container.style.height = 'auto';
     }
 }
 /**
