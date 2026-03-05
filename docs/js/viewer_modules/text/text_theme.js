@@ -89,7 +89,7 @@ export function applyTheme(mode = null) {
     
     const currentMode = mode || TextViewerState.theme.mode || 'dark';
     const colors = ThemePresets[currentMode] || ThemePresets.dark;
-    
+    document.body.style.backgroundColor = colors.background;
     const root = document.documentElement;
     root.style.setProperty('--text-primary', colors.text);
     root.style.setProperty('--text-secondary', colors.textSecondary);
