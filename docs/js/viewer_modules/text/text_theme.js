@@ -178,12 +178,14 @@ export function applyTypography() {
 export function applyPadding() {
     const paddingTop = parseInt(localStorage.getItem('text_padding_top') || '24');
     const paddingBottom = parseInt(localStorage.getItem('text_padding_bottom') || '24');
-    const totalPadding = paddingTop + paddingBottom;
     
     const container = document.getElementById('textViewerContainer');
     if (container) {
-        container.style.top = paddingTop + 'px';
-        container.style.height = 'calc(100vh - ' + totalPadding + 'px)';
+        container.style.top = '0';
+        container.style.height = '100vh';
+        container.style.paddingTop = paddingTop + 'px';
+        container.style.paddingBottom = paddingBottom + 'px';
+        container.style.boxSizing = 'border-box';
     }
 }
 /**
