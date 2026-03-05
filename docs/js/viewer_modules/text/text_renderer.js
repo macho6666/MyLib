@@ -433,14 +433,14 @@ function create1PageContent(container, textContent, metadata) {
         'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
     
-    if (metadata.coverUrl) {
-        content.innerHTML += 
-            '<div style="text-align: center; margin-bottom: 32px;">' +
-                '<img src="' + metadata.coverUrl + '" alt="cover" style="max-width: 180px; max-height: 260px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
-                '<h1 style="margin-top: 16px; font-size: 20px; font-weight: 600;">' + escapeHtml(metadata.name || '') + '</h1>' +
-            '</div>' +
-            '<hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">';
-    }
+if (metadata.coverUrl) {
+    content.innerHTML += 
+        '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 100px); padding: 20px; box-sizing: border-box;">' +
+            '<img src="' + metadata.coverUrl + '" alt="cover" style="max-width: 90%; max-height: 70vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
+            '<h1 style="margin-top: 20px; font-size: 20px; font-weight: 600; text-align: center;">' + escapeHtml(metadata.name || '') + '</h1>' +
+        '</div>' +
+        '<hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">';
+}
     content.innerHTML += formatText(textContent);
     content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
     container.appendChild(content);
@@ -576,13 +576,13 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     pageNumDiv.style.cssText = 'height: 40px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ' + (side === 'left' ? 'flex-start' : 'flex-end') + ';';
     
     switch (pageData.type) {
-        case 'cover':
-            contentDiv.innerHTML = 
-                '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">' +
-                    '<img src="' + pageData.coverUrl + '" alt="cover" style="max-width: 200px; max-height: 300px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
-                    '<h1 style="margin-top: 24px; font-size: 22px; font-weight: 600;">' + escapeHtml(pageData.title || '') + '</h1>' +
-                '</div>';
-            break;
+case 'cover':
+    contentDiv.innerHTML = 
+        '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px; box-sizing: border-box;">' +
+            '<img src="' + pageData.coverUrl + '" alt="cover" style="max-width: 90%; max-height: 70%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
+            '<h1 style="margin-top: 20px; font-size: 20px; font-weight: 600;">' + escapeHtml(pageData.title || '') + '</h1>' +
+        '</div>';
+    break;
         case 'text':
             contentDiv.innerHTML = formatText(pageData.content);
             pageNumDiv.textContent = pageNumber;
