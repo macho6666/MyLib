@@ -1413,7 +1413,9 @@ export function cleanupEpubViewer() {
     }
 
     document.body.style.overflow = '';
-    ['textToggleBtn', 'textViewerHeader', 'epubTocPanel', 'epubClickGuide'].forEach(function (id) {
+    
+    // ✅ 좌우 그림자 제거
+    ['textToggleBtn', 'textViewerHeader', 'epubTocPanel', 'epubClickGuide', 'leftShadowOverlay', 'rightShadowOverlay'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.remove();
     });
