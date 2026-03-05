@@ -197,34 +197,31 @@ function isLightColor(color) {
     return false;
 }
 
-// ✅ 여백: top/bottom 으로 읽기 영역 조절 (1page만)
+// ✅ 여백: top/height로 컨테이너 크기 조절 (1page만)
 function applyContainerStyle(container) {
     const is2Page = pageLayout === '2page';
-    const paddingTop = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_top') || '24');
-    const paddingBottom = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_bottom') || '24');
+    const marginTop = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_top') || '24');
+    const marginBottom = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_bottom') || '24');
 
-    container.style.cssText =
-        'position: fixed;' +
-        'top: 0;' +
-        'left: 0;' +
-        'right: 0;' +
-        'height: 100vh;' +
-        'padding-top: ' + paddingTop + 'px;' +
-        'padding-bottom: ' + paddingBottom + 'px;' +
-        'background: var(--bg-primary, #0d0d0d);' +
-        'color: var(--text-primary, #e8e8e8);' +
-        'overflow-x: hidden;' +
-        'overflow-y: ' + (is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')) + ';' +
-        'z-index: 5001;' +
-        '-webkit-overflow-scrolling: touch;' +
-        'display: ' + (is2Page ? 'flex' : 'block') + ';' +
-        'align-items: ' + (is2Page ? 'center' : 'stretch') + ';' +
-        'justify-content: ' + (is2Page ? 'center' : 'stretch') + ';' +
-        'user-select: text !important;' +
-        '-webkit-user-select: text !important;' +
-        'box-sizing: border-box;';
+    container.style.position = 'fixed';
+    container.style.top = marginTop + 'px';
+    container.style.left = '0';
+    container.style.right = '0';
+    container.style.bottom = marginBottom + 'px';
+    container.style.height = 'auto';
+    container.style.background = 'var(--bg-primary, #0d0d0d)';
+    container.style.color = 'var(--text-primary, #e8e8e8)';
+    container.style.overflowX = 'hidden';
+    container.style.overflowY = is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto');
+    container.style.zIndex = '5001';
+    container.style.webkitOverflowScrolling = 'touch';
+    container.style.display = is2Page ? 'flex' : 'block';
+    container.style.alignItems = is2Page ? 'center' : 'stretch';
+    container.style.justifyContent = is2Page ? 'center' : 'stretch';
+    container.style.userSelect = 'text';
+    container.style.webkitUserSelect = 'text';
+    container.style.boxSizing = 'border-box';
 }
-
 // ═══════════════════════════════════════════════════════════
 // 1 PAGE 모드
 // ═══════════════════════════════════════════════════════════
