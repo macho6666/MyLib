@@ -197,7 +197,6 @@ function isLightColor(color) {
     return false;
 }
 
-// ✅ 여백: top/height로 컨테이너 크기 조절 (1page만)
 function applyContainerStyle(container) {
     const is2Page = pageLayout === '2page';
     const marginTop = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_top') || '24');
@@ -222,24 +221,31 @@ function applyContainerStyle(container) {
     container.style.webkitUserSelect = 'text';
     container.style.boxSizing = 'border-box';
 
-// ✅ 1페이지 모드: 좌우 그림자
-    // ✅ 1페이지 모드: 좌우 그림자
+    // ✅ 1페이지 모드: 좌우 그림자 (여백까지 이어짐)
     if (!is2Page) {
-        let leftShadow = document.getElementById('leftShadowOverlay');
-        let rightShadow = document.getElementById('rightShadowOverlay');
-        
-if (!leftShadow) {
-    leftShadow = document.createElement('div');
-    leftShadow.id = 'leftShadowOverlay';
-    leftShadow.style.position = 'fixed';
-    leftShadow.style.top = '0';
-    leftShadow.style.left = 'calc(50% - 400px - 50px)';  // 본문 왼쪽 가장자리
-    leftShadow.style.width = '50px';
-    leftShadow.style.height = '100vh';
-    leftShadow.style.background = 'linear-gradient(90deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 100%)';
-    leftShadow.style.pointerEvents = 'none';
-    leftShadow.style.zIndex = '5050';
-    document.body.appendChild(leftShadow);
+        // 기존 rightShadow 제거
+        const oldRight = document.getElementById('rightShadowOverlay');
+        if (oldRight) oldRight.remove();
+
+        let shadowOverlay = document.getElementById('leftShadowOverlay');
+
+        if (!shadowOverlay) {
+            shadowOverlay = document.createElement('div');
+            shadowOverlay.id = 'leftShadowOverlay';
+            shadowOverlay.style.position = 'fixed';
+            shadowOverlay.style.top = '0';
+            shadowOverlay.style.left = 'calc(50% - 400px)';
+            shadowOverlay.style.width = '800px';
+            shadowOverlay.style.height = '100vh';
+            shadowOverlay.style.boxShadow = 'rgba(0, 0, 0, 0.3) 0px 4px 20px 0px';
+            shadowOverlay.style.pointerEvents = 'none';
+            shadowOverlay.style.zIndex = '5050';
+            document.body.appendChild(shadowOverlay);
+        }
+    } else {
+        const shadowOverlay = document.getElementById('leftShadowOverlay');
+        if (shadowOverlay) shadowOverlay.remove();
+    }
 }
 
 if (!rightShadow) {
