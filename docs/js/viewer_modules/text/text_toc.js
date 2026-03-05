@@ -32,7 +32,7 @@ export async function loadCover(seriesId, bookId, metadata = null) {
     
     for (const imgName of imageNames) {
         try {
-            const result = await API.request('get_sibling_file', {
+            const result = await API.request('view_get_sibling_file', {
                 currentFileId: bookId,
                 fileName: imgName
             });
