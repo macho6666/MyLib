@@ -221,6 +221,37 @@ function applyContainerStyle(container) {
     container.style.userSelect = 'text';
     container.style.webkitUserSelect = 'text';
     container.style.boxSizing = 'border-box';
+
+    // ✅ 1페이지 모드: 좌우 그림자
+    if (!is2Page) {
+        let leftShadow = document.getElementById('leftShadowOverlay');
+        let rightShadow = document.getElementById('rightShadowOverlay');
+        
+        if (!leftShadow) {
+            leftShadow = document.createElement('div');
+            leftShadow.id = 'leftShadowOverlay';
+            leftShadow.style.cssText = 
+                'position: fixed; top: 0; left: 0; width: 50px; height: 100vh;' +
+                'background: linear-gradient(to right, rgba(0,0,0,0.3), transparent);' +
+                'pointer-events: none; z-index: 5002;';
+            document.body.appendChild(leftShadow);
+        }
+        
+        if (!rightShadow) {
+            rightShadow = document.createElement('div');
+            rightShadow.id = 'rightShadowOverlay';
+            rightShadow.style.cssText = 
+                'position: fixed; top: 0; right: 0; width: 50px; height: 100vh;' +
+                'background: linear-gradient(to left, rgba(0,0,0,0.3), transparent);' +
+                'pointer-events: none; z-index: 5002;';
+            document.body.appendChild(rightShadow);
+        }
+    } else {
+        const leftShadow = document.getElementById('leftShadowOverlay');
+        const rightShadow = document.getElementById('rightShadowOverlay');
+        if (leftShadow) leftShadow.remove();
+        if (rightShadow) rightShadow.remove();
+    }
 }
 // ═══════════════════════════════════════════════════════════
 // 1 PAGE 모드
