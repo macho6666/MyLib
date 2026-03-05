@@ -662,7 +662,6 @@ function scrollPageAmount(direction) {
     var scrollAmount = container.clientHeight;
     container.scrollTop += direction * scrollAmount;
 }
-
 function setupKeyboardNavigation() {
     if (window._textKeyHandler) document.removeEventListener('keydown', window._textKeyHandler);
     
