@@ -1079,12 +1079,12 @@ function scrollPageAmount(direction) {
     var container = document.getElementById('textViewerContainer');
     if (!container) return;
     
-    var paddingTop = parseInt(localStorage.getItem('text_padding_top') || '0');
-    var paddingBottom = parseInt(localStorage.getItem('text_padding_bottom') || '0');
+    console.log('clientHeight:', container.clientHeight);
+    console.log('offsetHeight:', container.offsetHeight);
+    console.log('window.innerHeight:', window.innerHeight);
     
-    // 실제 콘텐츠 영역만 계산
-    var visibleArea = container.clientHeight - paddingTop - paddingBottom;
-    container.scrollTop += direction * visibleArea;
+    var scrollAmount = container.clientHeight;
+    container.scrollTop += direction * scrollAmount;
 }
 
 function setupKeyboardNavigation() {
