@@ -176,16 +176,16 @@ export function applyTypography() {
  * ✅ 여백 적용 (상단/하단 패딩)
  */
 export function applyPadding() {
-    const paddingTop = localStorage.getItem('text_padding_top') || '24';
-    const paddingBottom = localStorage.getItem('text_padding_bottom') || '24';
+    const paddingTop = parseInt(localStorage.getItem('text_padding_top') || '24');
+    const paddingBottom = parseInt(localStorage.getItem('text_padding_bottom') || '24');
+    const totalPadding = paddingTop + paddingBottom;
     
     const container = document.getElementById('textViewerContainer');
     if (container) {
         container.style.top = paddingTop + 'px';
-        container.style.bottom = paddingBottom + 'px';
+        container.style.height = 'calc(100vh - ' + totalPadding + 'px)';
     }
 }
-
 /**
  * ✅ 저장된 여백 가져오기
  */
