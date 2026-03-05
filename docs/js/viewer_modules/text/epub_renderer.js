@@ -223,39 +223,45 @@ function applyContainerStyle(container) {
     container.style.boxSizing = 'border-box';
 
 // ✅ 1페이지 모드: 좌우 그림자
-if (!is2Page) {
-    const viewerOverlay = document.getElementById('viewerOverlay');
-    if (!viewerOverlay) return;
-    
-    let leftShadow = document.getElementById('leftShadowOverlay');
-    let rightShadow = document.getElementById('rightShadowOverlay');
-    
-    if (!leftShadow) {
-        leftShadow = document.createElement('div');
-        leftShadow.id = 'leftShadowOverlay';
-        leftShadow.style.cssText = 
-            'position: fixed; top: 0; left: 0; width: 50px; height: 100vh;' +
-            'background: linear-gradient(to right, rgba(0,0,0,0.3), transparent);' +
-            'pointer-events: none; z-index: 5150;';
-        viewerOverlay.appendChild(leftShadow);
+    // ✅ 1페이지 모드: 좌우 그림자
+    if (!is2Page) {
+        let leftShadow = document.getElementById('leftShadowOverlay');
+        let rightShadow = document.getElementById('rightShadowOverlay');
+        
+        if (!leftShadow) {
+            leftShadow = document.createElement('div');
+            leftShadow.id = 'leftShadowOverlay';
+            leftShadow.style.position = 'fixed';
+            leftShadow.style.top = '0';
+            leftShadow.style.left = '0';
+            leftShadow.style.width = '50px';
+            leftShadow.style.height = '100vh';
+            leftShadow.style.backgroundImage = 'linear-gradient(to right, rgba(0,0,0,0.3), transparent)';
+            leftShadow.style.pointerEvents = 'none';
+            leftShadow.style.zIndex = '5050';
+            document.body.appendChild(leftShadow);
+        }
+        
+        if (!rightShadow) {
+            rightShadow = document.createElement('div');
+            rightShadow.id = 'rightShadowOverlay';
+            rightShadow.style.position = 'fixed';
+            rightShadow.style.top = '0';
+            rightShadow.style.right = '0';
+            rightShadow.style.width = '50px';
+            rightShadow.style.height = '100vh';
+            rightShadow.style.backgroundImage = 'linear-gradient(to left, rgba(0,0,0,0.3), transparent)';
+            rightShadow.style.pointerEvents = 'none';
+            rightShadow.style.zIndex = '5050';
+            document.body.appendChild(rightShadow);
+        }
+    } else {
+        const leftShadow = document.getElementById('leftShadowOverlay');
+        const rightShadow = document.getElementById('rightShadowOverlay');
+        if (leftShadow) leftShadow.remove();
+        if (rightShadow) rightShadow.remove();
     }
-    
-    if (!rightShadow) {
-        rightShadow = document.createElement('div');
-        rightShadow.id = 'rightShadowOverlay';
-        rightShadow.style.cssText = 
-            'position: fixed; top: 0; right: 0; width: 50px; height: 100vh;' +
-            'background: linear-gradient(to left, rgba(0,0,0,0.3), transparent);' +
-            'pointer-events: none; z-index: 5150;';
-        viewerOverlay.appendChild(rightShadow);
-    }
-} else {
-    const leftShadow = document.getElementById('leftShadowOverlay');
-    const rightShadow = document.getElementById('rightShadowOverlay');
-    if (leftShadow) leftShadow.remove();
-    if (rightShadow) rightShadow.remove();
 }
-    } 
 // ═══════════════════════════════════════════════════════════
 // 1 PAGE 모드
 // ═══════════════════════════════════════════════════════════
