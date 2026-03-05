@@ -181,7 +181,14 @@ function applyContainerStyle(container) {
     container.style.background = 'var(--bg-primary, #0d0d0d)';
     container.style.color = 'var(--text-primary, #e8e8e8)';
     container.style.overflowX = 'hidden';
-    container.style.overflowY = is2Page ? 'hidden' : (readMode === 'click' ? 'clip' : 'auto');
+    if (readMode === 'click' && !is2Page) {
+    container.style.overflowY = 'clip';
+    container.style.willChange = 'scroll-position';
+} else if (is2Page) {
+    container.style.overflowY = 'hidden';
+} else {
+    container.style.overflowY = 'auto';
+}
     container.style.zIndex = '5001';
     container.style.webkitOverflowScrolling = 'touch';
     container.style.display = is2Page ? 'flex' : 'block';
