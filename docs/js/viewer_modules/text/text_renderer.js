@@ -171,26 +171,50 @@ function applyContainerStyle(container) {
     const is2Page = pageLayout === '2page';
     const marginTop = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_top') || '24');
     const marginBottom = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_bottom') || '24');
-    const totalMargin = marginTop + marginBottom;
 
-    container.style.cssText =
-        'position: fixed;' +
-        'top: ' + marginTop + 'px;' +
-        'left: 0;' +
-        'right: 0;' +
-        'height: calc(100vh - ' + totalMargin + 'px);' +
-        'background: var(--bg-primary, #0d0d0d);' +
-        'color: var(--text-primary, #e8e8e8);' +
-        'overflow-x: hidden;' +
-        'overflow-y: ' + (is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto')) + ';' +
-        'z-index: 5001;' +
-        '-webkit-overflow-scrolling: touch;' +
-        'display: ' + (is2Page ? 'flex' : 'block') + ';' +
-        'align-items: ' + (is2Page ? 'center' : 'stretch') + ';' +
-        'justify-content: ' + (is2Page ? 'center' : 'stretch') + ';' +
-        'user-select: text !important;' +
-        '-webkit-user-select: text !important;' +
-        'box-sizing: border-box;';
+    container.style.position = 'fixed';
+    container.style.top = marginTop + 'px';
+    container.style.left = '0';
+    container.style.right = '0';
+    container.style.bottom = marginBottom + 'px';
+    container.style.height = 'auto';
+    container.style.background = 'var(--bg-primary, #0d0d0d)';
+    container.style.color = 'var(--text-primary, #e8e8e8)';
+    container.style.overflowX = 'hidden';
+    container.style.overflowY = is2Page ? 'hidden' : (readMode === 'click' ? 'hidden' : 'auto');
+    container.style.zIndex = '5001';
+    container.style.webkitOverflowScrolling = 'touch';
+    container.style.display = is2Page ? 'flex' : 'block';
+    container.style.alignItems = is2Page ? 'center' : 'stretch';
+    container.style.justifyContent = is2Page ? 'center' : 'stretch';
+    container.style.userSelect = 'text';
+    container.style.webkitUserSelect = 'text';
+    container.style.boxSizing = 'border-box';
+
+    // ✅ 1페이지 모드: 좌우 그림자 (여백까지 이어짐)
+    if (!is2Page) {
+        const oldRight = document.getElementById('rightShadowOverlay');
+        if (oldRight) oldRight.remove();
+
+        let shadowOverlay = document.getElementById('leftShadowOverlay');
+
+        if (!shadowOverlay) {
+            shadowOverlay = document.createElement('div');
+            shadowOverlay.id = 'leftShadowOverlay';
+            shadowOverlay.style.position = 'fixed';
+            shadowOverlay.style.top = '0';
+            shadowOverlay.style.left = 'calc(50% - 400px)';
+            shadowOverlay.style.width = '800px';
+            shadowOverlay.style.height = '100vh';
+            shadowOverlay.style.boxShadow = 'rgba(0, 0, 0, 0.3) 0px 4px 20px 0px';
+            shadowOverlay.style.pointerEvents = 'none';
+            shadowOverlay.style.zIndex = '5050';
+            document.body.appendChild(shadowOverlay);
+        }
+    } else {
+        const shadowOverlay = document.getElementById('leftShadowOverlay');
+        if (shadowOverlay) shadowOverlay.remove();
+    }
 }
 
 function createToggleButton() {
@@ -634,13 +658,9 @@ function setupClickZones(container) {
 function scrollPageAmount(direction) {
     var container = document.getElementById('textViewerContainer');
     if (!container) return;
-    var scrollAmount = container.clientHeight * 0.9;
-    if (readMode === 'click') {
-        container.style.scrollBehavior = 'auto';
-        container.scrollTop += direction * scrollAmount;
-    } else {
-        container.scrollBy({ top: direction * scrollAmount, behavior: 'smooth' });
-    }
+    
+    var scrollAmount = container.clientHeight;
+    container.scrollTop += direction * scrollAmount;
 }
 
 function setupKeyboardNavigation() {
@@ -778,7 +798,10 @@ export function cleanupTextRenderer() {
     if (window._textKeyHandler) { document.removeEventListener('keydown', window._textKeyHandler); delete window._textKeyHandler; }
     
     document.body.style.overflow = '';
-    ['textToggleBtn', 'textViewerHeader', 'textClickGuide'].forEach(function(id) { var el = document.getElementById(id); if (el) el.remove(); });
+    ['textToggleBtn', 'textViewerHeader', 'textClickGuide', 'leftShadowOverlay', 'rightShadowOverlay'].forEach(function(id) { 
+    var el = document.getElementById(id); 
+    if (el) el.remove(); 
+});
     
     var imageContent = document.getElementById('viewerContent');
     if (imageContent) imageContent.style.display = '';
