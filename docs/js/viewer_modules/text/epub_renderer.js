@@ -1078,11 +1078,7 @@ function setupClickZones(container) {
 function scrollPageAmount(direction) {
     var container = document.getElementById('textViewerContainer');
     if (!container) return;
-    
-    console.log('clientHeight:', container.clientHeight);
-    console.log('offsetHeight:', container.offsetHeight);
-    console.log('window.innerHeight:', window.innerHeight);
-    
+
     var scrollAmount = container.clientHeight;
     container.scrollTop += direction * scrollAmount;
 }
