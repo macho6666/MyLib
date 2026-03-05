@@ -223,7 +223,6 @@ function applyContainerStyle(container) {
 
     // ✅ 1페이지 모드: 좌우 그림자 (여백까지 이어짐)
     if (!is2Page) {
-        // 기존 rightShadow 제거
         const oldRight = document.getElementById('rightShadowOverlay');
         if (oldRight) oldRight.remove();
 
@@ -245,27 +244,6 @@ function applyContainerStyle(container) {
     } else {
         const shadowOverlay = document.getElementById('leftShadowOverlay');
         if (shadowOverlay) shadowOverlay.remove();
-    }
-}
-
-if (!rightShadow) {
-    rightShadow = document.createElement('div');
-    rightShadow.id = 'rightShadowOverlay';
-    rightShadow.style.position = 'fixed';
-    rightShadow.style.top = '0';
-    rightShadow.style.left = 'calc(50% + 400px)';  // 본문 오른쪽 가장자리
-    rightShadow.style.width = '50px';
-    rightShadow.style.height = '100vh';
-    rightShadow.style.background = 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%)';
-    rightShadow.style.pointerEvents = 'none';
-    rightShadow.style.zIndex = '5050';
-    document.body.appendChild(rightShadow);
-}
-    } else {
-        const leftShadow = document.getElementById('leftShadowOverlay');
-        const rightShadow = document.getElementById('rightShadowOverlay');
-        if (leftShadow) leftShadow.remove();
-        if (rightShadow) rightShadow.remove();
     }
 }
 // ═══════════════════════════════════════════════════════════
