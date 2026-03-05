@@ -1078,8 +1078,13 @@ function setupClickZones(container) {
 function scrollPageAmount(direction) {
     var container = document.getElementById('textViewerContainer');
     if (!container) return;
-    var scrollAmount = container.clientHeight * 0.9;
-    container.scrollTop += direction * scrollAmount;
+    
+    var paddingTop = parseInt(localStorage.getItem('text_padding_top') || '0');
+    var paddingBottom = parseInt(localStorage.getItem('text_padding_bottom') || '0');
+    
+    // 실제 콘텐츠 영역만 계산
+    var visibleArea = container.clientHeight - paddingTop - paddingBottom;
+    container.scrollTop += direction * visibleArea;
 }
 
 function setupKeyboardNavigation() {
