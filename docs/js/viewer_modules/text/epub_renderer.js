@@ -236,7 +236,7 @@ if (!is2Page) {
         leftShadow.style.cssText = 
             'position: fixed; top: 0; left: 0; width: 50px; height: 100vh;' +
             'background: linear-gradient(to right, rgba(0,0,0,0.3), transparent);' +
-            'pointer-events: none; z-index: 5002;';
+            'pointer-events: none; z-index: 5100;';
         viewerOverlay.appendChild(leftShadow);
     }
     
@@ -246,7 +246,7 @@ if (!is2Page) {
         rightShadow.style.cssText = 
             'position: fixed; top: 0; right: 0; width: 50px; height: 100vh;' +
             'background: linear-gradient(to left, rgba(0,0,0,0.3), transparent);' +
-            'pointer-events: none; z-index: 5002;';
+            'pointer-events: none; z-index: 5100;';
         viewerOverlay.appendChild(rightShadow);
     }
 } else {
