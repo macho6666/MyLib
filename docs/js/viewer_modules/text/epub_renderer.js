@@ -228,33 +228,33 @@ function applyContainerStyle(container) {
         let leftShadow = document.getElementById('leftShadowOverlay');
         let rightShadow = document.getElementById('rightShadowOverlay');
         
-        if (!leftShadow) {
-            leftShadow = document.createElement('div');
-            leftShadow.id = 'leftShadowOverlay';
-            leftShadow.style.position = 'fixed';
-            leftShadow.style.top = '0';
-            leftShadow.style.left = '0';
-            leftShadow.style.width = '50px';
-            leftShadow.style.height = '100vh';
-            leftShadow.style.backgroundImage = 'linear-gradient(to right, rgba(0,0,0,0.3), transparent)';
-            leftShadow.style.pointerEvents = 'none';
-            leftShadow.style.zIndex = '5050';
-            document.body.appendChild(leftShadow);
-        }
-        
-        if (!rightShadow) {
-            rightShadow = document.createElement('div');
-            rightShadow.id = 'rightShadowOverlay';
-            rightShadow.style.position = 'fixed';
-            rightShadow.style.top = '0';
-            rightShadow.style.right = '0';
-            rightShadow.style.width = '50px';
-            rightShadow.style.height = '100vh';
-            rightShadow.style.backgroundImage = 'linear-gradient(to left, rgba(0,0,0,0.3), transparent)';
-            rightShadow.style.pointerEvents = 'none';
-            rightShadow.style.zIndex = '5050';
-            document.body.appendChild(rightShadow);
-        }
+if (!leftShadow) {
+    leftShadow = document.createElement('div');
+    leftShadow.id = 'leftShadowOverlay';
+    leftShadow.style.position = 'fixed';
+    leftShadow.style.top = '0';
+    leftShadow.style.left = 'calc(50% - 400px - 50px)';  // 본문 왼쪽 가장자리
+    leftShadow.style.width = '50px';
+    leftShadow.style.height = '100vh';
+    leftShadow.style.background = 'linear-gradient(90deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 100%)';
+    leftShadow.style.pointerEvents = 'none';
+    leftShadow.style.zIndex = '5050';
+    document.body.appendChild(leftShadow);
+}
+
+if (!rightShadow) {
+    rightShadow = document.createElement('div');
+    rightShadow.id = 'rightShadowOverlay';
+    rightShadow.style.position = 'fixed';
+    rightShadow.style.top = '0';
+    rightShadow.style.left = 'calc(50% + 400px)';  // 본문 오른쪽 가장자리
+    rightShadow.style.width = '50px';
+    rightShadow.style.height = '100vh';
+    rightShadow.style.background = 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%)';
+    rightShadow.style.pointerEvents = 'none';
+    rightShadow.style.zIndex = '5050';
+    document.body.appendChild(rightShadow);
+}
     } else {
         const leftShadow = document.getElementById('leftShadowOverlay');
         const rightShadow = document.getElementById('rightShadowOverlay');
