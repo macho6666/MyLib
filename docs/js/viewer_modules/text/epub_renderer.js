@@ -200,15 +200,17 @@ function isLightColor(color) {
 // ✅ 여백: top/bottom 으로 읽기 영역 조절 (1page만)
 function applyContainerStyle(container) {
     const is2Page = pageLayout === '2page';
-    const paddingTop = is2Page ? '0' : (localStorage.getItem('text_padding_top') || '24');
-    const paddingBottom = is2Page ? '0' : (localStorage.getItem('text_padding_bottom') || '24');
+    const paddingTop = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_top') || '24');
+    const paddingBottom = is2Page ? 0 : parseInt(localStorage.getItem('text_padding_bottom') || '24');
 
     container.style.cssText =
         'position: fixed;' +
-        'top: ' + paddingTop + 'px;' +
+        'top: 0;' +
         'left: 0;' +
         'right: 0;' +
-        'bottom: ' + paddingBottom + 'px;' +
+        'height: 100vh;' +
+        'padding-top: ' + paddingTop + 'px;' +
+        'padding-bottom: ' + paddingBottom + 'px;' +
         'background: var(--bg-primary, #0d0d0d);' +
         'color: var(--text-primary, #e8e8e8);' +
         'overflow-x: hidden;' +
