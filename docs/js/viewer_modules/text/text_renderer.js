@@ -659,6 +659,7 @@ function scrollPageAmount(direction) {
     var container = document.getElementById('textViewerContainer');
     if (!container) return;
     
+    container.style.scrollBehavior = 'auto';
     var scrollAmount = container.clientHeight;
     container.scrollTop += direction * scrollAmount;
 }
