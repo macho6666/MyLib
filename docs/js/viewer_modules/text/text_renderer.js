@@ -671,12 +671,28 @@ function setupKeyboardNavigation() {
         
         switch (e.key) {
             case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
-                e.preventDefault(); navigatePage(-1); break;
+                e.preventDefault();
+                e.stopPropagation();
+                navigatePage(-1); 
+                break;
             case 'ArrowRight': case 'ArrowDown': case 'PageDown': case ' ':
-                e.preventDefault(); navigatePage(1); break;
-            case 'Home': e.preventDefault(); goToStart(); break;
-            case 'End': e.preventDefault(); goToEnd(); break;
-            case 'Escape': if (typeof closeViewer === 'function') closeViewer(); break;
+                e.preventDefault();
+                e.stopPropagation();
+                navigatePage(1); 
+                break;
+            case 'Home': 
+                e.preventDefault(); 
+                e.stopPropagation();
+                goToStart(); 
+                break;
+            case 'End': 
+                e.preventDefault(); 
+                e.stopPropagation();
+                goToEnd(); 
+                break;
+            case 'Escape': 
+                if (typeof closeViewer === 'function') closeViewer(); 
+                break;
         }
     };
     document.addEventListener('keydown', window._textKeyHandler);
