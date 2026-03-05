@@ -659,13 +659,11 @@ function scrollPageAmount(direction) {
     var container = document.getElementById('textViewerContainer');
     if (!container) return;
     
-    console.log('scrollPageAmount 호출:', direction, 'scrollTop:', container.scrollTop);
-    
+    container.style.overflowY = 'hidden';
     container.style.scrollBehavior = 'auto';
+    
     var scrollAmount = container.clientHeight;
     container.scrollTop += direction * scrollAmount;
-    
-    console.log('이동 후 scrollTop:', container.scrollTop);
 }
 
 function setupKeyboardNavigation() {
