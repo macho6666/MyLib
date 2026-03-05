@@ -1115,7 +1115,7 @@ function scrollPageAmount(direction) {
 }
 
 function setupKeyboardNavigation() {
-    if (window._epubKeyHandler) document.removeEventListener('keydown', window._epubKeyHandler);
+    if (window._epubKeyHandler) document.removeEventListener('keydown', window._epubKeyHandler, true);
 
     window._epubKeyHandler = function (e) {
         var container = document.getElementById('textViewerContainer');
@@ -1123,15 +1123,31 @@ function setupKeyboardNavigation() {
 
         switch (e.key) {
             case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
-                e.preventDefault(); navigatePage(-1); break;
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                navigatePage(-1);
+                break;
             case 'ArrowRight': case 'ArrowDown': case 'PageDown': case ' ':
-                e.preventDefault(); navigatePage(1); break;
-            case 'Home': e.preventDefault(); goToStart(); break;
-            case 'End': e.preventDefault(); goToEnd(); break;
-            case 'Escape': if (typeof closeViewer === 'function') closeViewer(); break;
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                navigatePage(1);
+                break;
+            case 'Home':
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                goToStart();
+                break;
+            case 'End':
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                goToEnd();
+                break;
+            case 'Escape':
+                if (typeof closeViewer === 'function') closeViewer();
+                break;
         }
     };
-    document.addEventListener('keydown', window._epubKeyHandler);
+    document.addEventListener('keydown', window._epubKeyHandler, true);
 }
 
 function navigatePage(direction) {
