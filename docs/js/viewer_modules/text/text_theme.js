@@ -99,16 +99,31 @@ export function applyTheme(mode = null) {
     root.style.setProperty('--bg-input', colors.bgInput);
     root.style.setProperty('--border-color', colors.border);
     
+    // ✅ 여백 영역 배경색 (body)
+    document.body.style.backgroundColor = colors.background;
+    
     const container = document.getElementById('textViewerContainer');
     if (container) {
         container.style.backgroundColor = colors.background;
         container.style.color = colors.text;
     }
     
+    // ✅ 1페이지 모드: 종이 느낌 스타일
     const content = document.getElementById('textViewerContent');
     if (content) {
-        content.style.backgroundColor = colors.background;
-        content.style.color = colors.text;
+        const is2Page = window.getTextLayout && window.getTextLayout() === '2page';
+        
+        if (!is2Page) {
+            content.style.backgroundColor = colors.background;
+            content.style.color = colors.text;
+            content.style.borderRadius = '8px';
+            content.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+            content.style.margin = '0 auto';
+            content.style.padding = '24px 20px';
+        } else {
+            content.style.borderRadius = '0';
+            content.style.boxShadow = 'none';
+        }
         
         content.querySelectorAll('p').forEach(p => {
             p.style.color = colors.text;
