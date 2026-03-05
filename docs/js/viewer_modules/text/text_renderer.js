@@ -437,7 +437,6 @@ if (metadata.coverUrl) {
     content.innerHTML += 
         '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 100px); padding: 20px; box-sizing: border-box;">' +
             '<img src="' + metadata.coverUrl + '" alt="cover" style="max-width: 90%; max-height: 70vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
-            '<h1 style="margin-top: 20px; font-size: 20px; font-weight: 600; text-align: center;">' + escapeHtml(metadata.name || '') + '</h1>' +
         '</div>' +
         '<hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">';
 }
@@ -579,8 +578,7 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
 case 'cover':
     contentDiv.innerHTML = 
         '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px; box-sizing: border-box;">' +
-            '<img src="' + pageData.coverUrl + '" alt="cover" style="max-width: 90%; max-height: 70%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
-            '<h1 style="margin-top: 20px; font-size: 20px; font-weight: 600;">' + escapeHtml(pageData.title || '') + '</h1>' +
+            '<img src="' + pageData.coverUrl + '" alt="cover" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
         '</div>';
     break;
         case 'text':
