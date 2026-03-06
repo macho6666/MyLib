@@ -159,7 +159,7 @@ function fillEditFormWithMetadata(meta) {
         const file = new File([blob], 'cover.jpg', { type: meta.coverMimeType });
         
         // editCoverFile 설정 (저장 시 자동 업로드)
-        editCoverFile = file;;
+        window.editCoverFile = file;
         
         // 미리보기 표시
         const preview = document.getElementById('editCoverPreview');
