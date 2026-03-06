@@ -886,7 +886,7 @@ function openEditModal(index) {
 
     editingSeriesIndex = index;
     editingSeriesId = series.id;
-    editCoverFile = null;
+    window.editCoverFile = null;  // ← 수정
     editSelectedTags = seriesTags[series.id] ? seriesTags[series.id].slice() : [];
 
     var meta = series.metadata || {};
@@ -925,7 +925,7 @@ function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
     editingSeriesIndex = -1;
     editingSeriesId = '';
-    editCoverFile = null;
+    window.editCoverFile = null;  // ← 수정
     editSelectedTags = [];
 }
 
@@ -968,7 +968,7 @@ function handleCoverSelect(event) {
     var file = event.target.files[0];
     if (!file) return;
 
-    editCoverFile = file;
+    window.editCoverFile = file;  // ← 수정
     document.getElementById('editCoverFilename').textContent = file.name;
 
     var reader = new FileReader();
@@ -983,7 +983,7 @@ function handleCoverSelect(event) {
 }
 
 async function saveEditInfo() {
-    console.log('💾 saveEditInfo 시작, editCoverFile:', editCoverFile);  // ← 여기!
+    console.log('💾 saveEditInfo 시작, editCoverFile:', window.editCoverFile);  // ← 수정
     if (!editingSeriesId) return;
 
     showToast("저장 중...", 5000);
@@ -1023,20 +1023,20 @@ async function saveEditInfo() {
             infoData: infoData
         });
 
-        if (editCoverFile) {
-            console.log('🖼️ 커버 업로드 시작:', editCoverFile);
-            var base64 = await fileToBase64(editCoverFile);
-            console.log('🖼️ base64 길이:', base64.length);
-            await API.request('edit_upload_cover', {
-                folderId: editingSeriesId,
-                fileName: 'cover.jpg',
-                base64Data: base64,
-                mimeType: editCoverFile.type
-            });
-            console.log('🖼️ 커버 업로드 완료');
-        } else {
-            console.log('🖼️ editCoverFile 없음');
-        }
+if (window.editCoverFile) {
+    console.log('🖼️ 커버 업로드 시작:', window.editCoverFile);
+    var base64 = await fileToBase64(window.editCoverFile);
+    console.log('🖼️ base64 길이:', base64.length);
+    await API.request('edit_upload_cover', {
+        folderId: editingSeriesId,
+        fileName: 'cover.jpg',
+        base64Data: base64,
+        mimeType: window.editCoverFile.type
+    });
+    console.log('🖼️ 커버 업로드 완료');
+} else {
+    console.log('🖼️ editCoverFile 없음');
+}
 
         seriesTags[editingSeriesId] = editSelectedTags;
         saveLocalData();
