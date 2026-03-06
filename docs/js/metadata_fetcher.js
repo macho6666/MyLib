@@ -49,16 +49,16 @@ function showSearchResultsModal(results) {
     modal.className = 'modal-overlay metadata-search-modal';
     modal.style.display = 'flex';
     
-    const resultItems = results.map((r, i) => `
-        <div class="search-result-item" onclick="selectSearchResult(${i})">
-            <div class="search-result-header">
-                <span class="search-result-site">${r.site}</span>
-            </div>
-            <div class="search-result-title">${r.title}</div>
-            <div class="search-result-author">${r.author || '작가 미상'}</div>
-            <div class="search-result-url">${r.url}</div>
+const resultItems = results.map((r, i) => `
+    <div class="search-result-item" onclick="selectSearchResult(${i})">
+        <div class="search-result-header">
+            <span class="search-result-site" data-site="${r.site}">${r.site}</span>
         </div>
-    `).join('');
+        <div class="search-result-title">${r.title}</div>
+        <div class="search-result-author">${r.author || '작가 미상'}</div>
+        <div class="search-result-url">${r.url}</div>
+    </div>
+`).join('');
     
     modal.innerHTML = `
         <div class="modal">
