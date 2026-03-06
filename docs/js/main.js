@@ -983,6 +983,7 @@ function handleCoverSelect(event) {
 }
 
 async function saveEditInfo() {
+    console.log('💾 saveEditInfo 시작, editCoverFile:', editCoverFile);  // ← 여기!
     if (!editingSeriesId) return;
 
     showToast("저장 중...", 5000);
