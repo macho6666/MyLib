@@ -981,45 +981,7 @@ function handleCoverSelect(event) {
     };
     reader.readAsDataURL(file);
 }
-async function fetchPlatformInfo() {
-    const urlInput = document.getElementById('editPlatformUrl');
-    const url = urlInput.value.trim();
-    
-    if (!url) {
-        alert('플랫폼 URL을 입력하세요');
-        return;
-    }
-    
-    try {
-        showToast('정보 가져오는 중...');
-        
-        const result = await API.request('fetch_platform_info', { url: url });
-        
-        if (result) {
-            if (result.title) document.getElementById('editTitle').value = result.title;
-            if (result.author) document.getElementById('editAuthor').value = result.author;
-            if (result.description) document.getElementById('editDescription').value = result.description;
-            if (result.platform) {
-                const publisherSelect = document.getElementById('editPublisher');
-                for (let i = 0; i < publisherSelect.options.length; i++) {
-                    if (publisherSelect.options[i].value === result.platform) {
-                        publisherSelect.selectedIndex = i;
-                        break;
-                    }
-                }
-            }
-            if (result.coverUrl) {
-                window._fetchedCoverUrl = result.coverUrl;
-                showToast('✅ 정보 + 커버 가져오기 완료!');
-            } else {
-                showToast('✅ 정보 가져오기 완료!');
-            }
-        }
-    } catch (e) {
-        console.error('Platform fetch error:', e);
-        alert('정보 가져오기 실패: ' + e.message);
-    }
-}
+
 async function saveEditInfo() {
     if (!editingSeriesId) return;
 
