@@ -2810,3 +2810,55 @@ header h1 {
 .btn-add-memo:hover {
   color: var(--accent-hover);
 }
+/* ===== METADATA FETCH BUTTON ===== */
+.btn-fetch-metadata {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  color: white;
+  border: none;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-fetch-metadata:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(113, 113, 122, 0.3);
+}
+
+.btn-fetch-metadata:active {
+  transform: translateY(0);
+}
+
+/* Light mode */
+[data-theme="light"] .btn-fetch-metadata {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .btn-fetch-metadata:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== SEARCH RESULTS MODAL ===== */
+.search-result-item {
+  padding: 12px;
+  margin: 8px 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.search-result-item:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+  transform: translateX(4px);
+}
