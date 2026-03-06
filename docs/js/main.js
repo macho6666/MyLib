@@ -26,7 +26,7 @@ let selectedCalendarDate = null;
 
 let editingSeriesIndex = -1;
 let editingSeriesId = '';
-var editCoverFile = null;
+window.editCoverFile = null;
 let editSelectedTags = [];
 
 let _currentBooks = [];
