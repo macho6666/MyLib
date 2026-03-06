@@ -261,11 +261,14 @@
             <img id="editCoverPreview" src="" alt="커버">
             <div class="edit-cover-no-image" id="editCoverNoImage">No Image</div>
           </div>
-          <div class="edit-cover-actions">
-            <label class="btn btn-upload" for="editCoverFile">커버 업로드</label>
-            <input type="file" id="editCoverFile" accept="image/*" style="display:none" onchange="handleCoverSelect(event)">
-            <div class="edit-cover-filename" id="editCoverFilename"></div>
-          </div>
+         <div class="edit-cover-actions">
+  <label class="btn btn-upload" for="editCoverFile">커버 업로드</label>
+  <button class="btn btn-fetch-metadata" onclick="fetchMetadataFromWeb()" type="button">
+    🔍 메타정보 가져오기
+  </button>
+  <input type="file" id="editCoverFile" accept="image/*" style="display:none" onchange="handleCoverSelect(event)">
+  <div class="edit-cover-filename" id="editCoverFilename"></div>
+</div>
         </div>
 
         <!-- 편집 폼 -->
