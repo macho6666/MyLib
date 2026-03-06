@@ -282,21 +282,9 @@
             <input type="text" id="editTitle" placeholder="작품 제목">
           </div>
           
-          <!-- ✅ 메타정보 가져오기 버튼 추가 (제목 바로 아래) -->
+          <!-- ✅ 메타정보 가져오기 버튼 -->
           <div class="edit-field">
-            <button class="btn btn-fetch-metadata" onclick="fetchMetadataFromWeb()" type="button" style="
-              width: 100%;
-              background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-              color: white;
-              border: none;
-              padding: 12px;
-              font-size: 14px;
-              font-weight: 600;
-              border-radius: 8px;
-              cursor: pointer;
-              transition: all 0.2s;
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(99,102,241,0.4)';" 
-               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+            <button class="btn btn-fetch-metadata" onclick="fetchMetadataFromWeb()" type="button">
               🔍 메타정보 자동 가져오기
             </button>
           </div>
@@ -356,18 +344,6 @@
           <button class="btn edit-btn-cancel" onclick="closeEditModal()">취소</button>
           <button class="btn edit-btn-save" onclick="saveEditInfo()">저장</button>
         </div>
-      </div>
-    </div>
-  </div>
-  <!-- ===== EPISODE MODAL ===== -->
-  <div id="episodeModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title">회차 목록</div>
-        <button class="modal-close" onclick="closeEpisodeModal()">×</button>
-      </div>
-      <div class="modal-body">
-        <div id="episodeList" class="episode-list"></div>
       </div>
     </div>
   </div>
