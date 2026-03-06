@@ -2882,12 +2882,17 @@ header h1 {
 .search-result-site {
   display: inline-block;
   padding: 3px 10px;
-  background: var(--accent-light);
-  color: var(--accent-hover);
   border-radius: var(--radius-sm);
   font-size: 11px;
   font-weight: 600;
 }
+
+.search-result-site[data-site="노벨피아"] { background: #7B2FF7; color: white; }
+.search-result-site[data-site="네이버"] { background: #00C73C; color: white; }
+.search-result-site[data-site="카카오"] { background: #FFCD00; color: #3C1E1E; }
+.search-result-site[data-site="문피아"] { background: #2E3192; color: white; }
+.search-result-site[data-site="조아라"] { background: #FF6B35; color: white; }
+.search-result-site[data-site="리디"] { background: #1F8CE6; color: white; }
 
 .search-result-title {
   font-size: 14px;
