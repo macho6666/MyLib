@@ -42,60 +42,41 @@ window.addEventListener('SEARCH_METADATA_RESULTS', function(e) {
 });
 // ===== 검색 결과 선택 모달 =====
 function showSearchResultsModal(results) {
-    // 기존 모달 제거
     const existingModal = document.querySelector('.metadata-search-modal');
     if (existingModal) existingModal.remove();
     
     const modal = document.createElement('div');
     modal.className = 'modal-overlay metadata-search-modal';
-    modal.style.zIndex = '10001'; // Edit Modal보다 위
-    modal.style.display = 'flex';  // ← 이 줄 추가!
+    modal.style.display = 'flex';
+    
     const resultItems = results.map((r, i) => `
-        <div class="search-result-item" onclick="selectSearchResult(${i})" style="
-            padding: 12px;
-            margin: 8px 0;
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        " onmouseover="this.style.borderColor='#6366f1'; this.style.background='#252525';" 
-           onmouseout="this.style.borderColor='#333'; this.style.background='#1a1a1a';">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="flex:1;">
-                    <div style="font-weight:600; color:#6366f1; font-size:12px; margin-bottom:4px;">${r.site}</div>
-                    <div style="font-size:14px; color:#e5e5e5; margin-bottom:4px;">${r.title}</div>
-                    <div style="font-size:12px; color:#999;">${r.author || '작가 미상'}</div>
-                </div>
+        <div class="search-result-item" onclick="selectSearchResult(${i})">
+            <div class="search-result-header">
+                <span class="search-result-site">${r.site}</span>
             </div>
-            <div style="font-size:11px; color:#666; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                ${r.url}
-            </div>
+            <div class="search-result-title">${r.title}</div>
+            <div class="search-result-author">${r.author || '작가 미상'}</div>
+            <div class="search-result-url">${r.url}</div>
         </div>
     `).join('');
     
     modal.innerHTML = `
-        <div class="modal" style="max-width:700px; max-height:80vh; overflow-y:auto; background:#0d0d0d;">
+        <div class="modal">
             <div class="modal-header">
                 <div class="modal-title">🔍 검색 결과 (${results.length}개)</div>
                 <button class="modal-close" onclick="this.closest('.metadata-search-modal').remove()">×</button>
             </div>
-            <div class="modal-body" style="padding:20px;">
-                <div style="color:#999; font-size:13px; margin-bottom:16px;">
-                    원하는 작품을 선택하세요
-                </div>
-                <div id="searchResultsList">${resultItems}</div>
-                <div style="margin-top:20px; text-align:center;">
-                    <button class="btn" onclick="this.closest('.metadata-search-modal').remove()" 
-                            style="background:#444; padding:10px 24px;">취소</button>
+            <div class="modal-body">
+                <div class="search-results-hint">원하는 작품을 선택하세요</div>
+                <div class="search-results-list">${resultItems}</div>
+                <div class="search-results-actions">
+                    <button class="btn edit-btn-cancel" onclick="this.closest('.metadata-search-modal').remove()">취소</button>
                 </div>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
-    
-    // 결과 저장 (선택용)
     window._searchResults = results;
 }
 
