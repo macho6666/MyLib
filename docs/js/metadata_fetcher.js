@@ -121,73 +121,64 @@ window.addEventListener('METADATA_SCRAPED', function(e) {
 function fillEditFormWithMetadata(meta) {
     console.log('📝 Filling form with metadata:', meta);
     
-    // 제목
-    if (meta.title) {
-        document.getElementById('editTitle').value = meta.title;
-    }
+    if (meta.title) document.getElementById('editTitle').value = meta.title;
+    if (meta.author) document.getElementById('editAuthor').value = meta.author;
     
-    // 작가
-    if (meta.author) {
-        document.getElementById('editAuthor').value = meta.author;
-    }
-    
-    // 연재상태
     if (meta.status) {
         const statusSelect = document.getElementById('editStatus');
-        // 매핑
         const statusMap = {
             '연재중': '연재중',
             '완결': '완결',
-            '휴재': '휴재',
-            'ongoing': '연재중',
-            'completed': '완결',
-            'hiatus': '휴재'
+            '휴재': '휴재'
         };
         const mappedStatus = statusMap[meta.status] || meta.status;
-        
-        // select 옵션에 있는지 확인
         const option = Array.from(statusSelect.options).find(opt => opt.value === mappedStatus);
-        if (option) {
-            statusSelect.value = mappedStatus;
-        }
+        if (option) statusSelect.value = mappedStatus;
     }
     
-    // 플랫폼
     if (meta.publisher) {
         const publisherSelect = document.getElementById('editPublisher');
         const option = Array.from(publisherSelect.options).find(opt => opt.value === meta.publisher);
-        if (option) {
-            publisherSelect.value = meta.publisher;
+        if (option) publisherSelect.value = meta.publisher;
+    }
+    
+    if (meta.description) document.getElementById('editDescription').value = meta.description;
+    if (meta.platformUrl) document.getElementById('editPlatformUrl').value = meta.platformUrl;
+    if (meta.adult !== undefined) document.getElementById('editAdult').checked = meta.adult;
+    
+    // ✅ 커버 이미지 처리
+    if (meta.coverBase64 && meta.coverMimeType) {
+        // base64를 File 객체로 변환
+        const byteString = atob(meta.coverBase64);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
         }
-    }
-    
-    // 작품 소개
-    if (meta.description) {
-        document.getElementById('editDescription').value = meta.description;
-    }
-    
-    // 플랫폼 링크
-    if (meta.platformUrl) {
-        document.getElementById('editPlatformUrl').value = meta.platformUrl;
-    }
-    
-    // 성인 작품 여부
-    if (meta.adult !== undefined) {
-        document.getElementById('editAdult').checked = meta.adult;
-    }
-    
-    // 커버 이미지 (URL만 표시, 실제 업로드는 사용자 선택)
-    if (meta.coverUrl) {
+        const blob = new Blob([ab], { type: meta.coverMimeType });
+        const file = new File([blob], 'cover.jpg', { type: meta.coverMimeType });
+        
+        // editCoverFile 설정 (저장 시 자동 업로드)
+        window.editCoverFile = file;
+        
+        // 미리보기 표시
         const preview = document.getElementById('editCoverPreview');
         const noImage = document.getElementById('editCoverNoImage');
+        const filenameEl = document.getElementById('editCoverFilename');
         
-        // 프록시 또는 직접 로드 (CORS 문제 가능)
+        preview.src = 'data:' + meta.coverMimeType + ';base64,' + meta.coverBase64;
+        preview.style.display = 'block';
+        noImage.style.display = 'none';
+        filenameEl.textContent = '자동 다운로드됨';
+        
+        console.log('✅ 커버 이미지 설정 완료');
+    } else if (meta.coverUrl) {
+        // base64 없으면 URL만 미리보기
+        const preview = document.getElementById('editCoverPreview');
+        const noImage = document.getElementById('editCoverNoImage');
         preview.src = meta.coverUrl;
         preview.style.display = 'block';
         noImage.style.display = 'none';
-        
-        // 선택사항: 커버 이미지를 File 객체로 변환하여 자동 업로드
-        // downloadCoverAsFile(meta.coverUrl);
     }
 }
 
