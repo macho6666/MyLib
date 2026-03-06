@@ -2862,19 +2862,17 @@ header h1 {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.2s ease;
 }
 
 .search-result-item:hover {
   background: var(--bg-hover);
   border-color: var(--accent);
-  transform: translateX(2px);
 }
 
 .search-result-item:last-child {
   margin-bottom: 0;
 }
-
 .search-result-header {
   margin-bottom: 6px;
 }
