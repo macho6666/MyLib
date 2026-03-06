@@ -1024,18 +1024,28 @@ async function saveEditInfo() {
         });
 
 if (window.editCoverFile) {
-    console.log('🖼️ 커버 업로드 시작:', window.editCoverFile);
-    var base64 = await fileToBase64(window.editCoverFile);
-    console.log('🖼️ base64 길이:', base64.length);
-    await API.request('edit_upload_cover', {
-        folderId: editingSeriesId,
-        fileName: 'cover.jpg',
-        base64Data: base64,
-        mimeType: window.editCoverFile.type
-    });
-    console.log('🖼️ 커버 업로드 완료');
-} else {
-    console.log('🖼️ editCoverFile 없음');
+    const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
+    
+    let shouldUpload = true;
+    
+    if (hasThumbnail) {
+        shouldUpload = confirm('Cover image already exists.\nReplace with new image?');
+    }
+    
+    if (shouldUpload) {
+        console.log('🖼️ 커버 업로드 시작:', window.editCoverFile);
+        var base64 = await fileToBase64(window.editCoverFile);
+        console.log('🖼️ base64 길이:', base64.length);
+        await API.request('edit_upload_cover', {
+            folderId: editingSeriesId,
+            fileName: 'cover.jpg',
+            base64Data: base64,
+            mimeType: window.editCoverFile.type
+        });
+        console.log('🖼️ 커버 업로드 완료');
+    } else {
+        console.log('🖼️ 커버 업로드 취소');
+    }
 }
 
         seriesTags[editingSeriesId] = editSelectedTags;
