@@ -24,6 +24,8 @@ function fetchMetadataFromWeb() {
 
 // ===== Tampermonkey로부터 검색 결과 받기 =====
 window.addEventListener('SEARCH_METADATA_RESULTS', function(e) {
+    console.log('🎯 검색 결과 받음!', e.detail);  // ← 여기 추가했어!
+    
     const results = e.detail.results;
     
     if (!results || results.length === 0) {
@@ -202,14 +204,6 @@ function fillEditFormWithMetadata(meta) {
         // 선택사항: 커버 이미지를 File 객체로 변환하여 자동 업로드
         // downloadCoverAsFile(meta.coverUrl);
     }
-}
-
-// ===== 커버 이미지 다운로드 (선택사항) =====
-// CORS 문제로 직접 다운로드는 어려울 수 있음
-// Tampermonkey에서 base64로 전달받는 방법도 가능
-function downloadCoverAsFile(url) {
-    // 구현 필요 시 추가
-    console.log('Cover image URL:', url);
 }
 
 // ===== 전역 함수로 노출 =====
