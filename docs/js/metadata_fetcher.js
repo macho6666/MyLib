@@ -14,7 +14,7 @@ function fetchMetadataFromWeb() {
         return;
     }
     
-    showToast('검색 중... (최대 30초 소요)', 3000);
+    showToast('Searching...', 3000);
     
     // Tampermonkey에게 검색 요청
     window.dispatchEvent(new CustomEvent('SEARCH_METADATA_REQUEST', {
@@ -32,7 +32,7 @@ window.addEventListener('SEARCH_METADATA_RESULTS', function(e) {
     
     if (!results || results.length === 0) {
         console.log('❌ 결과 없음');  // ← 추가
-        showToast('검색 결과가 없습니다');
+        showToast('No results found');
         return;
     }
     
@@ -80,12 +80,12 @@ const resultItems = results.map((r, i) => `
     window._searchResults = results;
 }
 
-// ===== 검색 결과 선택 =====
+// 검색 결과 선택
 function selectSearchResult(index) {
     const result = window._searchResults[index];
     
     if (!result) {
-        showToast('선택한 결과를 찾을 수 없습니다');
+        showToast('Result not found');
         return;
     }
     
@@ -93,7 +93,7 @@ function selectSearchResult(index) {
     const modal = document.querySelector('.metadata-search-modal');
     if (modal) modal.remove();
     
-    showToast('메타정보 가져오는 중...', 5000);
+    showToast('Fetching metadata...', 10000);
     
     // Tampermonkey에게 스크래핑 요청
     window.dispatchEvent(new CustomEvent('SCRAPE_METADATA_REQUEST', {
@@ -104,19 +104,21 @@ function selectSearchResult(index) {
     }));
 }
 
-// ===== Tampermonkey로부터 스크래핑된 메타정보 받기 =====
+// 스크래핑된 메타정보 받기
 window.addEventListener('METADATA_SCRAPED', function(e) {
     const meta = e.detail;
     
+    // ✅ 기존 토스트 제거
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    
     if (meta.error) {
-        showToast('메타정보 가져오기 실패: ' + meta.error, 5000);
+        showToast('Failed to fetch metadata: ' + meta.error, 5000);
         return;
     }
     
     fillEditFormWithMetadata(meta);
-    showToast('✅ 메타정보를 가져왔습니다!', 3000);
+    showToast('✅ Metadata fetched!', 3000);
 });
-
 // ===== 폼 자동 채우기 =====
 function fillEditFormWithMetadata(meta) {
     console.log('📝 Filling form with metadata:', meta);
