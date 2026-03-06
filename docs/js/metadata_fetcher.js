@@ -24,18 +24,22 @@ function fetchMetadataFromWeb() {
 
 // ===== Tampermonkey로부터 검색 결과 받기 =====
 window.addEventListener('SEARCH_METADATA_RESULTS', function(e) {
-    console.log('🎯 검색 결과 받음!', e.detail);  // ← 여기 추가했어!
+    console.log('🎯 검색 결과 받음!', e.detail);
     
     const results = e.detail.results;
     
+    console.log('📊 결과 개수:', results.length);  // ← 추가
+    
     if (!results || results.length === 0) {
+        console.log('❌ 결과 없음');  // ← 추가
         showToast('검색 결과가 없습니다');
         return;
     }
     
+    console.log('✅ 모달 표시 시작');  // ← 추가
     showSearchResultsModal(results);
+    console.log('✅ 모달 표시 완료');  // ← 추가
 });
-
 // ===== 검색 결과 선택 모달 =====
 function showSearchResultsModal(results) {
     // 기존 모달 제거
