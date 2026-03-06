@@ -63,7 +63,7 @@ function showSearchResultsModal(results) {
     modal.innerHTML = `
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">🔍 검색 결과 (${results.length}개)</div>
+                <div class="modal-title"> 검색 결과 (${results.length}개)</div>
                 <button class="modal-close" onclick="this.closest('.metadata-search-modal').remove()">×</button>
             </div>
             <div class="modal-body">
