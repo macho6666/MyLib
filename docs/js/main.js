@@ -1022,14 +1022,20 @@ async function saveEditInfo() {
             infoData: infoData
         });
 
-        if (editCoverFile) {
-            var base64 = await fileToBase64(editCoverFile);
-            await API.request('edit_upload_cover', {
-                folderId: editingSeriesId,
-                fileName: 'cover.jpg',
-                base64Data: base64,
-                mimeType: editCoverFile.type
-            });
+if (editCoverFile) {
+    console.log('🖼️ 커버 업로드 시작:', editCoverFile);  // ← 추가
+    var base64 = await fileToBase64(editCoverFile);
+    console.log('🖼️ base64 길이:', base64.length);  // ← 추가
+    await API.request('edit_upload_cover', {
+        folderId: editingSeriesId,
+        fileName: 'cover.jpg',
+        base64Data: base64,
+        mimeType: editCoverFile.type
+    });
+    console.log('🖼️ 커버 업로드 완료');  // ← 추가
+} else {
+    console.log('🖼️ editCoverFile 없음');  // ← 추가
+}
         }
 
         seriesTags[editingSeriesId] = editSelectedTags;
