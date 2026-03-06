@@ -247,7 +247,7 @@
       </div>
     </div>
   </div>
-    <!-- ===== EDIT MODAL ===== -->
+<!-- ===== EDIT MODAL ===== -->
   <div id="editModal" class="modal-overlay">
     <div class="modal edit-modal">
       <div class="modal-header">
@@ -271,16 +271,36 @@
         <!-- 편집 폼 -->
         <div class="edit-form">
           <!-- 제목 + 성인작품 체크 (같은 줄) -->
-<div class="edit-field">
-  <div class="edit-field-header">
-    <label>제목</label>
-    <label class="checkbox-label-adult">
-      <span>🔞 성인작품</span>
-      <input type="checkbox" id="editAdult">
-    </label>
-  </div>
-  <input type="text" id="editTitle" placeholder="작품 제목">
-</div>
+          <div class="edit-field">
+            <div class="edit-field-header">
+              <label>제목</label>
+              <label class="checkbox-label-adult">
+                <span>🔞 성인작품</span>
+                <input type="checkbox" id="editAdult">
+              </label>
+            </div>
+            <input type="text" id="editTitle" placeholder="작품 제목">
+          </div>
+          
+          <!-- ✅ 메타정보 가져오기 버튼 추가 (제목 바로 아래) -->
+          <div class="edit-field">
+            <button class="btn btn-fetch-metadata" onclick="fetchMetadataFromWeb()" type="button" style="
+              width: 100%;
+              background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+              color: white;
+              border: none;
+              padding: 12px;
+              font-size: 14px;
+              font-weight: 600;
+              border-radius: 8px;
+              cursor: pointer;
+              transition: all 0.2s;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(99,102,241,0.4)';" 
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+              🔍 메타정보 자동 가져오기
+            </button>
+          </div>
+
           <div class="edit-field">
             <label>작가</label>
             <input type="text" id="editAuthor" placeholder="작가명 (여러명: 쉼표 구분)">
@@ -312,15 +332,9 @@
             </select>
           </div>
           <div class="edit-field">
-<div class="edit-field">
-    <label>플랫폼 링크</label>
-    <input type="text" id="editPlatformUrl" placeholder="https://...">
-</div>
-            <div class="edit-field">
-  <button class="btn btn-fetch-metadata" onclick="fetchMetadataFromWeb()" style="width:100%; background:#6366f1; color:white;">
-    🔍 메타정보 자동 가져오기
-  </button>
-</div>
+            <label>플랫폼 링크</label>
+            <input type="text" id="editPlatformUrl" placeholder="https://...">
+          </div>
           <div class="edit-field">
             <label>작품 소개</label>
             <textarea id="editDescription" placeholder="작품 소개를 입력하세요..."></textarea>
@@ -345,7 +359,6 @@
       </div>
     </div>
   </div>
-
   <!-- ===== EPISODE MODAL ===== -->
   <div id="episodeModal" class="modal-overlay">
     <div class="modal">
