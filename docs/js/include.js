@@ -6,6 +6,7 @@
 import './api_client.js';
 import './viewer_modules/core/utils.js';
 import './viewer_modules/actions.js';
+import './metadata_fetcher.js';  // ← ✅ 메타데이터
 import './main.js';
 
 console.log('✅ Core modules loaded');
