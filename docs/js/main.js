@@ -986,7 +986,7 @@ async function saveEditInfo() {
     console.log('💾 saveEditInfo 시작, editCoverFile:', window.editCoverFile);  // ← 수정
     if (!editingSeriesId) return;
 
-    showToast("저장 중...", 5000);
+    showToast("Saving...", 5000);
 
     var saveBtn = document.querySelector('.edit-btn-save');
     if (saveBtn) {
