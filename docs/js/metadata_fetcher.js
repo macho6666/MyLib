@@ -49,7 +49,7 @@ function showSearchResultsModal(results) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay metadata-search-modal';
     modal.style.zIndex = '10001'; // Edit Modal보다 위
-    
+    modal.style.display = 'flex';  // ← 이 줄 추가!
     const resultItems = results.map((r, i) => `
         <div class="search-result-item" onclick="selectSearchResult(${i})" style="
             padding: 12px;
