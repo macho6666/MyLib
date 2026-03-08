@@ -2919,3 +2919,69 @@ header h1 {
   padding-top: 12px;
   border-top: 1px solid var(--border-color);
 }
+
+/* ===== SEARCH TABS ===== */
+.search-tabs-container {
+    margin-bottom: 16px;
+}
+
+.search-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0;
+}
+
+.search-tab {
+    padding: 10px 16px;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    position: relative;
+    user-select: none;
+}
+
+.search-tab:hover {
+    background: var(--bg-hover);
+}
+
+.search-tab.active {
+    background: var(--tab-color);
+    color: var(--tab-text);
+    border-color: var(--tab-color);
+}
+
+.search-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--bg-card);
+}
+
+.search-tab.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+.tab-name {
+    margin-right: 4px;
+}
+
+.tab-count {
+    opacity: 0.8;
+    font-size: 11px;
+}
+
+.search-results-content {
+    max-height: 350px;
+    overflow-y: auto;
+}
