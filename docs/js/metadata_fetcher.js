@@ -252,7 +252,7 @@ window.addEventListener('METADATA_SCRAPED', function(e) {
     }
     
     fillEditFormWithMetadata(meta);
-    showToast('✅ 메타정보 적용 완료!', 3000);
+    showToast('✓ Metadata applied successfully!', 3000);
 });
 
 // ===== 폼 자동 채우기 =====
