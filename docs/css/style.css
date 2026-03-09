@@ -2057,10 +2057,10 @@ input[type="range"]::-webkit-slider-thumb {
 .publisher[data-platform="노벨피아"] { background: #7B2FF7; color: white; }
 .publisher[data-platform="레진코믹스"] { background: #E5006D; color: white; }
 .publisher[data-platform="탑툰"] { background: #FF2D55; color: white; }
+.publisher[data-platform="무툰"] { background: #FF2D55; color: white; }
 .publisher[data-platform="봄툰"] { background: #FF85A2; color: white; }
 .publisher[data-platform="일본만화"] { background: #E60012; color: white; }
 .publisher[data-platform="기타플랫폼"] { background: #555; color: #ccc; }
-
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .app-container { padding: 16px; }
@@ -2891,6 +2891,7 @@ header h1 {
 .search-result-site[data-site="문피아"] { background: #2E3192; color: white; }
 .search-result-site[data-site="조아라"] { background: #FF6B35; color: white; }
 .search-result-site[data-site="리디"] { background: #1F8CE6; color: white; }
+.search-result-site[data-site="무툰"] { background: #FF2D55; color: white; }
 
 .search-result-title {
   font-size: 14px;
