@@ -997,16 +997,7 @@ async function saveEditInfo() {
             folderId: editingSeriesId,
             infoData: infoData
         });
-
-if (window.editCoverFile) {
-    const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
-    
-    let shouldUpload = true;
-    
-    if (hasThumbnail) {
-        shouldUpload = confirm('Cover image already exists.\nReplace with new image?');
-    }
-    
+        
 if (window.editCoverFile) {
     const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
     
@@ -1027,7 +1018,10 @@ if (window.editCoverFile) {
             mimeType: window.editCoverFile.type
         });
         console.log('🖼️ 커버 업로드 완료');
-        location.reload();  // ✅ F5 새로고침!
+        showToast("저장 완료");
+        closeEditModal();
+        location.reload();
+        return;  // ✅ 여기서 함수 종료!
     } else {
         console.log('🖼️ 커버 업로드 취소');
     }
