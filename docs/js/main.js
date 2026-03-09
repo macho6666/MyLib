@@ -8,10 +8,6 @@ let indexLastKnownTotalRows = 0;
 let indexLogFetching = false;
 let indexIsRunning = false;
 window.allSeries = [];
-const thumbnailQueue = [];
-const THUMBNAIL_DELAY_MS = 100;
-const MAX_CONCURRENT = 4;
-let loadingCount = 0;
 let activeBlobUrls = [];
 
 let customTags = [];
@@ -263,18 +259,18 @@ function renderGrid(seriesList) {
         grid.innerHTML = '<div class="no-data">저장된 작품이 없습니다.</div>';
         return;
     }
-    var observer = new IntersectionObserver(function(entries, obs) {
-        entries.forEach(function(entry) {
-            if (entry.isIntersecting) {
-                var img = entry.target;
-                var url = img.dataset.thumb;
-                if (url && url !== NO_IMAGE_SVG) {
-                    queueThumbnail(img, url);
-                }
-                obs.unobserve(img);
+var observer = new IntersectionObserver(function(entries, obs) {
+    entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+            var img = entry.target;
+            var url = img.dataset.thumb;
+            if (url && url !== NO_IMAGE_SVG) {
+                img.src = url;  // ← 바로 로딩!
             }
-        });
-    }, { rootMargin: '200px' });
+            obs.unobserve(img);
+        }
+    });
+}, { rootMargin: '300px' });
 
     seriesList.forEach(function(series, index) {
         try {
@@ -610,31 +606,6 @@ function updateFavoriteIcon() {
 }
 
 // ===== 썸네일 =====
-function loadNextThumbnail() {
-    while (loadingCount < MAX_CONCURRENT && thumbnailQueue.length > 0) {
-        loadingCount++;
-        var item = thumbnailQueue.shift();
-        var img = item.img;
-        var url = item.url;
-        
-        img.onload = function() {
-            img.dataset.loaded = 'true';
-            img.parentElement.classList.add('loaded');
-            loadingCount--;
-            loadNextThumbnail();
-        };
-        img.onerror = function() {
-            loadingCount--;
-            loadNextThumbnail();
-        };
-        img.src = url;
-    }
-}
-
-function queueThumbnail(img, url) {
-    thumbnailQueue.push({ img: img, url: url });
-    loadNextThumbnail();
-}
 
 function handleThumbnailError(img, fallbackSvg) {
     if (img.dataset.retried || img.src === fallbackSvg || img.src.startsWith('data:image/svg')) {
