@@ -1007,6 +1007,15 @@ if (window.editCoverFile) {
         shouldUpload = confirm('Cover image already exists.\nReplace with new image?');
     }
     
+if (window.editCoverFile) {
+    const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
+    
+    let shouldUpload = true;
+    
+    if (hasThumbnail) {
+        shouldUpload = confirm('Cover image already exists.\nReplace with new image?');
+    }
+    
     if (shouldUpload) {
         console.log('🖼️ 커버 업로드 시작:', window.editCoverFile);
         var base64 = await fileToBase64(window.editCoverFile);
@@ -1018,8 +1027,7 @@ if (window.editCoverFile) {
             mimeType: window.editCoverFile.type
         });
         console.log('🖼️ 커버 업로드 완료');
-        // ✅ 커버 업로드 완료 후에만 새로고침!
-        await refreshDB(null, false, true);
+        location.reload();  // ✅ F5 새로고침!
     } else {
         console.log('🖼️ 커버 업로드 취소');
     }
