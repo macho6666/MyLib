@@ -9,7 +9,6 @@ let indexLogFetching = false;
 let indexIsRunning = false;
 window.allSeries = [];
 const thumbnailQueue = [];
-let isLoadingThumbnail = false;
 const THUMBNAIL_DELAY_MS = 100;
 const MAX_CONCURRENT = 4;
 let loadingCount = 0;
