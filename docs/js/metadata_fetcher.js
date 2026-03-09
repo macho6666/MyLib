@@ -60,14 +60,16 @@ function showSearchResultsModal(results) {
     const existingModal = document.querySelector('.metadata-search-modal');
     if (existingModal) existingModal.remove();
     
-    // 사이트별로 그룹화
+    window._searchResults = results;
+    
     const grouped = {};
     results.forEach(r => {
         if (!grouped[r.site]) grouped[r.site] = [];
         grouped[r.site].push(r);
     });
     
-    // 결과 있는 사이트만 필터링 & 우선순위 순서로 정렬
+    window._groupedResults = grouped; 
+    
     const availableSites = window._siteOrder.filter(site => grouped[site] && grouped[site].length > 0);
     
     if (availableSites.length === 0) {
