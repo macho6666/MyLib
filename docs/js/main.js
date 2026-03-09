@@ -10,7 +10,9 @@ let indexIsRunning = false;
 window.allSeries = [];
 const thumbnailQueue = [];
 let isLoadingThumbnail = false;
-const THUMBNAIL_DELAY_MS = 250;
+const THUMBNAIL_DELAY_MS = 100;
+const MAX_CONCURRENT = 4;
+let loadingCount = 0;
 let activeBlobUrls = [];
 
 let customTags = [];
@@ -610,24 +612,24 @@ function updateFavoriteIcon() {
 
 // ===== 썸네일 =====
 function loadNextThumbnail() {
-    if (isLoadingThumbnail || thumbnailQueue.length === 0) return;
-    
-    isLoadingThumbnail = true;
-    var item = thumbnailQueue.shift();
-    var img = item.img;
-    var url = item.url;
-    
-    img.onload = function() {
-        img.dataset.loaded = 'true';
-        img.parentElement.classList.add('loaded');  // ← 이거 추가!
-        isLoadingThumbnail = false;
-        setTimeout(loadNextThumbnail, THUMBNAIL_DELAY_MS);
-    };
-    img.onerror = function() {
-        isLoadingThumbnail = false;
-        setTimeout(loadNextThumbnail, THUMBNAIL_DELAY_MS);
-    };
-    img.src = url;
+    while (loadingCount < MAX_CONCURRENT && thumbnailQueue.length > 0) {
+        loadingCount++;
+        var item = thumbnailQueue.shift();
+        var img = item.img;
+        var url = item.url;
+        
+        img.onload = function() {
+            img.dataset.loaded = 'true';
+            img.parentElement.classList.add('loaded');
+            loadingCount--;
+            loadNextThumbnail();
+        };
+        img.onerror = function() {
+            loadingCount--;
+            loadNextThumbnail();
+        };
+        img.src = url;
+    }
 }
 
 function queueThumbnail(img, url) {
