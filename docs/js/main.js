@@ -1049,7 +1049,8 @@ if (window.editCoverFile) {
         showToast("저장 완료");
         closeEditModal();
 
-        setTimeout(function() { refreshDB(null, true, true); }, 1000);
+        // ✅ 커버 업로드 여부 관계없이 새로고침
+        await refreshDB(null, false, true);
 
     } catch (e) {
         console.error('Save Error:', e);
