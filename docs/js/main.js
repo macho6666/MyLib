@@ -255,6 +255,13 @@ function renderGrid(seriesList) {
     if (calendarPage) calendarPage.style.display = 'none';
     if (grid) grid.style.display = 'grid';
     
+    clearBlobUrls()function renderGrid(seriesList) {
+    var grid = document.getElementById('grid');
+    var calendarPage = document.getElementById('calendarPage');
+    
+    if (calendarPage) calendarPage.style.display = 'none';
+    if (grid) grid.style.display = 'grid';
+    
     clearBlobUrls();
     grid.innerHTML = '';
 
@@ -288,16 +295,16 @@ function renderGrid(seriesList) {
             var publisher = meta.publisher || '';
             var isAdult = meta.adult === true;
             
- var thumb = NO_IMAGE_SVG;
-if (series.thumbnail && series.thumbnail.startsWith("data:image")) {
-    thumb = series.thumbnail;
-} else if (series.thumbnailUrl) {
-    thumb = series.thumbnailUrl;
-} else if (series.thumbnailId) {
-    thumb = "https://lh3.googleusercontent.com/d/" + series.thumbnailId + "=s400";
-} else if (series.thumbnail && series.thumbnail.startsWith("http")) {
-    thumb = series.thumbnail;
-}
+            var thumb = NO_IMAGE_SVG;
+            if (series.thumbnail && series.thumbnail.startsWith("data:image")) {
+                thumb = series.thumbnail;
+            } else if (series.thumbnailUrl) {
+                thumb = series.thumbnailUrl;
+            } else if (series.thumbnailId) {
+                thumb = "https://lh3.googleusercontent.com/d/" + series.thumbnailId + "=s400";
+            } else if (series.thumbnail && series.thumbnail.startsWith("http")) {
+                thumb = series.thumbnail;
+            }
 
             var statusClass = 'ongoing';
             var statusText = status;
@@ -682,16 +689,16 @@ function openDetailModal(index) {
     var coverImg = document.getElementById('detailCover');
     var noImageEl = document.getElementById('detailCoverNoImage');
     
-var thumb = '';
-if (series.thumbnail && series.thumbnail.startsWith("data:image")) {
-    thumb = series.thumbnail;
-} else if (series.thumbnailUrl) {
-    thumb = series.thumbnailUrl;
-} else if (series.thumbnailId) {
-    thumb = "https://lh3.googleusercontent.com/d/" + series.thumbnailId + "=s400";
-} else if (series.thumbnail && series.thumbnail.startsWith("http")) {
-    thumb = series.thumbnail;
-}
+    var thumb = '';
+    if (series.thumbnail && series.thumbnail.startsWith("data:image")) {
+        thumb = series.thumbnail;
+    } else if (series.thumbnailUrl) {
+        thumb = series.thumbnailUrl;
+    } else if (series.thumbnailId) {
+        thumb = "https://lh3.googleusercontent.com/d/" + series.thumbnailId + "=s400";
+    } else if (series.thumbnail && series.thumbnail.startsWith("http")) {
+        thumb = series.thumbnail;
+    }
     
     if (thumb) {
         coverImg.src = thumb;
@@ -713,10 +720,10 @@ if (series.thumbnail && series.thumbnail.startsWith("data:image")) {
         }
     }
 
-document.getElementById('detailInfoTitle').textContent = series.name || '-';
+    document.getElementById('detailInfoTitle').textContent = series.name || '-';
     
-var authorText = authors.join(', ') || '작가 미상';
-document.getElementById('detailInfoAuthor').textContent = authorText;
+    var authorText = authors.join(', ') || '작가 미상';
+    document.getElementById('detailInfoAuthor').textContent = authorText;
     
     document.getElementById('detailInfoStatus').textContent = meta.status || '-';
     document.getElementById('detailInfoPlatform').textContent = meta.publisher || '-';
@@ -742,17 +749,17 @@ document.getElementById('detailInfoAuthor').textContent = authorText;
     window.currentDetailSeries = series;
     
     updateFavoriteIcon();
-var adultBadge = document.getElementById('detailAdultBadge');
-if (adultBadge) {
-  if (meta.adult === true) {
-    adultBadge.style.display = 'inline';
-  } else {
-    adultBadge.style.display = 'none';
-  }
-}
+    var adultBadge = document.getElementById('detailAdultBadge');
+    if (adultBadge) {
+        if (meta.adult === true) {
+            adultBadge.style.display = 'inline';
+        } else {
+            adultBadge.style.display = 'none';
+        }
+    }
     modal.style.display = 'flex';
 }
-
+    
 function closeDetailModal() {
     var modal = document.getElementById('detailModal');
     if (modal) modal.style.display = 'none';
@@ -1508,26 +1515,29 @@ function selectBook(id, name) {
   document.getElementById('recordBookSearch').value = '';
   document.getElementById('recordBookResults').classList.remove('show');
   
-// 커버 이미지 표시
-var series = allSeries.find(function(s) { return s.id === id; });
-var thumb = '';
-if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
-  thumb = series.thumbnail;
-} else if (series.thumbnailUrl) {
-  thumb = series.thumbnailUrl;
-} else if (series.thumbnailId) {
-  thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
+  // 커버 이미지 표시
+  var series = allSeries.find(function(s) { return s.id === id; });
+  var thumb = '';
+  if (series) {
+    if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
+      thumb = series.thumbnail;
+    } else if (series.thumbnailUrl) {
+      thumb = series.thumbnailUrl;
+    } else if (series.thumbnailId) {
+      thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
+    }
+  }
+  
+  var coverEl = document.getElementById('recordSelectedCover');
+  if (thumb) {
+    coverEl.innerHTML = '<img src="' + thumb + '" alt="">';
+  } else {
+    coverEl.innerHTML = '';
+  }
+  
+  document.getElementById('recordSelectedName').textContent = name;
+  document.getElementById('recordSelectedBook').style.display = 'flex';
 }
-
-var coverEl = document.getElementById('recordSelectedCover');
-if (thumb) {
-  coverEl.innerHTML = '<img src="' + thumb + '" alt="">';
-} else {
-  coverEl.innerHTML = '';
-}
-
-document.getElementById('recordSelectedName').textContent = name;
-document.getElementById('recordSelectedBook').style.display = 'flex';
 
 function updateProgressValue(value) {
     document.getElementById('recordProgressValue').textContent = value;
@@ -2149,7 +2159,6 @@ function showRecordsByStatus(status) {
   var statusLabel = status === 'completed' ? 'Completed' : 
                     status === 'dropped' ? 'Dropped' : 'Reading';
   
-  // 해당 상태의 책들 수집
   var latestRecords = {};
   
   Object.keys(calendarData).forEach(function(dateStr) {
@@ -2161,7 +2170,6 @@ function showRecordsByStatus(status) {
     });
   });
   
-  // 상태 필터링
   var filtered = Object.values(latestRecords).filter(function(item) {
     return item.record.status === status;
   });
@@ -2184,9 +2192,11 @@ function showRecordsByStatus(status) {
     var thumb = '';
     if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
       thumb = series.thumbnail;
-} else if (series.thumbnailId) {
-  thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
-}
+    } else if (series.thumbnailUrl) {
+      thumb = series.thumbnailUrl;
+    } else if (series.thumbnailId) {
+      thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
+    }
     
     var bookItem = document.createElement('div');
     bookItem.className = 'bookshelf-item';
@@ -2254,6 +2264,8 @@ function openBookRecords(seriesId) {
   var thumb = '';
   if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
     thumb = series.thumbnail;
+  } else if (series.thumbnailUrl) {
+    thumb = series.thumbnailUrl;
   } else if (series.thumbnailId) {
     thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
   }
@@ -2310,23 +2322,6 @@ function openBookRecords(seriesId) {
             '</div>';
         });
       }
-      
-      // 하이라이트 HTML 생성
-      var highlightsHtml = '';
-      if (record.highlights && record.highlights.length > 0) {
-        record.highlights.forEach(function(hl, hlIndex) {
-          var hlText = hl.text.length > 50 ? hl.text.substring(0, 50) + '...' : hl.text;
-          highlightsHtml += 
-            '<div class="book-record-highlight" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;">' +
-              '<span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ' + hl.color + '; flex-shrink: 0; margin-top: 4px;"></span>' +
-              '<div style="flex: 1; min-width: 0;">' +
-                '<div style="font-size: 12px; color: var(--text-secondary, #aaa);">"' + hlText + '"</div>' +
-                (hl.memo ? '<div style="font-size: 11px; color: var(--text-tertiary, #666); margin-top: 2px;">→ ' + hl.memo + '</div>' : '') +
-              '</div>' +
-              '<button class="book-record-hl-delete" onclick="deleteHighlightRecord(\'' + dateStr + '\', \'' + seriesId + '\', ' + hlIndex + ')" style="background: none; border: none; color: var(--text-tertiary, #666); cursor: pointer; font-size: 12px; padding: 2px;">x</button>' +
-            '</div>';
-        });
-      }
 
       var progressHtml = record.progress !== undefined ? '<div class="book-record-progress">' + record.progress + '%</div>' : '';
 
@@ -2349,8 +2344,6 @@ function openBookRecords(seriesId) {
         highlightsHtml += '</div>';
       }
 
-      var progressHtml = record.progress !== undefined ? '<div class="book-record-progress">' + record.progress + '%</div>' : '';
-
       item.innerHTML = 
         '<div class="book-record-date">' +
           '<span class="book-record-date-text">' + dateStr + '</span>' +
@@ -2358,8 +2351,7 @@ function openBookRecords(seriesId) {
         '</div>' +
         progressHtml +
         '<div class="book-record-memos">' + memosHtml + '</div>' +
-        highlightsHtml; +
-        (highlightsHtml ? '<div class="book-record-highlights" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color, #333);">' + highlightsHtml + '</div>' : '');    
+        highlightsHtml;
       recordsList.appendChild(item);
     });
   });
