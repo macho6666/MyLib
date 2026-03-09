@@ -1018,6 +1018,8 @@ if (window.editCoverFile) {
             mimeType: window.editCoverFile.type
         });
         console.log('🖼️ 커버 업로드 완료');
+        // ✅ 커버 업로드 완료 후에만 새로고침!
+        await refreshDB(null, false, true);
     } else {
         console.log('🖼️ 커버 업로드 취소');
     }
@@ -1048,9 +1050,6 @@ if (window.editCoverFile) {
         renderGrid(allSeries);
         showToast("저장 완료");
         closeEditModal();
-
-        // ✅ 커버 업로드 여부 관계없이 새로고침
-        await refreshDB(null, false, true);
 
     } catch (e) {
         console.error('Save Error:', e);
