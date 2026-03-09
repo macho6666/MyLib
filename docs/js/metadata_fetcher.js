@@ -5,7 +5,7 @@
 
 // ===== 전역 변수 =====
 window._searchResults = [];
-window._siteOrder = JSON.parse(localStorage.getItem('metadataSiteOrder') || '["리디","네이버","노벨피아","카카오"]');
+window._siteOrder = JSON.parse(localStorage.getItem('metadataSiteOrder') || '["리디","네이버","노벨피아","카카오","조아라","문피아","무툰"]');
 
 // ===== 사이트 색상 =====
 const SITE_COLORS = {
