@@ -1508,9 +1508,8 @@ function selectBook(id, name) {
   document.getElementById('recordBookSearch').value = '';
   document.getElementById('recordBookResults').classList.remove('show');
   
-  // 커버 이미지 표시
-  var series = allSeries.find(function(s) { return s.id === id; });
-  var thumb = '';
+// 커버 이미지 표시
+var series = allSeries.find(function(s) { return s.id === id; });
 var thumb = '';
 if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
   thumb = series.thumbnail;
@@ -1519,18 +1518,16 @@ if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
 } else if (series.thumbnailId) {
   thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
 }
-  }
-  
-  var coverEl = document.getElementById('recordSelectedCover');
-  if (thumb) {
-    coverEl.innerHTML = '<img src="' + thumb + '" alt="">';
-  } else {
-    coverEl.innerHTML = '';
-  }
-  
-  document.getElementById('recordSelectedName').textContent = name;
-  document.getElementById('recordSelectedBook').style.display = 'flex';
+
+var coverEl = document.getElementById('recordSelectedCover');
+if (thumb) {
+  coverEl.innerHTML = '<img src="' + thumb + '" alt="">';
+} else {
+  coverEl.innerHTML = '';
 }
+
+document.getElementById('recordSelectedName').textContent = name;
+document.getElementById('recordSelectedBook').style.display = 'flex';
 
 function updateProgressValue(value) {
     document.getElementById('recordProgressValue').textContent = value;
