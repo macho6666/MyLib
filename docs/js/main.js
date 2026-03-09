@@ -925,7 +925,7 @@ function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
     editingSeriesIndex = -1;
     editingSeriesId = '';
-    window.editCoverFile = null;  // ← 수정
+    window.editCoverFile = null;
     editSelectedTags = [];
 }
 
@@ -968,7 +968,7 @@ function handleCoverSelect(event) {
     var file = event.target.files[0];
     if (!file) return;
 
-    window.editCoverFile = file;  // ← 수정
+    window.editCoverFile = file;
     document.getElementById('editCoverFilename').textContent = file.name;
 
     var reader = new FileReader();
