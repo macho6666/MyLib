@@ -238,24 +238,17 @@ async function refreshDB(forceId, silent, bypassCache) {
         renderGrid(allSeries);
         showToast("Library loaded");
 
-} catch (e) {
-    console.error("Library Fetch Error:", e);
-    showToast("❌ Load failed: " + e.message, 5000);
-    throw e;
-} finally {
+    } catch (e) {
+        console.error("Library Fetch Error:", e);
+        showToast("❌ Load failed: " + e.message, 5000);
+        throw e;
+    } finally {
         if(loader) loader.style.display = 'none';
     }
 }
 
 // ===== 그리드 렌더링 =====
 function renderGrid(seriesList) {
-    var grid = document.getElementById('grid');
-    var calendarPage = document.getElementById('calendarPage');
-    
-    if (calendarPage) calendarPage.style.display = 'none';
-    if (grid) grid.style.display = 'grid';
-    
-    clearBlobUrls()function renderGrid(seriesList) {
     var grid = document.getElementById('grid');
     var calendarPage = document.getElementById('calendarPage');
     
@@ -269,7 +262,6 @@ function renderGrid(seriesList) {
         grid.innerHTML = '<div class="no-data">저장된 작품이 없습니다.</div>';
         return;
     }
-
     var observer = new IntersectionObserver(function(entries, obs) {
         entries.forEach(function(entry) {
             if (entry.isIntersecting) {
