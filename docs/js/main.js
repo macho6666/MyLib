@@ -288,14 +288,16 @@ function renderGrid(seriesList) {
             var publisher = meta.publisher || '';
             var isAdult = meta.adult === true;
             
-            var thumb = NO_IMAGE_SVG;
-            if (series.thumbnail && series.thumbnail.startsWith("data:image")) {
-                thumb = series.thumbnail;
-            } else if (series.thumbnailId) {
-                thumb = "https://lh3.googleusercontent.com/d/" + series.thumbnailId + "=s400";
-            } else if (series.thumbnail && series.thumbnail.startsWith("http")) {
-                thumb = series.thumbnail;
-            }
+ var thumb = NO_IMAGE_SVG;
+if (series.thumbnail && series.thumbnail.startsWith("data:image")) {
+    thumb = series.thumbnail;
+} else if (series.thumbnailUrl) {
+    thumb = series.thumbnailUrl;
+} else if (series.thumbnailId) {
+    thumb = "https://lh3.googleusercontent.com/d/" + series.thumbnailId + "=s400";
+} else if (series.thumbnail && series.thumbnail.startsWith("http")) {
+    thumb = series.thumbnail;
+}
 
             var statusClass = 'ongoing';
             var statusText = status;
@@ -680,14 +682,16 @@ function openDetailModal(index) {
     var coverImg = document.getElementById('detailCover');
     var noImageEl = document.getElementById('detailCoverNoImage');
     
-    var thumb = '';
-    if (series.thumbnail && series.thumbnail.startsWith("data:image")) {
-        thumb = series.thumbnail;
-    } else if (series.thumbnailId) {
-        thumb = "https://lh3.googleusercontent.com/d/" + series.thumbnailId + "=s400";
-    } else if (series.thumbnail && series.thumbnail.startsWith("http")) {
-        thumb = series.thumbnail;
-    }
+var thumb = '';
+if (series.thumbnail && series.thumbnail.startsWith("data:image")) {
+    thumb = series.thumbnail;
+} else if (series.thumbnailUrl) {
+    thumb = series.thumbnailUrl;
+} else if (series.thumbnailId) {
+    thumb = "https://lh3.googleusercontent.com/d/" + series.thumbnailId + "=s400";
+} else if (series.thumbnail && series.thumbnail.startsWith("http")) {
+    thumb = series.thumbnail;
+}
     
     if (thumb) {
         coverImg.src = thumb;
@@ -1507,12 +1511,14 @@ function selectBook(id, name) {
   // 커버 이미지 표시
   var series = allSeries.find(function(s) { return s.id === id; });
   var thumb = '';
-  if (series) {
-    if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
-      thumb = series.thumbnail;
-    } else if (series.thumbnailId) {
-      thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
-    }
+var thumb = '';
+if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
+  thumb = series.thumbnail;
+} else if (series.thumbnailUrl) {
+  thumb = series.thumbnailUrl;
+} else if (series.thumbnailId) {
+  thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
+}
   }
   
   var coverEl = document.getElementById('recordSelectedCover');
@@ -2181,9 +2187,9 @@ function showRecordsByStatus(status) {
     var thumb = '';
     if (series.thumbnail && series.thumbnail.startsWith('data:image')) {
       thumb = series.thumbnail;
-    } else if (series.thumbnailId) {
-      thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
-    }
+} else if (series.thumbnailId) {
+  thumb = 'https://lh3.googleusercontent.com/d/' + series.thumbnailId + '=s200';
+}
     
     var bookItem = document.createElement('div');
     bookItem.className = 'bookshelf-item';
