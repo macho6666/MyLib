@@ -5,7 +5,23 @@
 
 // ===== 전역 변수 =====
 window._searchResults = [];
-window._siteOrder = JSON.parse(localStorage.getItem('metadataSiteOrder') || '["리디","네이버","노벨피아","카카오","조아라","문피아","무툰"]');
+
+const defaultSites = ["리디","네이버","노벨피아","카카오","문피아"];
+let savedOrder = localStorage.getItem('metadataSiteOrder');
+
+if (savedOrder) {
+  let parsed = JSON.parse(savedOrder);
+  // 저장된 순서에 없는 새 사이트만 뒤에 추가
+  defaultSites.forEach(site => {
+    if (!parsed.includes(site)) {
+      parsed.push(site);
+    }
+  });
+  window._siteOrder = parsed;
+  localStorage.setItem('metadataSiteOrder', JSON.stringify(parsed));
+} else {
+  window._siteOrder = defaultSites;
+}
 
 // ===== 사이트 색상 =====
 const SITE_COLORS = {
@@ -219,7 +235,7 @@ function saveSiteOrder(tabsContainer) {
     const order = Array.from(tabs).map(tab => tab.dataset.site);
     
     // 결과 없는 사이트도 순서에 포함
-    const allSites = ['리디', '네이버', '노벨피아', '카카오'];
+    const allSites = defaultSites;
     const fullOrder = [...order, ...allSites.filter(s => !order.includes(s))];
     
     window._siteOrder = fullOrder;
