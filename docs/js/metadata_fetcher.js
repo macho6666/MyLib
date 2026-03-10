@@ -6,7 +6,7 @@
 // ===== 전역 변수 =====
 window._searchResults = [];
 
-const defaultSites = ["리디","네이버","노벨피아","카카오","문피아"];
+const defaultSites = ["리디","네이버","노벨피아","카카오","문피아","조아라"];
 let savedOrder = localStorage.getItem('metadataSiteOrder');
 
 if (savedOrder) {
