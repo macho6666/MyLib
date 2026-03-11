@@ -120,9 +120,11 @@ function showSearchResultsModal(results) {
             </div>
             <div class="modal-body">
                 <div class="search-tabs-container">
+                    <button class="tab-scroll-btn tab-scroll-left" onclick="scrollTabs('left')">‹</button>
                     <div class="search-tabs" id="searchTabs">
                         ${tabsHTML}
                     </div>
+                    <button class="tab-scroll-btn tab-scroll-right" onclick="scrollTabs('right')">›</button>
                 </div>
                 <div class="search-results-content" id="searchResultsContent">
                     ${resultsHTML}
@@ -242,6 +244,18 @@ function saveSiteOrder(tabsContainer) {
     localStorage.setItem('metadataSiteOrder', JSON.stringify(fullOrder));
 }
 
+// ===== 탭 스크롤 함수 =====
+function scrollTabs(direction) {
+    const tabsContainer = document.querySelector('#searchTabs');
+    const scrollAmount = 200;
+    
+    if (direction === 'left') {
+        tabsContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    } else {
+        tabsContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+}
+
 // ===== 검색 결과 선택 =====
 function selectSearchResult(index) {
     const result = window._searchResults[index];
@@ -339,5 +353,6 @@ function fillEditFormWithMetadata(meta) {
 // ===== 전역 함수로 노출 =====
 window.fetchMetadataFromWeb = fetchMetadataFromWeb;
 window.selectSearchResult = selectSearchResult;
+window.scrollTabs = scrollTabs;
 
 console.log('✅ Metadata Fetcher loaded');
