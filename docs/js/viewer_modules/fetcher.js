@@ -56,6 +56,7 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
         urlInfo = urlResponse.body;
         console.log('✅ Direct URL received:', urlInfo.url.substring(0, 60) + '...');
     } catch (e) {
+        console.error('❌ Direct URL error:', e.message, e);  // ← 이걸로 변경
         console.error('❌ Failed to get direct URL, falling back to chunked method');
         return fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName);
     }
