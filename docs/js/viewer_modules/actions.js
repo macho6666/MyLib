@@ -158,6 +158,11 @@ export async function loadViewer(index, isContinuous = false) {
         
         showLoadingOverlay(false);
         
+        const showStart = performance.now();
+        const showTime = performance.now() - showStart;
+        console.log(`⏱️ [HIDE OVERLAY] ${showTime.toFixed(2)}ms`);
+
+        console.log('📊 === COMPLETE TIMELINE ===');
         const totalViewerTime = performance.now() - viewerStartTime;
         console.log(`✅ [TOTAL VIEWER TIME] ${totalViewerTime.toFixed(2)}ms`);
         
