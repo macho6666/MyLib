@@ -124,47 +124,23 @@ export async function loadViewer(index, isContinuous = false) {
             index: index
         };
         
-        // 파일 타입에 따라 뷰어 선택
-        if (result.type === 'text' || result.type === 'txt' || result.type === 'epub') {
-            // 텍스트 뷰어 로드 및 열기
-            const textViewerStart = performance.now();
-            const textViewer = await loadTextViewer();
-            const textViewerLoadTime = performance.now() - textViewerStart;
-            console.log(`⏱️ [LOAD TEXT VIEWER] ${textViewerLoadTime.toFixed(2)}ms`);
-            
-            const openTextStart = performance.now();
-            await textViewer.openTextViewer(result, metadata);
-            const openTextTime = performance.now() - openTextStart;
-            console.log(`⏱️ [OPEN TEXT VIEWER] ${openTextTime.toFixed(2)}ms`);
-            
-        } else if (result.type === 'images') {
-            // 이미지 뷰어 로드 및 열기
-            const imageViewerStart = performance.now();
-            const imageViewer = await loadImageViewer();
-            const imageViewerLoadTime = performance.now() - imageViewerStart;
-            console.log(`⏱️ [LOAD IMAGE VIEWER] ${imageViewerLoadTime.toFixed(2)}ms`);
-            
-            const openImageStart = performance.now();
-            await imageViewer.openImageViewer(result, metadata);
-            const openImageTime = performance.now() - openImageStart;
-            console.log(`⏱️ [OPEN IMAGE VIEWER] ${openImageTime.toFixed(2)}ms`);
-            
-        } else if (result.type === 'external') {
-            console.log('📄 External file opened in new tab');
-            
-        } else {
-            throw new Error('Unknown file type: ' + result.type);
-        }
+        // 뷰어 모듈 로드
+        const viewerModuleStart = performance.now();
+        const viewerModule = await import('./index.js');
+        const viewerModuleTime = performance.now() - viewerModuleStart;
+        console.log(`⏱️ [LOAD VIEWER MODULE] ${viewerModuleTime.toFixed(2)}ms`);
+        
+        // 뷰어 열기
+        const openViewerStart = performance.now();
+        await viewerModule.openViewer(result, metadata);
+        const openViewerTime = performance.now() - openViewerStart;
+        console.log(`⏱️ [OPEN VIEWER] ${openViewerTime.toFixed(2)}ms`);
         
         showLoadingOverlay(false);
         
-        const showStart = performance.now();
-        const showTime = performance.now() - showStart;
-        console.log(`⏱️ [HIDE OVERLAY] ${showTime.toFixed(2)}ms`);
-
-        console.log('📊 === COMPLETE TIMELINE ===');
         const totalViewerTime = performance.now() - viewerStartTime;
         console.log(`✅ [TOTAL VIEWER TIME] ${totalViewerTime.toFixed(2)}ms`);
+        console.log('📊 === COMPLETE TIMELINE ===');
         
     } catch (e) {
         console.error('Viewer load failed:', e);
@@ -172,7 +148,6 @@ export async function loadViewer(index, isContinuous = false) {
         showLoadingOverlay(false);
     }
 }
-
 /**
  * 뷰어 닫기
  */
