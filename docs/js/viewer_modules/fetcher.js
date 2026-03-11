@@ -84,6 +84,7 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
 /**
  * 직접 다운로드 (fetch + 프로그레스)
  */
+// downloadDirect() 개선
 async function downloadDirect(url, totalSize, onProgress) {
     var response = await fetch(url);
     if (!response.ok) throw new Error('HTTP ' + response.status);
@@ -101,7 +102,7 @@ async function downloadDirect(url, totalSize, onProgress) {
 
         if (totalSize && onProgress) {
             var percent = Math.round((receivedLength / totalSize) * 100);
-            onProgress('다운로드 중... (' + percent + '%)');
+            onProgress('다운로드 중... (' + percent + '%)');  // ✅ 정확한 형식
         }
     }
 
