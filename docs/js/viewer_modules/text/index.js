@@ -34,11 +34,21 @@ export async function openTextViewer(result, metadata) {
         TextViewerState.currentBook = metadata;
         console.log(`⏱️ [RESET STATE] ${(performance.now() - resetStart).toFixed(2)}ms`);
         
-        // 표지 로드 시도
-        const coverStart = performance.now();
-        const coverUrl = await loadCover(metadata.seriesId, metadata.bookId, metadata);
+// ✅ 표지 로드 - 백그라운드 (기다리지 않음!)
+loadCover(metadata.seriesId, metadata.bookId, metadata)
+    .then(coverUrl => {
         metadata.coverUrl = coverUrl;
-        console.log(`⏱️ [LOAD COVER] ${(performance.now() - coverStart).toFixed(2)}ms`);
+        console.log('📷 Cover loaded (background)');
+        
+        // 이미 렌더링된 커버 이미지 업데이트
+        const coverImg = document.querySelector('img[alt="cover"]');
+        if (coverImg && coverUrl) {
+            coverImg.src = coverUrl;
+        }
+    })
+    .catch(e => {
+        console.log('📷 No cover found');
+    });
 
         // 타입에 따라 렌더링
         const renderStart = performance.now();
