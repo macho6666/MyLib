@@ -292,17 +292,22 @@ function setupControlEvents() {
         };
     }
     
-    // ✅ 2페이지 하단 여백
-    const padding2pageBottomSlider = document.getElementById('padding2pageBottomSlider');
-    if (padding2pageBottomSlider) {
-        padding2pageBottomSlider.oninput = (e) => {
-            const value = parseInt(e.target.value);
-            document.getElementById('padding2pageBottomValue').innerText = value + 'px';
-            localStorage.setItem('text_2page_padding_bottom', value);
-            // 2페이지 모드 즉시 반영 (페이지 재분할 + 재렌더)
-            if (window.rerenderTextContent) window.rerenderTextContent();
-        };
-    }
+// ✅ 2페이지 하단 여백 - oninput → onchange로 변경
+const padding2pageBottomSlider = document.getElementById('padding2pageBottomSlider');
+if (padding2pageBottomSlider) {
+    // 드래그 중에는 숫자만 표시
+    padding2pageBottomSlider.oninput = (e) => {
+        const value = parseInt(e.target.value);
+        document.getElementById('padding2pageBottomValue').innerText = value + 'px';
+    };
+    
+    // 손 뗄 때만 저장 + 재렌더
+    padding2pageBottomSlider.onchange = (e) => {
+        const value = parseInt(e.target.value);
+        localStorage.setItem('text_2page_padding_bottom', value);
+        if (window.rerenderTextContent) window.rerenderTextContent();
+    };
+}
     
     const chkSaveProgress = document.getElementById('chkSaveProgress');
     if (chkSaveProgress) {
