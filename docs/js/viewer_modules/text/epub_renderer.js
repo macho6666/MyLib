@@ -1125,6 +1125,12 @@ function setupKeyboardNavigation() {
     if (window._epubKeyHandler) document.removeEventListener('keydown', window._epubKeyHandler, true);
 
     window._epubKeyHandler = function (e) {
+        // ✅ 입력 필드에 포커스 중이면 무시
+        var activeTag = document.activeElement.tagName;
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') {
+            return;
+        }
+
         var container = document.getElementById('textViewerContainer');
         if (!container) return;
 
