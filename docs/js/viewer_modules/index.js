@@ -1,6 +1,7 @@
 /**
  * viewer_modules/index.js
  * 뷰어 모듈 메인 진입점 (텍스트 + 이미지)
+ * ✅ 타이밍 측정 추가
  */
 
 // Core
@@ -21,24 +22,46 @@ import { openImageViewer, closeImageViewer, isImageViewerOpen } from './image/in
  */
 export async function openViewer(result, metadata) {
     console.log('🚀 Opening Viewer:', result.type);
+    const viewerOpenStart = performance.now();
     
-    // 타입에 따라 분기
-    if (result.type === 'text' || result.type === 'txt' || result.type === 'epub') {
-        // 텍스트 뷰어
-        GlobalState.viewerType = 'text';
-        await openTextViewer(result, metadata);
+    try {
+        // 타입에 따라 분기
+        if (result.type === 'text' || result.type === 'txt' || result.type === 'epub') {
+            // 텍스트 뷰어
+            console.log('⏱️ [TEXT VIEWER OPEN START]');
+            const textStart = performance.now();
+            
+            GlobalState.viewerType = 'text';
+            await openTextViewer(result, metadata);
+            
+            const textTime = performance.now() - textStart;
+            console.log(`⏱️ [TEXT VIEWER OPEN END] ${textTime.toFixed(2)}ms`);
+            
+        } else if (result.type === 'images') {
+            // 이미지 뷰어
+            console.log('⏱️ [IMAGE VIEWER OPEN START]');
+            const imageStart = performance.now();
+            
+            GlobalState.viewerType = 'image';
+            await openImageViewer(result, metadata);
+            
+            const imageTime = performance.now() - imageStart;
+            console.log(`⏱️ [IMAGE VIEWER OPEN END] ${imageTime.toFixed(2)}ms`);
+            
+        } else if (result.type === 'external') {
+            // PDF 등 외부 링크
+            console.log('📄 External file opened in new tab');
+            
+        } else {
+            throw new Error('Unknown viewer type: ' + result.type);
+        }
         
-    } else if (result.type === 'images') {
-        // 이미지 뷰어
-        GlobalState.viewerType = 'image';
-        await openImageViewer(result, metadata);
+        const totalViewerTime = performance.now() - viewerOpenStart;
+        console.log(`✅ [VIEWER OPEN COMPLETE] ${totalViewerTime.toFixed(2)}ms`);
         
-    } else if (result.type === 'external') {
-        // PDF 등 외부 링크
-        console.log('📄 External file opened in new tab');
-        
-    } else {
-        throw new Error('Unknown viewer type: ' + result.type);
+    } catch (e) {
+        console.error('❌ Viewer open failed:', e);
+        throw e;
     }
 }
 
