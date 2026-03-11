@@ -34,29 +34,27 @@ export async function openTextViewer(result, metadata) {
         TextViewerState.currentBook = metadata;
         console.log(`⏱️ [RESET STATE] ${(performance.now() - resetStart).toFixed(2)}ms`);
         
-// ✅ 표지 로드 - 백그라운드 (기다리지 않음!)
-loadCover(metadata.seriesId, metadata.bookId, metadata)
-    .then(coverUrl => {
-        metadata.coverUrl = coverUrl;
-        console.log('📷 Cover loaded (background)');
-        
-        // 이미 렌더링된 커버 이미지 업데이트
-        const coverImg = document.querySelector('img[alt="cover"]');
-        if (coverImg && coverUrl) {
-            coverImg.src = coverUrl;
-        }
-    })
-    .catch(e => {
-        console.log('📷 No cover found');
-    });
+        // ✅ 표지 로드 - 백그라운드 (기다리지 않음!)
+        loadCover(metadata.seriesId, metadata.bookId, metadata)
+            .then(coverUrl => {
+                metadata.coverUrl = coverUrl;
+                console.log('📷 Cover loaded (background):', coverUrl ? 'found' : 'none');
+                
+                // 이미 렌더링된 커버 이미지 업데이트
+                const coverImg = document.querySelector('img[alt="cover"]');
+                if (coverImg && coverUrl) {
+                    coverImg.src = coverUrl;
+                }
+            })
+            .catch(() => {
+                console.log('📷 No cover found');
+            });
 
-        // 타입에 따라 렌더링
+        // 타입에 따라 렌더링 (바로 시작!)
         const renderStart = performance.now();
         if (result.type === 'text' || result.type === 'txt') {
-            // TXT 파일
             await openTxtFile(result.content, metadata);
         } else if (result.type === 'epub') {
-            // EPUB 파일
             await openEpubFile(result, metadata); 
         } else {
             throw new Error('Unsupported file type: ' + result.type);
