@@ -1126,9 +1126,6 @@ function setupKeyboardNavigation() {
     if (window._epubKeyHandler) document.removeEventListener('keydown', window._epubKeyHandler, true);
 
     window._epubKeyHandler = function (e) {
-        // ✅ 디버깅 (확인 후 삭제)
-        console.log('KEY:', e.key, 'TARGET:', e.target.tagName);
-
         // ✅ 입력 필드면 무시
         var target = e.target;
         if (target.tagName === 'INPUT' || 
