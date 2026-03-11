@@ -241,6 +241,11 @@ function updateLoadingProgress(progress) {
     const progressEl = document.getElementById('loadingProgress');
     if (progressEl) {
         progressEl.innerText = progress;
+        // ✅ 프로그레스 바 업데이트
+    var fill = document.getElementById('loadingProgressFill');
+    if (fill) {
+        var match = progress.match(/(\d+)%/);
+        if (match) fill.style.width = match[1] + '%';
     }
 }
 
