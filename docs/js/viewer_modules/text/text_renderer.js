@@ -1,6 +1,7 @@
 /**
  * viewer_modules/text/text_renderer.js
  * TXT 렌더링 (스크롤/클릭 모드, 1페이지/2페이지 레이아웃)
+ * ✅ 최적화: 샘플링 기반 페이지 분할 + 여백 반영
  */
 
 import { TextViewerState, setCurrentPage } from './text_state.js';
@@ -23,6 +24,8 @@ let clickGuideVisible = false;
 let clickGuideTimeout = null;
 
 export async function renderTxt(textContent, metadata) {
+    const renderStart = performance.now();
+    
     TextViewerState.renderType = 'txt';
     TextViewerState.currentBook = metadata;
     headerVisible = false;
@@ -71,13 +74,13 @@ export async function renderTxt(textContent, metadata) {
     window.onTextThemeChange = onThemeChange;
     window.scrollToProgress = scrollToProgress;
     window.rerenderTextContent = function() {
-    const currentProgress = TextViewerState.scrollProgress || 0;
-    renderContent();
-    if (pageLayout === '2page') {
-        var spreadIndex = Math.round((currentProgress / 100) * (totalSpreads - 1));
-        renderSpread(Math.max(0, Math.min(spreadIndex, totalSpreads - 1)));
-    }
-};
+        const currentProgress = TextViewerState.scrollProgress || 0;
+        renderContent();
+        if (pageLayout === '2page') {
+            var spreadIndex = Math.round((currentProgress / 100) * (totalSpreads - 1));
+            renderSpread(Math.max(0, Math.min(spreadIndex, totalSpreads - 1)));
+        }
+    };
     
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
     
@@ -95,6 +98,7 @@ export async function renderTxt(textContent, metadata) {
     
     Events.emit('text:open', { bookId: metadata.bookId, metadata });
     console.log('📖 TXT Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
+    console.log(`⏱️ [RENDER TOTAL] ${(performance.now() - renderStart).toFixed(2)}ms`);
 }
 
 function renderContent() {
@@ -480,6 +484,7 @@ function create2PageContent(container, textContent, metadata) {
  * ✅ 최적화된 페이지 분할 (샘플링 + 여백 반영)
  */
 function splitTextToPages(textContent, metadata) {
+    const startTime = performance.now();
     const pages = [];
     
     if (metadata.coverUrl) {
@@ -492,9 +497,9 @@ function splitTextToPages(textContent, metadata) {
     // ✅ 여백 설정 반영
     const maxHeight = calculateMaxPageHeight();
     
-    // ✅ 샘플링: 처음 20개 문단으로 평균 높이 계산
+    // ✅ 샘플링: 처음 30개 문단으로 평균 높이 계산
     const testPage = createTestPageElement();
-    const sampleSize = Math.min(20, paragraphs.length);
+    const sampleSize = Math.min(30, paragraphs.length);
     let totalSampleHeight = 0;
     let totalSampleChars = 0;
     
@@ -543,11 +548,13 @@ function splitTextToPages(textContent, metadata) {
         pages.push({ type: 'empty' });
     }
     
+    console.log(`⏱️ [SPLIT PAGES] ${(performance.now() - startTime).toFixed(2)}ms (${pages.length} pages)`);
+    
     return pages;
 }
 
 /**
- * ✅ 테스트용 페이지 요소 생성
+ * 테스트용 페이지 요소 생성
  */
 function createTestPageElement() {
     const testPage = document.createElement('div');
@@ -568,7 +575,7 @@ function createTestPageElement() {
 }
 
 /**
- * ✅ 페이지 최대 높이 계산 (여백 반영)
+ * 페이지 최대 높이 계산 (여백 반영)
  */
 function calculateMaxPageHeight() {
     const bookHeight = window.innerHeight - 80;
@@ -715,7 +722,6 @@ function setupKeyboardNavigation() {
     if (window._epubKeyHandler) document.removeEventListener('keydown', window._epubKeyHandler, true);
 
     window._epubKeyHandler = function (e) {
-        // ✅ 입력 필드면 무시
         var target = e.target;
         if (target.tagName === 'INPUT' || 
             target.tagName === 'TEXTAREA' || 
@@ -754,7 +760,6 @@ function setupKeyboardNavigation() {
     };
     document.addEventListener('keydown', window._epubKeyHandler, true);
 }
-
 
 function navigatePage(direction) {
     if (pageLayout === '2page') navigate2Page(direction);
