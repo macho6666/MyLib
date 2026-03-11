@@ -70,7 +70,14 @@ export async function renderTxt(textContent, metadata) {
     window.getTextLayout = getTextLayout;
     window.onTextThemeChange = onThemeChange;
     window.scrollToProgress = scrollToProgress;
-    window.rerenderTextContent = renderContent;
+    window.rerenderTextContent = function() {
+    const currentProgress = TextViewerState.scrollProgress || 0;
+    renderContent();
+    if (pageLayout === '2page') {
+        var spreadIndex = Math.round((currentProgress / 100) * (totalSpreads - 1));
+        renderSpread(Math.max(0, Math.min(spreadIndex, totalSpreads - 1)));
+    }
+};
     
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
     
