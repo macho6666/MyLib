@@ -581,9 +581,9 @@ function calculateMaxPageHeight() {
     const bookHeight = window.innerHeight - 80;
     const topPadding = 40;
     const pageNumArea = 40;
-    const paddingBottom2p = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
+    const userMargin = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
     
-    return bookHeight - topPadding - pageNumArea - paddingBottom2p;
+    return bookHeight - topPadding - pageNumArea - userMargin;
 }
 
 function renderSpread(spreadIndex) {
@@ -613,10 +613,15 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     pageEl.innerHTML = '';
     if (!pageData) return;
     
-    const paddingBottom2p = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
+    const userMargin = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
     
     const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'height: calc(100% - 40px); overflow: hidden; box-sizing: border-box; padding-bottom: ' + paddingBottom2p + 'px;';
+    contentDiv.style.cssText = `
+        height: calc(100% - 40px);
+        overflow: hidden;
+        box-sizing: border-box;
+        padding-bottom: ${userMargin}px;
+    `;
     
     const pageNumDiv = document.createElement('div');
     pageNumDiv.style.cssText = 'height: 40px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ' + (side === 'left' ? 'flex-start' : 'flex-end') + ';';
@@ -641,7 +646,6 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     pageEl.appendChild(contentDiv);
     pageEl.appendChild(pageNumDiv);
 }
-
 function formatText(text) {
     if (!text) return '';
     return text.split(/\n/).map(function(line) {
