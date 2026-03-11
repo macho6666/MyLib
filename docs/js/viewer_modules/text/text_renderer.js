@@ -616,11 +616,11 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     const userMargin = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
     
     const contentDiv = document.createElement('div');
+    // ✅ padding이 아니라 height로 줄여야 여백이 생김!
     contentDiv.style.cssText = `
-        height: calc(100% - 40px);
+        height: calc(100% - 40px - ${userMargin}px);
         overflow: hidden;
         box-sizing: border-box;
-        padding-bottom: ${userMargin}px;
     `;
     
     const pageNumDiv = document.createElement('div');
@@ -643,7 +643,12 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
             break;
     }
     
+    // ✅ 여백 div 추가
+    const marginDiv = document.createElement('div');
+    marginDiv.style.cssText = `height: ${userMargin}px; background: transparent;`;
+    
     pageEl.appendChild(contentDiv);
+    pageEl.appendChild(marginDiv);
     pageEl.appendChild(pageNumDiv);
 }
 function formatText(text) {
