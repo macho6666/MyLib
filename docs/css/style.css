@@ -2998,6 +2998,7 @@ header h1 {
     align-items: center;
     gap: 8px;
     margin-bottom: 20px;
+    height: 40px;  /* ← 고정 높이 추가 */
 }
 
 /* 탭 영역 */
@@ -3009,10 +3010,19 @@ header h1 {
     scroll-behavior: smooth;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
+    align-items: center;  /* ← 추가 */
+    height: 100%;  /* ← 추가 */
 }
 
 .search-tabs::-webkit-scrollbar {
     display: none; /* Chrome/Safari */
+}
+
+/* 개별 탭 크기 고정 */
+.search-tab {
+    height: 36px;  /* ← 고정 높이 */
+    min-width: fit-content;  /* ← 내용만큼만 */
+    flex-shrink: 0;  /* ← 줄어들지 않음 */
 }
 
 /* 스크롤 버튼 */
