@@ -213,8 +213,24 @@ function showLoadingOverlay(show) {
                     border-radius: 50%;
                     animation: spin 0.8s linear infinite;
                 "></div>
-                <div id="loadingProgress" style="
+                <div id="loadingProgressBar" style="
+                    width: 200px;
+                    height: 4px;
+                    background: var(--border-color, #2a2a2a);
+                    border-radius: 2px;
                     margin-top: 20px;
+                    overflow: hidden;
+                ">
+                    <div id="loadingProgressFill" style="
+                        width: 0%;
+                        height: 100%;
+                        background: var(--accent, #4a9eff);
+                        border-radius: 2px;
+                        transition: width 0.3s ease;
+                    "></div>
+                </div>
+                <div id="loadingProgress" style="
+                    margin-top: 10px;
                     font-size: 14px;
                     color: var(--text-secondary, #999);
                 ">로딩 중...</div>
