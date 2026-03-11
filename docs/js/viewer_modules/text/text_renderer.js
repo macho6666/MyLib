@@ -476,6 +476,9 @@ function create2PageContent(container, textContent, metadata) {
     renderSpread(0);
 }
 
+/**
+ * ✅ 최적화된 페이지 분할 (샘플링 기반)
+ */
 function splitTextToPages(textContent, metadata) {
     const pages = [];
     
@@ -484,40 +487,61 @@ function splitTextToPages(textContent, metadata) {
         pages.push({ type: 'empty' });
     }
     
-    const paragraphs = textContent.split(/\n/).filter(function(line) { return line.trim(); });
-    
-    const testPage = createTestPageElement();
+    const paragraphs = textContent.split(/\n/).filter(line => line.trim());
     const maxHeight = calculateMaxPageHeight();
     
-    let currentPageContent = [];
+    // ✅ 샘플링: 처음 20개 문단으로 평균 높이 계산
+    const testPage = createTestPageElement();
+    const sampleSize = Math.min(20, paragraphs.length);
+    let totalSampleHeight = 0;
+    let totalSampleChars = 0;
     
-    paragraphs.forEach(function(para) {
-        const trimmed = para.trim();
-        if (!trimmed) return;
+    for (let i = 0; i < sampleSize; i++) {
+        const para = paragraphs[i].trim();
+        testPage.innerHTML = '<p style="margin: 0 0 0.8em 0; text-indent: 1em;">' + escapeHtml(para) + '</p>';
+        totalSampleHeight += testPage.scrollHeight;
+        totalSampleChars += para.length;
+    }
+    
+    document.body.removeChild(testPage);
+    
+    // 글자당 평균 높이 계산
+    const avgHeightPerChar = totalSampleChars > 0 ? totalSampleHeight / totalSampleChars : 0.5;
+    const charsPerPage = Math.floor(maxHeight / avgHeightPerChar);
+    
+    console.log(`📐 Estimated ${charsPerPage} chars/page (sampled ${sampleSize} paragraphs)`);
+    
+    // ✅ 나머지는 글자 수 기반으로 빠르게 분할
+    let currentPageContent = [];
+    let currentCharCount = 0;
+    
+    for (let i = 0; i < paragraphs.length; i++) {
+        const para = paragraphs[i].trim();
+        if (!para) continue;
         
-        const testContent = [...currentPageContent, trimmed];
-        testPage.innerHTML = formatText(testContent.join('\n\n'));
+        const paraLength = para.length;
         
-        if (testPage.scrollHeight > maxHeight && currentPageContent.length > 0) {
+        if (currentCharCount + paraLength > charsPerPage && currentPageContent.length > 0) {
             pages.push({ type: 'text', content: currentPageContent.join('\n\n') });
-            currentPageContent = [trimmed];
+            currentPageContent = [para];
+            currentCharCount = paraLength;
         } else {
-            currentPageContent.push(trimmed);
+            currentPageContent.push(para);
+            currentCharCount += paraLength;
         }
-    });
+    }
     
     if (currentPageContent.length > 0) {
         pages.push({ type: 'text', content: currentPageContent.join('\n\n') });
     }
     
-    document.body.removeChild(testPage);
-    
     pages.push({ type: 'end' });
-    if (pages.length % 2 !== 0) pages.push({ type: 'empty' });
+    if (pages.length % 2 !== 0) {
+        pages.push({ type: 'empty' });
+    }
     
     return pages;
 }
-
 function createTestPageElement() {
     const testPage = document.createElement('div');
     testPage.style.cssText = 
