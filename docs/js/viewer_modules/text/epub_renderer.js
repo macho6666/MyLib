@@ -1126,16 +1126,14 @@ function setupKeyboardNavigation() {
     if (window._epubKeyHandler) document.removeEventListener('keydown', window._epubKeyHandler, true);
 
     window._epubKeyHandler = function (e) {
-        // ✅ 입력 필드 또는 메모 다이얼로그면 무시
-        var active = document.activeElement;
-        if (active && (
-            active.tagName === 'INPUT' || 
-            active.tagName === 'TEXTAREA' || 
-            active.isContentEditable
-        )) {
-            return;
-        }
-        if (document.querySelector('#memoText')) {
+        // ✅ 디버깅 (확인 후 삭제)
+        console.log('KEY:', e.key, 'TARGET:', e.target.tagName);
+
+        // ✅ 입력 필드면 무시
+        var target = e.target;
+        if (target.tagName === 'INPUT' || 
+            target.tagName === 'TEXTAREA' || 
+            target.isContentEditable) {
             return;
         }
 
