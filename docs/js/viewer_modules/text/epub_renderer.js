@@ -1121,8 +1121,6 @@ function scrollPageAmount(direction) {
     container.scrollTop += direction * scrollAmount;
 }
 
-function setupKeyboardNavigation() {
-    if (window._epubKeyHandler) document.removeEventListener('keydown', window._epubKeyHandler, true);
 
 function setupKeyboardNavigation() {
     if (window._epubKeyHandler) document.removeEventListener('keydown', window._epubKeyHandler, true);
