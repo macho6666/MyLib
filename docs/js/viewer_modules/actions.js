@@ -243,6 +243,9 @@ function showLoadingOverlay(show) {
             document.body.appendChild(overlay);
         }
         overlay.style.display = 'flex';
+        // ✅ 프로그레스 바 리셋
+        var fill = document.getElementById('loadingProgressFill');
+        if (fill) fill.style.width = '0%';
     } else {
         if (overlay) {
             overlay.style.display = 'none';
