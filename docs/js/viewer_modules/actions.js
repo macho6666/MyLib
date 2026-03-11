@@ -249,16 +249,14 @@ function showLoadingOverlay(show) {
         }
     }
 }
-
 /**
  * 로딩 진행률 업데이트
  */
 function updateLoadingProgress(progress) {
-    const progressEl = document.getElementById('loadingProgress');
+    var progressEl = document.getElementById('loadingProgress');
     if (progressEl) {
         progressEl.innerText = progress;
     }
-    // ✅ 프로그레스 바 업데이트
     var fill = document.getElementById('loadingProgressFill');
     if (fill) {
         var match = progress.match(/(\d+)%/);
