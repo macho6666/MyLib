@@ -477,7 +477,7 @@ function create2PageContent(container, textContent, metadata) {
 }
 
 /**
- * ✅ 최적화된 페이지 분할 (샘플링 기반)
+ * ✅ 최적화된 페이지 분할 (샘플링 + 여백 반영)
  */
 function splitTextToPages(textContent, metadata) {
     const pages = [];
@@ -488,6 +488,8 @@ function splitTextToPages(textContent, metadata) {
     }
     
     const paragraphs = textContent.split(/\n/).filter(line => line.trim());
+    
+    // ✅ 여백 설정 반영
     const maxHeight = calculateMaxPageHeight();
     
     // ✅ 샘플링: 처음 20개 문단으로 평균 높이 계산
@@ -498,6 +500,7 @@ function splitTextToPages(textContent, metadata) {
     
     for (let i = 0; i < sampleSize; i++) {
         const para = paragraphs[i].trim();
+        if (!para) continue;
         testPage.innerHTML = '<p style="margin: 0 0 0.8em 0; text-indent: 1em;">' + escapeHtml(para) + '</p>';
         totalSampleHeight += testPage.scrollHeight;
         totalSampleChars += para.length;
@@ -509,9 +512,9 @@ function splitTextToPages(textContent, metadata) {
     const avgHeightPerChar = totalSampleChars > 0 ? totalSampleHeight / totalSampleChars : 0.5;
     const charsPerPage = Math.floor(maxHeight / avgHeightPerChar);
     
-    console.log(`📐 Estimated ${charsPerPage} chars/page (sampled ${sampleSize} paragraphs)`);
+    console.log(`📐 Max height: ${maxHeight}px, ~${charsPerPage} chars/page`);
     
-    // ✅ 나머지는 글자 수 기반으로 빠르게 분할
+    // ✅ 글자 수 기반으로 빠르게 분할
     let currentPageContent = [];
     let currentCharCount = 0;
     
@@ -542,6 +545,10 @@ function splitTextToPages(textContent, metadata) {
     
     return pages;
 }
+
+/**
+ * ✅ 테스트용 페이지 요소 생성
+ */
 function createTestPageElement() {
     const testPage = document.createElement('div');
     testPage.style.cssText = 
@@ -560,6 +567,9 @@ function createTestPageElement() {
     return testPage;
 }
 
+/**
+ * ✅ 페이지 최대 높이 계산 (여백 반영)
+ */
 function calculateMaxPageHeight() {
     const bookHeight = window.innerHeight - 80;
     const topPadding = 40;
