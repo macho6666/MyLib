@@ -21,29 +21,27 @@ function setupKeyboardNavigation() {
         document.removeEventListener('keydown', window._textViewerKeyHandler);
     }
     
-JavaScript
+    const keyHandler = (e) => {
+        // ✅ 입력 필드면 무시
+        var target = e.target;
+        if (target.tagName === 'INPUT' || 
+            target.tagName === 'TEXTAREA' || 
+            target.isContentEditable) {
+            return;
+        }
+        if (document.querySelector('#memoText')) {
+            return;
+        }
 
-const keyHandler = (e) => {
-    // ✅ 입력 필드면 무시
-    var target = e.target;
-    if (target.tagName === 'INPUT' || 
-        target.tagName === 'TEXTAREA' || 
-        target.isContentEditable) {
-        return;
-    }
-    if (document.querySelector('#memoText')) {
-        return;
-    }
-
-    const viewer = document.getElementById('viewerOverlay');
-    if (!viewer || viewer.style.display !== 'flex') return;
-    
-    const container = document.getElementById('textViewerContainer');
-    if (!container) return;
-    
-    const scrollAmount = container.clientHeight * 0.9;
-    
-    switch (e.key) {
+        const viewer = document.getElementById('viewerOverlay');
+        if (!viewer || viewer.style.display !== 'flex') return;
+        
+        const container = document.getElementById('textViewerContainer');
+        if (!container) return;
+        
+        const scrollAmount = container.clientHeight * 0.9;
+        
+        switch (e.key) {
             case 'ArrowDown':
             case ' ':
             case 'PageDown':
