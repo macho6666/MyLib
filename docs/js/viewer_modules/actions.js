@@ -260,13 +260,18 @@ function updateLoadingProgress(progress) {
     if (progressEl) {
         progressEl.innerText = progress;
     }
+    
     var fill = document.getElementById('loadingProgressFill');
     if (fill) {
-        var match = progress.match(/(\d+)%/);
-        if (match) fill.style.width = match[1] + '%';
+        // ✅ 정규식 강화
+        var match = progress.match(/\((\d+)%\)/);
+        if (match) {
+            var percent = parseInt(match[1]);
+            fill.style.width = percent + '%';
+            console.log('📊 Progress:', percent + '%');  // 디버깅용
+        }
     }
 }
-
 // 전역 함수 등록
 window.loadViewer = loadViewer;
 window.closeViewer = closeViewer;
