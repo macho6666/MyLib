@@ -84,7 +84,6 @@ export function saveProgress(seriesId, bookId, progress) {
         };
         
         localStorage.setItem(key, JSON.stringify(data));
-        console.log('💾 Progress saved:', progress + '%');
         
     } catch (e) {
         console.warn('Save progress failed:', e);
@@ -103,6 +102,41 @@ export function getProgress(seriesId, bookId) {
     } catch (e) {
         console.warn('Get progress failed:', e);
         return 0;
+    }
+}
+
+/**
+ * 읽은 기록 저장
+ */
+export function saveReadHistory(seriesId, bookId) {
+    try {
+        const key = `read_${seriesId}`;
+        const data = JSON.parse(localStorage.getItem(key) || '{}');
+        
+        data[bookId] = {
+            completed: true,
+            timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem(key, JSON.stringify(data));
+        console.log('📚 Marked as read:', bookId);
+        
+    } catch (e) {
+        console.warn('Save read history failed:', e);
+    }
+}
+
+/**
+ * 읽음 여부 확인
+ */
+export function isRead(seriesId, bookId) {
+    try {
+        const key = `read_${seriesId}`;
+        const data = JSON.parse(localStorage.getItem(key) || '{}');
+        return data[bookId]?.completed || false;
+        
+    } catch (e) {
+        return false;
     }
 }
 
