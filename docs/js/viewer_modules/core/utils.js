@@ -70,4 +70,40 @@ export function formatSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+/**
+ * 진행도 저장 (localStorage)
+ */
+export function saveProgress(seriesId, bookId, progress) {
+    try {
+        const key = `progress_${seriesId}`;
+        const data = JSON.parse(localStorage.getItem(key) || '{}');
+        
+        data[bookId] = {
+            progress: progress,
+            timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem(key, JSON.stringify(data));
+        console.log('💾 Progress saved:', progress + '%');
+        
+    } catch (e) {
+        console.warn('Save progress failed:', e);
+    }
+}
+
+/**
+ * 진행도 불러오기
+ */
+export function getProgress(seriesId, bookId) {
+    try {
+        const key = `progress_${seriesId}`;
+        const data = JSON.parse(localStorage.getItem(key) || '{}');
+        return data[bookId]?.progress || 0;
+        
+    } catch (e) {
+        console.warn('Get progress failed:', e);
+        return 0;
+    }
+}
+
 console.log('✅ Utils loaded');
