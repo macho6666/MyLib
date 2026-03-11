@@ -2,7 +2,6 @@
  * viewer_modules/text/epub_renderer.js
  * EPUB 렌더링 (txt 뷰어와 동일한 방식) - Lazy Loading 최적화
  * ✅ 여백 설정 (top/bottom), 클릭 가이드, 모드 전환 위치 유지, 이미지 404 제거, TOC
- * 📝 TOC "권" 구분: 나중에 추가 예정 (금색 #d4af37)
  */
 
 import { TextViewerState, setCurrentPage } from './text_state.js';
@@ -87,6 +86,15 @@ export async function renderEpub(epubResult, metadata) {
     window.getTextLayout = function () { return pageLayout; };
     window.onTextThemeChange = onThemeChange;
     window.scrollToProgress = scrollToProgress;
+    window.rerenderTextContent = function () {
+        const currentProgress = TextViewerState.scrollProgress || 0;
+        renderContent().then(function () {
+            if (pageLayout === '2page') {
+                var spreadIndex = Math.round((currentProgress / 100) * (totalSpreads - 1));
+                renderSpread(Math.max(0, Math.min(spreadIndex, totalSpreads - 1)));
+            }
+        });
+    };
 
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
 
@@ -212,13 +220,13 @@ function applyContainerStyle(container) {
     container.style.color = 'var(--text-primary, #e8e8e8)';
     container.style.overflowX = 'hidden';
     if (readMode === 'click' && !is2Page) {
-    container.style.overflowY = 'clip';
-    container.style.willChange = 'scroll-position';
-} else if (is2Page) {
-    container.style.overflowY = 'hidden';
-} else {
-    container.style.overflowY = 'auto';
-}
+        container.style.overflowY = 'clip';
+        container.style.willChange = 'scroll-position';
+    } else if (is2Page) {
+        container.style.overflowY = 'hidden';
+    } else {
+        container.style.overflowY = 'auto';
+    }
     container.style.zIndex = '5001';
     container.style.webkitOverflowScrolling = 'touch';
     container.style.display = is2Page ? 'flex' : 'block';
@@ -228,7 +236,6 @@ function applyContainerStyle(container) {
     container.style.webkitUserSelect = 'text';
     container.style.boxSizing = 'border-box';
 
-    // ✅ 1페이지 모드: 좌우 그림자 (여백까지 이어짐)
     if (!is2Page) {
         const oldRight = document.getElementById('rightShadowOverlay');
         if (oldRight) oldRight.remove();
@@ -253,6 +260,7 @@ function applyContainerStyle(container) {
         if (shadowOverlay) shadowOverlay.remove();
     }
 }
+
 // ═══════════════════════════════════════════════════════════
 // 1 PAGE 모드
 // ═══════════════════════════════════════════════════════════
@@ -263,7 +271,7 @@ async function create1PageContent(container) {
     content.style.cssText =
         'max-width: 800px; margin: 0 auto;' +
         'padding: 0 16px;' +
-        'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
+        'font-size: 18px; line-height: 1.9; word-break: keep-all; overflow-wrap: break-word; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
 
     container.appendChild(content);
@@ -334,7 +342,6 @@ async function renderChapter(container, index) {
 
         await processImages(body, epubData.zip, epubData.imagePaths, chapterPath.href);
 
-        // 남아있는 문제 이미지 제거
         body.querySelectorAll('img').forEach(function (img) {
             var src = img.getAttribute('src') || '';
             if (!src.startsWith('data:') && !src.startsWith('http')) {
@@ -343,7 +350,6 @@ async function renderChapter(container, index) {
             }
         });
 
-        // SVG image 제거
         body.querySelectorAll('svg image').forEach(function (img) {
             var href = img.getAttribute('href') || img.getAttribute('xlink:href') || '';
             if (!href.startsWith('data:') && !href.startsWith('http')) {
@@ -353,7 +359,6 @@ async function renderChapter(container, index) {
             }
         });
 
-        // CSS 링크 제거
         body.querySelectorAll('link[rel="stylesheet"]').forEach(function (link) {
             link.remove();
         });
@@ -500,7 +505,7 @@ async function create2PageContent(container) {
     leftPage.id = 'textLeftPage';
     leftPage.style.cssText =
         'flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden;' +
-        'font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px;' +
+        'font-size: 17px; line-height: 1.85; word-break: keep-all; overflow-wrap: break-word; letter-spacing: 0.3px;' +
         'box-sizing: border-box; position: relative;' +
         'border-right: 1px solid rgba(128,128,128,0.3);';
 
@@ -508,7 +513,7 @@ async function create2PageContent(container) {
     rightPage.id = 'textRightPage';
     rightPage.style.cssText =
         'flex: 1; height: 100%; padding: 40px 40px 0 40px; overflow: hidden;' +
-        'font-size: 17px; line-height: 1.85; word-break: keep-all; letter-spacing: 0.3px;' +
+        'font-size: 17px; line-height: 1.85; word-break: keep-all; overflow-wrap: break-word; letter-spacing: 0.3px;' +
         'box-sizing: border-box; position: relative;';
 
     book.appendChild(leftPage);
@@ -589,15 +594,16 @@ async function extractPagesWithImages() {
 function splitHtmlToChunks(body, maxHeight, chapterIdx) {
     const chunks = [];
     const children = Array.from(body.children);
+    const paddingBottom2p = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
 
     let currentElements = [];
 
     const measureDiv = document.createElement('div');
     measureDiv.style.cssText =
         'position: absolute; left: -9999px; top: 0;' +
-        'width: 700px; padding: 40px 40px 20px 40px;' +
+        'width: 700px; padding: 40px 40px ' + paddingBottom2p + 'px 40px;' +
         'font-size: 17px; line-height: 1.85;' +
-        'word-break: keep-all; letter-spacing: 0.3px;' +
+        'word-break: keep-all; overflow-wrap: break-word; letter-spacing: 0.3px;' +
         'box-sizing: border-box; visibility: hidden;';
     document.body.appendChild(measureDiv);
 
@@ -666,17 +672,24 @@ function splitHtmlToChunks(body, maxHeight, chapterIdx) {
 }
 
 function createTestPageElement() {
+    const paddingBottom2p = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
     const testPage = document.createElement('div');
     testPage.style.cssText =
         'position: absolute; left: -9999px; top: 0; width: 700px;' +
-        'padding: 40px 40px 0 40px; font-size: 17px; line-height: 1.85;' +
-        'word-break: keep-all; letter-spacing: 0.3px; box-sizing: border-box; visibility: hidden;';
+        'padding: 40px 40px ' + paddingBottom2p + 'px 40px; font-size: 17px; line-height: 1.85;' +
+        'word-break: keep-all; overflow-wrap: break-word; letter-spacing: 0.3px;' +
+        'box-sizing: border-box; visibility: hidden;';
     document.body.appendChild(testPage);
     return testPage;
 }
 
 function calculateMaxPageHeight() {
-    return window.innerHeight - 80 - 40 - 40;
+    const bookHeight = window.innerHeight - 80;
+    const topPadding = 40;
+    const pageNumArea = 40;
+    const paddingBottom2p = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
+
+    return bookHeight - topPadding - pageNumArea - paddingBottom2p;
 }
 
 function renderSpread(spreadIndex) {
@@ -708,8 +721,10 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     pageEl.innerHTML = '';
     if (!pageData) return;
 
+    const paddingBottom2p = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
+
     const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'height: calc(100% - 40px); overflow: hidden; box-sizing: border-box;';
+    contentDiv.style.cssText = 'height: calc(100% - 40px); overflow: hidden; box-sizing: border-box; padding-bottom: ' + paddingBottom2p + 'px;';
 
     const pageNumDiv = document.createElement('div');
     pageNumDiv.style.cssText =
@@ -775,7 +790,6 @@ function formatText(text) {
 
 // ═══════════════════════════════════════════════════════════
 // TOC 패널
-// 📝 TODO: "권" 구분 추가 예정 (금색 #d4af37, 패턴: /^\d+권|제\d+권/)
 // ═══════════════════════════════════════════════════════════
 
 function createTocPanel() {
@@ -798,14 +812,7 @@ function createTocPanel() {
         '<div id="tocList" style="padding: 12px 0;">';
 
     if (epubData && epubData.toc && epubData.toc.length > 0) {
-
-        
-            // 📝 TODO: "권" 구분 스타일 추가 예정
-            // const isVolume = /^\d+권|제\d+권|Volume\s*\d/i.test(item.label);
-            // if (isVolume) → 금색 #d4af37, 폰트 크기 16px, font-weight: 600
-
-        
-         epubData.toc.forEach(function (item, index) {
+        epubData.toc.forEach(function (item, index) {
             var isVolume = /^\d+권|제\d+권|Volume\s*\d/i.test(item.label.trim());
 
             if (isVolume) {
@@ -1223,7 +1230,6 @@ async function setTextLayout(layout) {
         return;
     }
 
-    // 현재 위치 저장
     let currentChapterIndex = 0;
     let chapterProgress = 0;
 
@@ -1267,7 +1273,6 @@ async function setTextLayout(layout) {
 
     console.log('📍 레이아웃 전환: ch=' + currentChapterIndex + ', progress=' + chapterProgress.toFixed(2));
 
-    // 전환 전 localStorage에 직접 저장
     if (currentMetadata && currentMetadata.seriesId && currentMetadata.bookId) {
         const key = 'progress_' + currentMetadata.seriesId;
         const progressData = JSON.parse(localStorage.getItem(key) || '{}');
@@ -1291,13 +1296,11 @@ async function setTextLayout(layout) {
         console.log('💾 전환 전 저장: ch=' + currentChapterIndex + ', chProgress=' + chapterProgress.toFixed(2) + ', total=' + totalProgress + '%');
     }
 
-    // 레이아웃 변경
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
 
     await renderContent();
 
-    // DOM 준비 후 복원
     setTimeout(async function () {
         if (pageLayout === '2page') {
             scrollToChapterIn2Page(currentChapterIndex, chapterProgress);
@@ -1427,8 +1430,7 @@ export function cleanupEpubViewer() {
     }
 
     document.body.style.overflow = '';
-    
-    // ✅ 좌우 그림자 제거
+
     ['textToggleBtn', 'textViewerHeader', 'epubTocPanel', 'epubClickGuide', 'leftShadowOverlay', 'rightShadowOverlay'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.remove();
@@ -1457,6 +1459,7 @@ export function cleanupEpubViewer() {
     delete window.getTextLayout;
     delete window.onTextThemeChange;
     delete window.scrollToProgress;
+    delete window.rerenderTextContent;
 }
 
 // ═══════════════════════════════════════════════════════════
