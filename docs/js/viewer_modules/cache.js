@@ -66,9 +66,12 @@ export async function cacheSet(fileId, data, fileSize, fileName) {
             var tx = db.transaction(STORE_NAME, 'readwrite');
             var store = tx.objectStore(STORE_NAME);
 
+            // ✅ TXT는 이미 문자열, ZIP/EPUB은 Uint8Array
+            var storedData = (typeof data === 'string') ? data : data;
+
             store.put({
                 id: fileId,
-                data: data,
+                data: storedData,
                 size: fileSize || 0,
                 fileName: fileName || '',
                 lastAccess: Date.now(),
