@@ -1,7 +1,7 @@
 /**
  * viewer_modules/fetcher.js
  * 파일 다운로드 + 압축 해제 (TXT/EPUB/CBZ/PDF)
- * ✅ 직접 다운로드 + IndexedDB 캐싱
+ * ✅ 캐시 최적화 + 프로그레스 개선
  */
 
 import { showToast } from './core/utils.js';
@@ -16,7 +16,7 @@ function formatSize(bytes) {
 }
 
 /**
- * 파일 다운로드 및 처리
+ * 파일 다운로드 및 처리 (메인 진입점)
  */
 export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     fileName = fileName || '';
@@ -32,15 +32,24 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     // ═══════════════════════════════════════
     // ✅ 캐시 확인
     // ═══════════════════════════════════════
+    console.log('🔍 Checking cache for:', fileId);
     var cached = await cacheGet(fileId);
+    
     if (cached) {
         console.log('⚡ Cache hit:', fileName, '(' + formatSize(cached.size) + ')');
-        if (onProgress) onProgress('캐시에서 로드 중...');
-
+        
+        // TXT: 캐시는 이미 문자열
         if (lowerName.endsWith('.txt')) {
+            if (onProgress) onProgress('캐시 로드 완료 (100%)');
+            console.log('✅ TXT loaded from cache instantly');
             return { type: 'text', content: cached.data };
-        } else {
-            return processZipBytes(cached.data, onProgress);
+        } 
+        // ZIP: 캐시된 바이트 처리
+        else {
+            if (onProgress) onProgress('파일 처리 중... (0%)');
+            var result = await processZipBytesWithProgress(cached.data, onProgress, true);
+            if (onProgress) onProgress('준비 완료 (100%)');
+            return result;
         }
     }
 
@@ -48,46 +57,68 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     // 🚀 직접 다운로드 URL 방식
     // ═══════════════════════════════════════
     console.log('🌐 Requesting direct download URL...');
-    if (onProgress) onProgress('다운로드 준비 중...');
+    if (onProgress) onProgress('다운로드 준비 중... (0%)');
 
     var urlInfo;
     try {
         var urlResponse = await API.request('view_get_direct_url', { fileId: fileId });
         urlInfo = urlResponse.body;
-        console.log('✅ Direct URL received:', urlInfo.url.substring(0, 60) + '...');
+        console.log('✅ Direct URL received');
     } catch (e) {
-        console.error('❌ Direct URL error:', e.message, e);  // ← 이걸로 변경
-        console.error('❌ Failed to get direct URL, falling back to chunked method');
+        console.error('❌ Direct URL error:', e.message);
         return fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName);
     }
 
     // fetch로 직접 다운로드
     var bytes;
     try {
-        bytes = await downloadDirect(urlInfo.url, urlInfo.size, onProgress);
+        bytes = await downloadDirect(urlInfo.url, urlInfo.size || totalSize, onProgress);
     } catch (e) {
-        console.error('❌ Direct download failed, falling back to chunked method');
+        console.error('❌ Direct download failed:', e.message);
         return fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName);
     }
 
-    // ✅ 캐시 저장 (백그라운드)
+    // ═══════════════════════════════════════
+    // 💾 캐시 저장 + 처리
+    // ═══════════════════════════════════════
+    
     if (lowerName.endsWith('.txt')) {
+        if (onProgress) onProgress('텍스트 변환 중... (90%)');
+        
         var textContent = new TextDecoder('utf-8').decode(bytes);
-        cacheSet(fileId, textContent, bytes.length, fileName).catch(function () {});
+        
+        // 백그라운드 캐시 저장 (비동기)
+        cacheSet(fileId, textContent, bytes.length, fileName).catch(function (e) {
+            console.warn('Cache save failed:', e);
+        });
+        
+        if (onProgress) onProgress('준비 완료 (100%)');
         return { type: 'text', content: textContent };
-    } else {
-        cacheSet(fileId, bytes, bytes.length, fileName).catch(function () {});
-        return processZipBytes(bytes, onProgress);
+    } 
+    else {
+        if (onProgress) onProgress('파일 처리 중... (85%)');
+        
+        // 백그라운드 캐시 저장
+        cacheSet(fileId, bytes, bytes.length, fileName).catch(function (e) {
+            console.warn('Cache save failed:', e);
+        });
+        
+        var result = await processZipBytesWithProgress(bytes, onProgress, false);
+        if (onProgress) onProgress('준비 완료 (100%)');
+        return result;
     }
 }
 
 /**
  * 직접 다운로드 (fetch + 프로그레스)
  */
-// downloadDirect() 개선
 async function downloadDirect(url, totalSize, onProgress) {
+    console.log('📥 Starting direct download, size:', formatSize(totalSize));
+    
     var response = await fetch(url);
-    if (!response.ok) throw new Error('HTTP ' + response.status);
+    if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+    }
 
     var reader = response.body.getReader();
     var chunks = [];
@@ -102,19 +133,23 @@ async function downloadDirect(url, totalSize, onProgress) {
 
         if (totalSize && onProgress) {
             var percent = Math.round((receivedLength / totalSize) * 100);
-            onProgress('다운로드 중... (' + percent + '%)');  // ✅ 정확한 형식
+            // 0-85% 범위로 조정 (나머지는 처리 단계)
+            var displayPercent = Math.round((percent * 85) / 100);
+            onProgress('다운로드 중... (' + displayPercent + '%)');
         }
     }
 
-    if (onProgress) onProgress('병합 중...');
+    if (onProgress) onProgress('다운로드 완료 (85%)');
 
+    // 청크 병합
     var allChunks = new Uint8Array(receivedLength);
     var position = 0;
-    for (var chunk of chunks) {
-        allChunks.set(chunk, position);
-        position += chunk.length;
+    for (var i = 0; i < chunks.length; i++) {
+        allChunks.set(chunks[i], position);
+        position += chunks[i].length;
     }
 
+    console.log('✅ Download complete:', formatSize(receivedLength));
     return allChunks;
 }
 
@@ -122,10 +157,12 @@ async function downloadDirect(url, totalSize, onProgress) {
  * Fallback: 기존 청크 방식
  */
 async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName) {
+    console.log('⚠️ Using fallback chunked download');
+    
     // TXT
     if (lowerName.endsWith('.txt')) {
         console.log('📄 TXT (Fallback)');
-        if (onProgress) onProgress('텍스트 다운로드 중...');
+        if (onProgress) onProgress('텍스트 다운로드 중... (0%)');
 
         try {
             var response = await API.request('view_get_chunk', {
@@ -140,10 +177,13 @@ async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, 
                 for (var i = 0; i < binaryString.length; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
+                
+                if (onProgress) onProgress('텍스트 변환 중... (90%)');
                 var textContent = new TextDecoder('utf-8').decode(bytes);
 
                 cacheSet(fileId, textContent, totalSize, fileName).catch(function () {});
-
+                
+                if (onProgress) onProgress('준비 완료 (100%)');
                 return { type: 'text', content: textContent };
             } else {
                 throw new Error('Empty Response');
@@ -156,7 +196,10 @@ async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, 
     // ZIP/EPUB/CBZ
     var combinedBytes = await downloadBytesChunked(fileId, totalSize, onProgress);
     cacheSet(fileId, combinedBytes, totalSize, fileName).catch(function () {});
-    return processZipBytes(combinedBytes, onProgress);
+    
+    var result = await processZipBytesWithProgress(combinedBytes, onProgress, false);
+    if (onProgress) onProgress('준비 완료 (100%)');
+    return result;
 }
 
 /**
@@ -167,7 +210,7 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
     var combinedBytes;
 
     if (totalSize > 0 && totalSize < SAFE_THRESHOLD) {
-        // Single
+        // Single chunk
         console.log('📉 Small File (' + formatSize(totalSize) + ')');
         if (onProgress) onProgress('다운로드 중... (0%)');
 
@@ -184,7 +227,7 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
                 for (var i = 0; i < len; i++) {
                     combinedBytes[i] = binaryString.charCodeAt(i);
                 }
-                if (onProgress) onProgress('다운로드 완료 (100%)');
+                if (onProgress) onProgress('다운로드 완료 (85%)');
             } else {
                 throw new Error('Empty Response');
             }
@@ -192,7 +235,7 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
             throw new Error('다운로드 실패: ' + e.message);
         }
     } else {
-        // Chunked
+        // Multiple chunks
         console.log('📈 Large File (' + formatSize(totalSize) + ')');
 
         var CHUNK_SIZE = 10 * 1024 * 1024;
@@ -238,7 +281,7 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
                         completed++;
 
                         if (onProgress) {
-                            var percent = Math.round((completed / chunkCount) * 100);
+                            var percent = Math.round((completed / chunkCount) * 85);
                             onProgress('다운로드 중... (' + percent + '%)');
                         }
                         break;
@@ -257,7 +300,7 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
         }
         await Promise.all(workers);
 
-        if (onProgress) onProgress('병합 중...');
+        if (onProgress) onProgress('병합 중... (85%)');
         var totalLen = 0;
         results.forEach(function (r) { totalLen += r.length; });
         combinedBytes = new Uint8Array(totalLen);
@@ -272,29 +315,35 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
 }
 
 /**
- * ZIP 바이트 → EPUB/CBZ 분기
+ * ZIP 바이트 처리 (프로그레스 포함)
  */
-async function processZipBytes(bytes, onProgress) {
-    if (onProgress) onProgress('압축 해제 중...');
+async function processZipBytesWithProgress(bytes, onProgress, fromCache) {
+    console.log('📦 Processing ZIP bytes, size:', formatSize(bytes.length || bytes.byteLength));
+    
+    if (onProgress) onProgress('압축 파일 로드 중... (10%)');
 
     if (typeof JSZip === 'undefined') {
         throw new Error('JSZip 라이브러리가 없습니다');
     }
 
     var zip = await JSZip.loadAsync(bytes);
+    if (onProgress) onProgress('파일 분석 중... (25%)');
 
     var files = Object.keys(zip.files).sort(function (a, b) {
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
     });
 
-    // EPUB
+    // EPUB 감지
     var isEpub = zip.file('OEBPS/content.opf') ||
                  zip.file('OPS/content.opf') ||
                  zip.file('mimetype');
 
     if (isEpub) {
-        console.log('📘 EPUB Detected');
+        console.log('📘 EPUB Detected (' + files.length + ' files)');
+        if (onProgress) onProgress('EPUB 준비 중... (50%)');
+        
         var blobData = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        
         return {
             type: 'epub',
             zip: zip,
@@ -302,17 +351,31 @@ async function processZipBytes(bytes, onProgress) {
         };
     }
 
-    // CBZ
+    // CBZ (이미지) 감지
+    if (onProgress) onProgress('이미지 추출 중... (30%)');
+    
     var imageUrls = [];
+    var processedCount = 0;
+
     for (var i = 0; i < files.length; i++) {
         var filename = files[i];
         if (filename.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
-            var blob = await zip.files[filename].async('blob');
-            imageUrls.push(URL.createObjectURL(blob));
+            try {
+                var blob = await zip.files[filename].async('blob');
+                imageUrls.push(URL.createObjectURL(blob));
+                
+                processedCount++;
+                var percent = 30 + Math.round((processedCount / files.length) * 55);
+                if (onProgress) onProgress('이미지 추출 중... (' + percent + '%)');
+            } catch (e) {
+                console.warn('Failed to extract image:', filename, e);
+            }
         }
     }
 
     if (imageUrls.length > 0) {
+        console.log('🖼️ CBZ Detected (' + imageUrls.length + ' images)');
+        if (onProgress) onProgress('준비 완료 (100%)');
         return { type: 'images', images: imageUrls };
     }
 
