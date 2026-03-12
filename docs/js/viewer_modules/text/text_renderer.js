@@ -39,6 +39,7 @@ export async function renderTxt(textContent, metadata) {
     headerVisible = false;
     currentSpreadIndex = 0;
     currentTextContent = textContent;
+    window.currentTextContent = textContent;
     currentMetadata = metadata;
     
     // ✅ 커버가 렌더러보다 먼저 로드됐으면 적용
