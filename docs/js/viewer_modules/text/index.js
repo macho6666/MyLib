@@ -107,20 +107,98 @@ async function openTxtFile(textContent, metadata) {
     metadata.toc = toc;
     console.log(`⏱️ [GENERATE TOC] ${(performance.now() - tocStart).toFixed(2)}ms`);
     
+    // ✅ 커버 플레이스홀더 표시
+    if (metadata.coverUrl) {
+        // 1page 모드에서만 표시
+        if (pageLayout === '1page') {
+            const content = document.getElementById('textViewerContent');
+            if (content) {
+                const coverPlaceholder = document.createElement('div');
+                coverPlaceholder.id = 'coverPlaceholder';
+                coverPlaceholder.style.cssText = `
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: calc(100vh - 100px);
+                    padding: 20px;
+                    box-sizing: border-box;
+                    background: var(--bg-primary, #0d0d0d);
+                `;
+                coverPlaceholder.innerHTML = `
+                    <div style="
+                        width: 250px;
+                        height: 350px;
+                        background: var(--bg-input, #222);
+                        border: 2px dashed var(--border-color, #333);
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: var(--text-tertiary, #666);
+                        font-size: 14px;
+                    ">
+                        커버 로딩 중...
+                    </div>
+                `;
+                content.insertBefore(coverPlaceholder, content.firstChild);
+            }
+        }
+    }
+    
     // 렌더링
     const renderStart = performance.now();
     await renderTxt(textContent, metadata);
-    console.log(`⏱️ [RENDER TXT] ${(performance.now() - renderStart).toFixed(2)}ms`);
+    const renderTime = performance.now() - renderStart;
+    console.log(`⏱️ [RENDER TXT] ${renderTime.toFixed(2)}ms`);
     
-    // 책갈피 불러오기 & 스크롤 복원
+    // ✅ 커버 로드 완료 후 플레이스홀더 교체
+    if (metadata.coverUrl && pageLayout === '1page') {
+        loadCover(metadata.seriesId, metadata.bookId, metadata)
+            .then(coverUrl => {
+                metadata.coverUrl = coverUrl;
+                const placeholder = document.getElementById('coverPlaceholder');
+                if (placeholder && coverUrl) {
+                    const coverDiv = document.createElement('div');
+                    coverDiv.style.cssText = `
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: calc(100vh - 100px);
+                        padding: 20px;
+                        box-sizing: border-box;
+                    `;
+                    coverDiv.innerHTML = `
+                        <img src="${coverUrl}" alt="cover" style="
+                            max-width: 90%;
+                            max-height: 70vh;
+                            object-fit: contain;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                        ">
+                    `;
+                    placeholder.replaceWith(coverDiv);
+                    console.log('📷 Cover loaded and displayed');
+                }
+            })
+            .catch(() => {
+                const placeholder = document.getElementById('coverPlaceholder');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+            });
+    }
+    
+    // 책갈피 불러오기
     const bookmarkStart = performance.now();
     const bookmark = loadBookmark(metadata.seriesId, metadata.bookId);
     console.log('📌 Loaded bookmark:', bookmark);
     
-    if (bookmark && bookmark.position > 0) {
+    if (bookmark && bookmark.progress > 0) {
         const container = document.getElementById('textViewerContainer');
         if (container) {
-            container.scrollTop = bookmark.position;
+            container.scrollTop = bookmark.position || 0;
             console.log('📌 Restored position:', bookmark.position);
             showToast('Bookmark restored');
         }
