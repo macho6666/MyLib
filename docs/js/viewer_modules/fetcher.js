@@ -19,39 +19,46 @@ function formatSize(bytes) {
 /**
  * 자동 인코딩 감지 + 디코딩
  */
+/**
+ * 자동 인코딩 감지 + 디코딩 (최적화 + 디버그)
+ */
 function decodeTextAuto(bytes) {
     // BOM 확인
-    if (bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+        console.log('📝 Encoding: UTF-8 (BOM)');
         return new TextDecoder('utf-8').decode(bytes.slice(3));
     }
-    if (bytes[0] === 0xFF && bytes[1] === 0xFE) {
+    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+        console.log('📝 Encoding: UTF-16 LE (BOM)');
         return new TextDecoder('utf-16le').decode(bytes.slice(2));
     }
-    if (bytes[0] === 0xFE && bytes[1] === 0xFF) {
+    if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+        console.log('📝 Encoding: UTF-16 BE (BOM)');
         return new TextDecoder('utf-16be').decode(bytes.slice(2));
     }
 
-    // UTF-8 시도 (엄격 모드)
-    try {
-        var text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-        return text;
-    } catch (e) {}
-
-    // EUC-KR (한글 CP949) 시도
-    try {
-        var text = new TextDecoder('euc-kr').decode(bytes);
-        if (/[가-힣]/.test(text)) {
-            return text;
+    // UTF-8 먼저 시도
+    var text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    
+    // 깨진 문자 확인 (처음 1000자만)
+    var sample = text.slice(0, 1000);
+    var brokenCount = (sample.match(/\uFFFD/g) || []).length;
+    
+    console.log('📝 UTF-8 broken chars:', brokenCount, '/', sample.length);
+    
+    // 깨진 문자가 5% 이상이면 EUC-KR 시도
+    if (brokenCount > sample.length * 0.05) {
+        try {
+            var eucText = new TextDecoder('euc-kr').decode(bytes);
+            console.log('📝 Encoding: EUC-KR (fallback)');
+            return eucText;
+        } catch (e) {
+            console.log('📝 EUC-KR failed:', e.message);
         }
-    } catch (e) {}
-
-    // CP1252 (Windows Latin) 시도
-    try {
-        return new TextDecoder('windows-1252').decode(bytes);
-    } catch (e) {}
-
-    // 최후: UTF-8 (에러 무시)
-    return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    }
+    
+    console.log('📝 Encoding: UTF-8');
+    return text;
 }
 
 /**
