@@ -439,7 +439,7 @@ function create1PageContent(container, textContent, metadata) {
         'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
     
-    // ✅ Cover 영역
+    // ✅ Cover 영역 (항상 먼저 추가)
     if (metadata.coverUrl) {
         const coverWrapper = document.createElement('div');
         coverWrapper.id = 'textCoverWrapper';
@@ -449,37 +449,34 @@ function create1PageContent(container, textContent, metadata) {
             'padding: 20px; box-sizing: border-box; margin-bottom: 20px; ' +
             'background: var(--bg-primary, #0d0d0d);';
         
+        // Spinner
+        const spinner = document.createElement('div');
+        spinner.style.cssText = 
+            'width: 40px; height: 40px; border: 3px solid var(--border-color, #2a2a2a); ' +
+            'border-top-color: var(--accent, #71717a); border-radius: 50%; ' +
+            'animation: spin 0.8s linear infinite;';
+        coverWrapper.appendChild(spinner);
+        
         const coverImg = document.createElement('img');
         coverImg.id = 'textCoverImage';
         coverImg.alt = 'cover';
         coverImg.style.cssText = 
             'max-width: 90%; max-height: 70vh; object-fit: contain; ' +
             'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); ' +
-            'display: none;';  // ← 처음엔 숨김
-        
-        // ✅ 로딩 중 spinner 표시
-        const spinner = document.createElement('div');
-        spinner.id = 'textCoverSpinner';
-        spinner.style.cssText = 
-            'width: 40px; height: 40px; border: 3px solid var(--border-color, #2a2a2a); ' +
-            'border-top-color: var(--accent, #71717a); border-radius: 50%; ' +
-            'animation: spin 0.8s linear infinite;';
+            'position: absolute; opacity: 0; transition: opacity 0.3s ease;';
         
         coverImg.onload = function() {
             spinner.style.display = 'none';
-            coverImg.style.display = 'block';  // ← 보이게 함
-            console.log('✅ Cover image loaded');
+            coverImg.style.opacity = '1';
         };
         
         coverImg.onerror = function() {
-            console.warn('⚠️ Cover image failed to load');
             spinner.style.display = 'none';
             coverWrapper.style.display = 'none';
         };
         
-        coverImg.src = metadata.coverUrl;  // ← src는 마지막에 설정
+        coverImg.src = metadata.coverUrl;
         
-        coverWrapper.appendChild(spinner);
         coverWrapper.appendChild(coverImg);
         content.appendChild(coverWrapper);
         
@@ -502,6 +499,67 @@ function create2PageContent(container, textContent, metadata) {
     bookWrapper.id = 'textBookWrapper';
     bookWrapper.style.cssText = 'display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 20px; box-sizing: border-box;';
     
+    // ✅ Cover 공간 미리 예약 (2페이지도 동일)
+    if (metadata.coverUrl) {
+        const coverPlaceholder = document.createElement('div');
+        coverPlaceholder.id = 'textCoverPlaceholder2Page';
+        coverPlaceholder.style.cssText = 
+            'width: calc(100% - 80px); max-width: 1400px; ' +
+            'height: calc(100vh - 80px); border-radius: 8px; ' +
+            'display: flex; flex-direction: column; align-items: center; ' +
+            'justify-content: center; position: relative; ' +
+            'box-shadow: 0 0 40px rgba(0,0,0,0.5);';
+        
+        // Spinner
+        const spinner = document.createElement('div');
+        spinner.id = 'textCoverSpinner2Page';
+        spinner.style.cssText = 
+            'width: 40px; height: 40px; border: 3px solid var(--border-color, #2a2a2a); ' +
+            'border-top-color: var(--accent, #71717a); border-radius: 50%; ' +
+            'animation: spin 0.8s linear infinite;';
+        coverPlaceholder.appendChild(spinner);
+        
+        // Cover 이미지
+        const coverImg = document.createElement('img');
+        coverImg.id = 'textCoverImage2Page';
+        coverImg.src = metadata.coverUrl;
+        coverImg.alt = 'cover';
+        coverImg.style.cssText = 
+            'max-width: 90%; max-height: 90%; object-fit: contain; ' +
+            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); ' +
+            'position: absolute; opacity: 0; transition: opacity 0.3s ease;';
+        
+        coverImg.onload = function() {
+            spinner.style.display = 'none';
+            coverImg.style.opacity = '1';
+            console.log('✅ Cover loaded (2page)');
+        };
+        
+        coverImg.onerror = function() {
+            spinner.style.display = 'none';
+            coverPlaceholder.style.display = 'none';
+            console.warn('⚠️ Cover failed (2page)');
+        };
+        
+        coverPlaceholder.appendChild(coverImg);
+        bookWrapper.appendChild(coverPlaceholder);
+        
+        // Cover 로드 후 책 페이지 표시
+        const originalRenderSpread = renderSpread;
+        renderSpread = function(spreadIndex) {
+            // Cover 영역 숨기고 책 표시
+            if (spreadIndex === 0 && coverPlaceholder.style.display !== 'none') {
+                // 첫 번째는 cover
+            } else {
+                coverPlaceholder.style.display = 'none';
+                if (document.getElementById('textBook')) {
+                    document.getElementById('textBook').style.display = 'flex';
+                }
+            }
+            originalRenderSpread.call(this, spreadIndex);
+        };
+    }
+    
     const book = document.createElement('div');
     book.id = 'textBook';
     book.style.cssText = 'display: flex; width: calc(100% - 80px); max-width: 1400px; height: calc(100vh - 80px); border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 2px rgba(255,255,255,0.1); overflow: hidden; position: relative;';
@@ -520,13 +578,7 @@ function create2PageContent(container, textContent, metadata) {
     container.appendChild(bookWrapper);
     container._pages = pages;
     
-    // ✅ Cover가 있으면 첫 spread에 표시
-    if (metadata.coverUrl) {
-        // pages 배열의 0번 페이지가 cover이면 자동으로 renderSpread(0)에서 표시됨
-        renderSpread(0);
-    } else {
-        renderSpread(0);
-    }
+    renderSpread(0);
 }
 /**
  * ✅ 최적화된 페이지 분할 (샘플링 + 여백 반영)
