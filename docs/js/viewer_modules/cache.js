@@ -1,10 +1,11 @@
 /**
  * viewer_modules/cache.js
  * IndexedDB 파일 캐시 (2GB, LRU)
+ * ✅ encoding + rawBytes 지원 (인코딩 변경 시 재디코딩)
  */
 
 const DB_NAME = 'mylib_viewer_cache';
-const DB_VERSION = 1;
+const DB_VERSION = 2;  // ← 버전 업 (rawBytes 필드 추가)
 const STORE_NAME = 'files';
 const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 
@@ -21,6 +22,7 @@ async function getDB() {
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME, { keyPath: 'id' });
             }
+            // 기존 데이터는 유지됨 (새 필드는 undefined → null 처리)
         };
 
         req.onsuccess = function () {
@@ -32,6 +34,9 @@ async function getDB() {
     });
 }
 
+/**
+ * 캐시 읽기
+ */
 export async function cacheGet(fileId) {
     try {
         var db = await getDB();
@@ -57,7 +62,16 @@ export async function cacheGet(fileId) {
     }
 }
 
-export async function cacheSet(fileId, data, fileSize, fileName) {
+/**
+ * 캐시 저장
+ * @param {string} fileId
+ * @param {string|Uint8Array} data - 디코딩된 텍스트 또는 바이너리
+ * @param {number} fileSize
+ * @param {string} fileName
+ * @param {string|null} encoding - 텍스트 인코딩 (TXT만 해당)
+ * @param {Uint8Array|null} rawBytes - 원본 바이트 (TXT만, 재디코딩용)
+ */
+export async function cacheSet(fileId, data, fileSize, fileName, encoding, rawBytes) {
     try {
         await enforceSizeLimit(fileSize || 0);
 
@@ -66,20 +80,20 @@ export async function cacheSet(fileId, data, fileSize, fileName) {
             var tx = db.transaction(STORE_NAME, 'readwrite');
             var store = tx.objectStore(STORE_NAME);
 
-            // ✅ TXT는 이미 문자열, ZIP/EPUB은 Uint8Array
-            var storedData = (typeof data === 'string') ? data : data;
-
             store.put({
                 id: fileId,
-                data: storedData,
+                data: data,
                 size: fileSize || 0,
                 fileName: fileName || '',
+                encoding: encoding || null,
+                rawBytes: rawBytes || null,
                 lastAccess: Date.now(),
                 created: Date.now()
             });
 
             tx.oncomplete = function () {
-                console.log('💾 Cached:', fileName || fileId, '(' + formatSize(fileSize || 0) + ')');
+                var encLabel = encoding ? ' [' + encoding + ']' : '';
+                console.log('💾 Cached:', (fileName || fileId) + encLabel, '(' + formatSize(fileSize || 0) + ')');
                 resolve();
             };
             tx.onerror = function () { resolve(); };
@@ -199,4 +213,4 @@ function formatSize(bytes) {
 window.clearViewerCache = cacheClear;
 window.getViewerCacheInfo = cacheGetInfo;
 
-console.log('✅ Cache module loaded');
+console.log('✅ Cache module loaded (v2 - encoding support)');
