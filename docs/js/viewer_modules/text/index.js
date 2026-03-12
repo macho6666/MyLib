@@ -5,7 +5,7 @@
 
 import { TextViewerState, resetViewerState } from './text_state.js';
 import { Events } from '../core/events.js';
-import { renderTxt, cleanupTextRenderer, updateCoverImage } from './text_renderer.js';
+import { renderTxt, cleanupTextRenderer, updateCoverImage, updateCoverFailed } from './text_renderer.js';
 import { loadCover, generateTxtTOC } from './text_toc.js';
 import { loadBookmark, saveOnClose, startAutoSave } from './text_bookmark.js';
 import { initControls, openSettings } from './text_controls.js';
