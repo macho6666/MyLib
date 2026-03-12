@@ -25,16 +25,20 @@ export async function openTextViewer(result, metadata) {
         TextViewerState.currentBook = metadata;
 
         // ✅ Cover 백그라운드 로드 (비동기)
-        loadCover(metadata.seriesId, metadata.bookId, metadata)
-            .then(function(coverUrl) {
-                if (coverUrl) {
-                    metadata.coverUrl = coverUrl;
-                    if (window.updateCoverImage) {
-                        window.updateCoverImage(coverUrl);
-                    }
-                }
-            })
-            .catch(function() {});
+// ✅ Cover 백그라운드 로드 (비동기)
+loadCover(metadata.seriesId, metadata.bookId, metadata)
+    .then(function(coverUrl) {
+        if (coverUrl) {
+            metadata.coverUrl = coverUrl;
+            updateCoverImage(coverUrl);  // ← import된 함수 직접 호출
+        } else {
+            updateCoverFailed();  // ← 실패 처리
+        }
+    })
+    .catch(function() {
+        updateCoverFailed();  // ← 에러 처리
+    });
+
 
         // 타입에 따라 렌더링
         if (result.type === 'text' || result.type === 'txt') {
