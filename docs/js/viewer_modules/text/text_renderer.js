@@ -2,7 +2,7 @@
  * viewer_modules/text/text_renderer.js
  * TXT 렌더링 (스크롤/클릭 모드, 1페이지/2페이지 레이아웃)
  * ✅ Cover 공간 무조건 생성 + 백그라운드 로드
- * ✅ 로딩 중 "이미지 불러오는 중..." 표시
+ * ✅ 외부에서 Cover 업데이트 가능
  * ✅ 모드/여백 변경 시 위치 유지
  */
 
@@ -32,10 +32,7 @@ var coverLoaded = false;
 
 export async function renderTxt(textContent, metadata) {
     var renderStart = performance.now();
-    console.log('⏱️ [START] renderTxt');
-    console.log('📋 metadata:', metadata);
-    console.log('📋 coverUrl:', metadata.coverUrl);
-    
+
     TextViewerState.renderType = 'txt';
     TextViewerState.currentBook = metadata;
     headerVisible = false;
@@ -69,7 +66,6 @@ export async function renderTxt(textContent, metadata) {
         viewer.appendChild(container);
     }
 
-    // ✅ 즉시 렌더링 (Cover 공간 포함)
     renderContent();
     createToggleButton();
     createHeader(metadata.name);
@@ -85,6 +81,7 @@ export async function renderTxt(textContent, metadata) {
     window.getTextLayout = getTextLayout;
     window.onTextThemeChange = onThemeChange;
     window.scrollToProgress = scrollToProgress;
+    window.updateCoverImage = updateCoverImage;
     window.rerenderTextContent = function() {
         var currentProgress = TextViewerState.scrollProgress || 0;
         renderContent();
@@ -100,19 +97,24 @@ export async function renderTxt(textContent, metadata) {
         if (bookProgress && bookProgress.progress > 0) {
             requestAnimationFrame(function() {
                 scrollToProgress(bookProgress.progress);
-                console.log('📖 Restored to ' + bookProgress.progress + '%');
             });
         }
     }
 
     Events.emit('text:open', { bookId: metadata.bookId, metadata: metadata });
-    console.log('📖 TXT Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
-    console.log('⏱️ [RENDER TOTAL] ' + (performance.now() - renderStart).toFixed(2) + 'ms');
+    console.log('📖 TXT Viewer opened (' + (performance.now() - renderStart).toFixed(0) + 'ms)');
+}
 
-    // ✅ Cover 백그라운드 로드
-    if (metadata.coverUrl) {
-        loadCoverBackground(metadata.coverUrl);
-    }
+// ═══════════════════════════════════════
+// Cover 업데이트 (외부에서 호출)
+// ═══════════════════════════════════════
+
+export function updateCoverImage(coverUrl) {
+    if (!coverUrl || !currentMetadata) return;
+
+    currentMetadata.coverUrl = coverUrl;
+    coverLoaded = false;
+    loadCoverBackground(coverUrl);
 }
 
 // ═══════════════════════════════════════
@@ -120,14 +122,11 @@ export async function renderTxt(textContent, metadata) {
 // ═══════════════════════════════════════
 
 function loadCoverBackground(coverUrl) {
-    console.log('📸 Loading cover in background...');
-    console.log('📸 Cover URL:', coverUrl);  // ✅ 추가
     var img = new Image();
     img.onload = function() {
-        console.log('✅ Cover loaded');
         coverLoaded = true;
 
-        // 1페이지 모드: placeholder에 이미지 삽입
+        // 1페이지 모드
         var ph1 = document.getElementById('coverPlaceholder1Page');
         if (ph1) {
             ph1.innerHTML = '';
@@ -142,24 +141,18 @@ function loadCoverBackground(coverUrl) {
             requestAnimationFrame(function() { coverImg.style.opacity = '1'; });
         }
 
-        // 2페이지 모드: spread 다시 렌더
+        // 2페이지 모드
         var ph2 = document.getElementById('coverPlaceholder2Page');
         if (ph2) {
             renderSpread(currentSpreadIndex);
         }
     };
     img.onerror = function() {
-        console.warn('⚠️ Cover failed');
-        console.warn('⚠️ Failed URL:', coverUrl);  // ✅ 추가
         coverLoaded = false;
-        
-        // 1페이지: 실패 메시지
         var ph1 = document.getElementById('coverPlaceholder1Page');
         if (ph1) {
             ph1.innerHTML = '<p style="color: var(--text-tertiary, #666); font-size: 14px;">이미지를 불러올 수 없습니다</p>';
         }
-        
-        // 2페이지: spread 다시 렌더
         var ph2 = document.getElementById('coverPlaceholder2Page');
         if (ph2) {
             renderSpread(currentSpreadIndex);
@@ -351,7 +344,6 @@ function create1PageContent(container, textContent, metadata) {
         'padding: 20px; box-sizing: border-box; margin-bottom: 20px;';
 
     if (metadata.coverUrl && coverLoaded) {
-        // 이미 로드됨 → 이미지 표시
         var coverImg = document.createElement('img');
         coverImg.src = metadata.coverUrl;
         coverImg.alt = 'cover';
@@ -360,7 +352,6 @@ function create1PageContent(container, textContent, metadata) {
             'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
         coverDiv.appendChild(coverImg);
     } else if (metadata.coverUrl) {
-        // 로딩 중 → spinner + 텍스트
         var spinnerWrap = document.createElement('div');
         spinnerWrap.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 16px;';
 
@@ -381,7 +372,6 @@ function create1PageContent(container, textContent, metadata) {
         spinnerWrap.appendChild(loadingText);
         coverDiv.appendChild(spinnerWrap);
     } else {
-        // Cover URL 없음 → 제목만 표시
         var titleWrap = document.createElement('div');
         titleWrap.style.cssText = 'text-align: center;';
         titleWrap.innerHTML =
@@ -397,7 +387,6 @@ function create1PageContent(container, textContent, metadata) {
     separator.style.cssText = 'border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;';
     content.appendChild(separator);
 
-    // ✅ 텍스트 본문
     var textDiv = document.createElement('div');
     textDiv.innerHTML = formatText(textContent);
     content.appendChild(textDiv);
@@ -448,15 +437,12 @@ function create2PageContent(container, textContent, metadata) {
 // ═══════════════════════════════════════
 
 function splitTextToPages(textContent, metadata) {
-    var startTime = performance.now();
     var pages = [];
 
-    // ✅ 무조건 첫 페이지: 제목/저자 + Cover
     pages.push({ type: 'title', title: metadata.name || 'Untitled', author: metadata.author || '' });
     pages.push({ type: 'cover', coverUrl: metadata.coverUrl || null });
 
     var paragraphs = textContent.split(/\n/).filter(function(line) { return line.trim(); });
-
     var maxHeight = calculateMaxPageHeight();
 
     var testPage = createTestPageElement();
@@ -476,8 +462,6 @@ function splitTextToPages(textContent, metadata) {
 
     var avgHeightPerChar = totalSampleChars > 0 ? totalSampleHeight / totalSampleChars : 0.5;
     var charsPerPage = Math.floor(maxHeight / avgHeightPerChar);
-
-    console.log('📐 Max height: ' + maxHeight + 'px, ~' + charsPerPage + ' chars/page');
 
     var currentPageContent = [];
     var currentCharCount = 0;
@@ -506,8 +490,6 @@ function splitTextToPages(textContent, metadata) {
     if (pages.length % 2 !== 0) {
         pages.push({ type: 'empty' });
     }
-
-    console.log('⏱️ [SPLIT PAGES] ' + (performance.now() - startTime).toFixed(2) + 'ms (' + pages.length + ' pages)');
 
     return pages;
 }
@@ -596,13 +578,11 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
             contentDiv.style.justifyContent = 'center';
 
             if (pageData.coverUrl && coverLoaded) {
-                // 이미지 로드됨 → 표시
                 contentDiv.innerHTML =
                     '<img src="' + pageData.coverUrl + '" alt="cover" ' +
                     'style="max-width: 90%; max-height: 90%; object-fit: contain; ' +
                     'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">';
             } else if (pageData.coverUrl) {
-                // 로딩 중 → spinner + 텍스트
                 contentDiv.innerHTML =
                     '<div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">' +
                         '<div class="cover-spinner" style="' +
@@ -614,7 +594,6 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
                         '<p style="margin: 0; font-size: 14px; color: var(--text-tertiary, #666);">이미지 불러오는 중...</p>' +
                     '</div>';
             } else {
-                // Cover URL 없음 → 빈 페이지
                 contentDiv.innerHTML =
                     '<div style="text-align: center; color: var(--text-tertiary, #666);">' +
                         '<p style="font-size: 14px;">No Cover</p>' +
@@ -1111,7 +1090,7 @@ export function cleanupTextRenderer() {
     delete window.setTextReadMode; delete window.getTextReadMode;
     delete window.setTextLayout; delete window.getTextLayout;
     delete window.onTextThemeChange; delete window.scrollToProgress;
-    delete window.rerenderTextContent;
+    delete window.updateCoverImage; delete window.rerenderTextContent;
 }
 
 function escapeHtml(text) {
@@ -1121,6 +1100,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-export function renderPage(pageIndex) { console.log('renderPage called but using scroll mode'); }
+export function renderPage(pageIndex) { }
 
 console.log('✅ TXT Renderer loaded');
