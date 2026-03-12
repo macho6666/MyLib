@@ -1,7 +1,7 @@
 /**
  * viewer_modules/text/text_renderer.js
  * TXT 렌더링 (스크롤/클릭 모드, 1페이지/2페이지 레이아웃)
- * ✅ 최적화: 샘플링 기반 페이지 분할 + 여백 반영
+ * ✅ Cover 이미지 + 제목 페이지 포함
  */
 
 import { TextViewerState, setCurrentPage } from './text_state.js';
@@ -25,6 +25,7 @@ let clickGuideTimeout = null;
 
 export async function renderTxt(textContent, metadata) {
     const renderStart = performance.now();
+    console.log('⏱️ [START] renderTxt');
     
     TextViewerState.renderType = 'txt';
     TextViewerState.currentBook = metadata;
@@ -58,6 +59,23 @@ export async function renderTxt(textContent, metadata) {
         viewer.appendChild(container);
     }
     
+    // Cover 이미지 미리 로드
+    if (metadata.coverUrl) {
+        console.log('📸 Preloading cover image...');
+        await new Promise(function(resolve) {
+            const img = new Image();
+            img.onload = function() {
+                console.log('✅ Cover preloaded');
+                resolve();
+            };
+            img.onerror = function() {
+                console.warn('⚠️ Cover failed to load');
+                resolve();
+            };
+            img.src = metadata.coverUrl;
+        });
+    }
+    
     renderContent();
     createToggleButton();
     createHeader(metadata.name);
@@ -68,7 +86,7 @@ export async function renderTxt(textContent, metadata) {
     window.openTextSettings = openSettings;
     window.toggleTextHeader = toggleHeader;
     window.setTextReadMode = setReadMode;
-    window.getTextReadMode = () => readMode;
+    window.getTextReadMode = function() { return readMode; };
     window.setTextLayout = setTextLayout;
     window.getTextLayout = getTextLayout;
     window.onTextThemeChange = onThemeChange;
@@ -96,9 +114,9 @@ export async function renderTxt(textContent, metadata) {
         }
     }
     
-    Events.emit('text:open', { bookId: metadata.bookId, metadata });
+    Events.emit('text:open', { bookId: metadata.bookId, metadata: metadata });
     console.log('📖 TXT Viewer opened (mode: ' + readMode + ', layout: ' + pageLayout + ')');
-    console.log(`⏱️ [RENDER TOTAL] ${(performance.now() - renderStart).toFixed(2)}ms`);
+    console.log('⏱️ [RENDER TOTAL] ' + (performance.now() - renderStart).toFixed(2) + 'ms');
 }
 
 function renderContent() {
@@ -139,7 +157,7 @@ export function onThemeChange() {
 }
 
 function apply2PageTheme() {
-    setTimeout(() => {
+    setTimeout(function() {
         const container = document.getElementById('textViewerContainer');
         if (!container) return;
         
@@ -439,7 +457,6 @@ function create1PageContent(container, textContent, metadata) {
         'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
     
-    // ✅ Cover 표시 (1페이지)
     if (metadata.coverUrl) {
         const coverDiv = document.createElement('div');
         coverDiv.style.cssText = 
@@ -462,19 +479,12 @@ function create1PageContent(container, textContent, metadata) {
         content.appendChild(separator);
     }
     
-    // ✅ 텍스트 본문 (2페이지~)
     content.innerHTML += formatText(textContent);
     content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
     container.appendChild(content);
 }
 
 function create2PageContent(container, textContent, metadata) {
-    const pages = splitTextToPages(textContent, metadata);
-    totalSpreads = Math.ceil(pages.length / 2);
-    
-    const bookWrapper = document.createElement('div');
-    bookWrapper.id = 'textBookWrapper';
-    bookWrapper.style.cssText = 'display: flex; justify-content: center; aligfunction create2PageContent(container, textContent, metadata) {
     const pages = splitTextToPages(textContent, metadata);
     totalSpreads = Math.ceil(pages.length / 2);
     
@@ -502,24 +512,20 @@ function create2PageContent(container, textContent, metadata) {
     
     renderSpread(0);
 }
-/**
- * ✅ 최적화된 페이지 분할 (샘플링 + 여백 반영)
- */
+
 function splitTextToPages(textContent, metadata) {
     const startTime = performance.now();
     const pages = [];
     
     if (metadata.coverUrl) {
+        pages.push({ type: 'title', title: metadata.name, author: metadata.author || '' });
         pages.push({ type: 'cover', coverUrl: metadata.coverUrl, title: metadata.name });
-        pages.push({ type: 'empty' });
     }
     
-    const paragraphs = textContent.split(/\n/).filter(line => line.trim());
+    const paragraphs = textContent.split(/\n/).filter(function(line) { return line.trim(); });
     
-    // ✅ 여백 설정 반영
     const maxHeight = calculateMaxPageHeight();
     
-    // ✅ 샘플링: 처음 30개 문단으로 평균 높이 계산
     const testPage = createTestPageElement();
     const sampleSize = Math.min(30, paragraphs.length);
     let totalSampleHeight = 0;
@@ -535,13 +541,11 @@ function splitTextToPages(textContent, metadata) {
     
     document.body.removeChild(testPage);
     
-    // 글자당 평균 높이 계산
     const avgHeightPerChar = totalSampleChars > 0 ? totalSampleHeight / totalSampleChars : 0.5;
     const charsPerPage = Math.floor(maxHeight / avgHeightPerChar);
     
-    console.log(`📐 Max height: ${maxHeight}px, ~${charsPerPage} chars/page`);
+    console.log('📐 Max height: ' + maxHeight + 'px, ~' + charsPerPage + ' chars/page');
     
-    // ✅ 글자 수 기반으로 빠르게 분할
     let currentPageContent = [];
     let currentCharCount = 0;
     
@@ -570,14 +574,11 @@ function splitTextToPages(textContent, metadata) {
         pages.push({ type: 'empty' });
     }
     
-    console.log(`⏱️ [SPLIT PAGES] ${(performance.now() - startTime).toFixed(2)}ms (${pages.length} pages)`);
+    console.log('⏱️ [SPLIT PAGES] ' + (performance.now() - startTime).toFixed(2) + 'ms (' + pages.length + ' pages)');
     
     return pages;
 }
 
-/**
- * 테스트용 페이지 요소 생성
- */
 function createTestPageElement() {
     const testPage = document.createElement('div');
     testPage.style.cssText = 
@@ -596,9 +597,6 @@ function createTestPageElement() {
     return testPage;
 }
 
-/**
- * 페이지 최대 높이 계산 (여백 반영)
- */
 function calculateMaxPageHeight() {
     const bookHeight = window.innerHeight - 80;
     const topPadding = 40;
@@ -638,21 +636,19 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     const userMargin = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
     
     const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = `
-        height: calc(100% - 40px - ${userMargin}px);
-        overflow: hidden;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    `;
+    contentDiv.style.cssText = 
+        'height: calc(100% - 40px - ' + userMargin + 'px); ' +
+        'overflow: hidden; ' +
+        'box-sizing: border-box; ' +
+        'display: flex; ' +
+        'flex-direction: column; ' +
+        'align-items: center; ' +
+        'justify-content: center;';
     
     const pageNumDiv = document.createElement('div');
     pageNumDiv.style.cssText = 'height: 40px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ' + (side === 'left' ? 'flex-start' : 'flex-end') + ';';
     
     switch (pageData.type) {
-        // ✅ 제목 페이지
         case 'title':
             contentDiv.innerHTML = 
                 '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px 20px; box-sizing: border-box;">' +
@@ -661,7 +657,6 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
                 '</div>';
             break;
         
-        // ✅ Cover 페이지
         case 'cover':
             contentDiv.innerHTML = 
                 '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px; box-sizing: border-box;">' +
@@ -669,31 +664,29 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
                 '</div>';
             break;
         
-        // ✅ 텍스트 페이지
         case 'text':
             contentDiv.innerHTML = formatText(pageData.content);
             pageNumDiv.textContent = pageNumber;
             break;
         
-        // ✅ 끝 페이지
         case 'end':
             contentDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-tertiary, #666); font-size: 16px;">— 끝 —</div>';
             pageNumDiv.textContent = pageNumber;
             break;
         
-        // ✅ 빈 페이지
         case 'empty':
             contentDiv.innerHTML = '';
             break;
     }
     
     const marginDiv = document.createElement('div');
-    marginDiv.style.cssText = `height: ${userMargin}px; background: transparent;`;
+    marginDiv.style.cssText = 'height: ' + userMargin + 'px; background: transparent;';
     
     pageEl.appendChild(contentDiv);
     pageEl.appendChild(marginDiv);
     pageEl.appendChild(pageNumDiv);
 }
+
 function formatText(text) {
     if (!text) return '';
     return text.split(/\n/).map(function(line) {
@@ -773,7 +766,7 @@ function scrollPageAmount(direction) {
 function setupKeyboardNavigation() {
     if (window._epubKeyHandler) document.removeEventListener('keydown', window._epubKeyHandler, true);
 
-    window._epubKeyHandler = function (e) {
+    window._epubKeyHandler = function(e) {
         var target = e.target;
         if (target.tagName === 'INPUT' || 
             target.tagName === 'TEXTAREA' || 
