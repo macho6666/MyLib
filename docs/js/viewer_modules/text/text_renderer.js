@@ -439,53 +439,30 @@ function create1PageContent(container, textContent, metadata) {
         'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
     
-    // ✅ Cover 영역 (항상 먼저 추가)
+    // ✅ Cover 표시 (1페이지)
     if (metadata.coverUrl) {
-        const coverWrapper = document.createElement('div');
-        coverWrapper.id = 'textCoverWrapper';
-        coverWrapper.style.cssText = 
+        const coverDiv = document.createElement('div');
+        coverDiv.style.cssText = 
             'display: flex; flex-direction: column; align-items: center; ' +
             'justify-content: center; min-height: calc(100vh - 100px); ' +
-            'padding: 20px; box-sizing: border-box; margin-bottom: 20px; ' +
-            'background: var(--bg-primary, #0d0d0d);';
-        
-        // Spinner
-        const spinner = document.createElement('div');
-        spinner.style.cssText = 
-            'width: 40px; height: 40px; border: 3px solid var(--border-color, #2a2a2a); ' +
-            'border-top-color: var(--accent, #71717a); border-radius: 50%; ' +
-            'animation: spin 0.8s linear infinite;';
-        coverWrapper.appendChild(spinner);
+            'padding: 20px; box-sizing: border-box; margin-bottom: 20px;';
         
         const coverImg = document.createElement('img');
-        coverImg.id = 'textCoverImage';
+        coverImg.src = metadata.coverUrl;
         coverImg.alt = 'cover';
         coverImg.style.cssText = 
             'max-width: 90%; max-height: 70vh; object-fit: contain; ' +
-            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); ' +
-            'position: absolute; opacity: 0; transition: opacity 0.3s ease;';
+            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
         
-        coverImg.onload = function() {
-            spinner.style.display = 'none';
-            coverImg.style.opacity = '1';
-        };
-        
-        coverImg.onerror = function() {
-            spinner.style.display = 'none';
-            coverWrapper.style.display = 'none';
-        };
-        
-        coverImg.src = metadata.coverUrl;
-        
-        coverWrapper.appendChild(coverImg);
-        content.appendChild(coverWrapper);
+        coverDiv.appendChild(coverImg);
+        content.appendChild(coverDiv);
         
         const separator = document.createElement('hr');
         separator.style.cssText = 'border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;';
         content.appendChild(separator);
     }
     
-    // ✅ TXT 본문
+    // ✅ 텍스트 본문 (2페이지~)
     content.innerHTML += formatText(textContent);
     content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
     container.appendChild(content);
@@ -497,68 +474,13 @@ function create2PageContent(container, textContent, metadata) {
     
     const bookWrapper = document.createElement('div');
     bookWrapper.id = 'textBookWrapper';
-    bookWrapper.style.cssText = 'display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 20px; box-sizing: border-box;';
+    bookWrapper.style.cssText = 'display: flex; justify-content: center; aligfunction create2PageContent(container, textContent, metadata) {
+    const pages = splitTextToPages(textContent, metadata);
+    totalSpreads = Math.ceil(pages.length / 2);
     
-    // ✅ Cover 공간 미리 예약 (2페이지도 동일)
-    if (metadata.coverUrl) {
-        const coverPlaceholder = document.createElement('div');
-        coverPlaceholder.id = 'textCoverPlaceholder2Page';
-        coverPlaceholder.style.cssText = 
-            'width: calc(100% - 80px); max-width: 1400px; ' +
-            'height: calc(100vh - 80px); border-radius: 8px; ' +
-            'display: flex; flex-direction: column; align-items: center; ' +
-            'justify-content: center; position: relative; ' +
-            'box-shadow: 0 0 40px rgba(0,0,0,0.5);';
-        
-        // Spinner
-        const spinner = document.createElement('div');
-        spinner.id = 'textCoverSpinner2Page';
-        spinner.style.cssText = 
-            'width: 40px; height: 40px; border: 3px solid var(--border-color, #2a2a2a); ' +
-            'border-top-color: var(--accent, #71717a); border-radius: 50%; ' +
-            'animation: spin 0.8s linear infinite;';
-        coverPlaceholder.appendChild(spinner);
-        
-        // Cover 이미지
-        const coverImg = document.createElement('img');
-        coverImg.id = 'textCoverImage2Page';
-        coverImg.src = metadata.coverUrl;
-        coverImg.alt = 'cover';
-        coverImg.style.cssText = 
-            'max-width: 90%; max-height: 90%; object-fit: contain; ' +
-            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); ' +
-            'position: absolute; opacity: 0; transition: opacity 0.3s ease;';
-        
-        coverImg.onload = function() {
-            spinner.style.display = 'none';
-            coverImg.style.opacity = '1';
-            console.log('✅ Cover loaded (2page)');
-        };
-        
-        coverImg.onerror = function() {
-            spinner.style.display = 'none';
-            coverPlaceholder.style.display = 'none';
-            console.warn('⚠️ Cover failed (2page)');
-        };
-        
-        coverPlaceholder.appendChild(coverImg);
-        bookWrapper.appendChild(coverPlaceholder);
-        
-        // Cover 로드 후 책 페이지 표시
-        const originalRenderSpread = renderSpread;
-        renderSpread = function(spreadIndex) {
-            // Cover 영역 숨기고 책 표시
-            if (spreadIndex === 0 && coverPlaceholder.style.display !== 'none') {
-                // 첫 번째는 cover
-            } else {
-                coverPlaceholder.style.display = 'none';
-                if (document.getElementById('textBook')) {
-                    document.getElementById('textBook').style.display = 'flex';
-                }
-            }
-            originalRenderSpread.call(this, spreadIndex);
-        };
-    }
+    const bookWrapper = document.createElement('div');
+    bookWrapper.id = 'textBookWrapper';
+    bookWrapper.style.cssText = 'display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 20px; box-sizing: border-box;';
     
     const book = document.createElement('div');
     book.id = 'textBook';
@@ -716,34 +638,55 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
     const userMargin = parseInt(localStorage.getItem('text_2page_padding_bottom') || '20');
     
     const contentDiv = document.createElement('div');
-    // ✅ padding이 아니라 height로 줄여야 여백이 생김!
     contentDiv.style.cssText = `
         height: calc(100% - 40px - ${userMargin}px);
         overflow: hidden;
         box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     `;
     
     const pageNumDiv = document.createElement('div');
     pageNumDiv.style.cssText = 'height: 40px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ' + (side === 'left' ? 'flex-start' : 'flex-end') + ';';
     
     switch (pageData.type) {
+        // ✅ 제목 페이지
+        case 'title':
+            contentDiv.innerHTML = 
+                '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px 20px; box-sizing: border-box;">' +
+                    '<h1 style="font-size: 24px; font-weight: 700; margin: 0 0 20px 0; word-break: keep-all; color: var(--text-primary, #e8e8e8);">' + escapeHtml(pageData.title) + '</h1>' +
+                    (pageData.author ? '<p style="font-size: 14px; color: var(--text-secondary, #999); margin: 0;">저자: ' + escapeHtml(pageData.author) + '</p>' : '') +
+                '</div>';
+            break;
+        
+        // ✅ Cover 페이지
         case 'cover':
             contentDiv.innerHTML = 
                 '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px; box-sizing: border-box;">' +
                     '<img src="' + pageData.coverUrl + '" alt="cover" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
                 '</div>';
             break;
+        
+        // ✅ 텍스트 페이지
         case 'text':
             contentDiv.innerHTML = formatText(pageData.content);
             pageNumDiv.textContent = pageNumber;
             break;
+        
+        // ✅ 끝 페이지
         case 'end':
             contentDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-tertiary, #666); font-size: 16px;">— 끝 —</div>';
             pageNumDiv.textContent = pageNumber;
             break;
+        
+        // ✅ 빈 페이지
+        case 'empty':
+            contentDiv.innerHTML = '';
+            break;
     }
     
-    // ✅ 여백 div 추가
     const marginDiv = document.createElement('div');
     marginDiv.style.cssText = `height: ${userMargin}px; background: transparent;`;
     
