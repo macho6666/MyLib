@@ -19,48 +19,47 @@ function formatSize(bytes) {
 /**
  * 자동 인코딩 감지 + 디코딩
  */
-/**
- * 자동 인코딩 감지 + 디코딩 (최적화 + 디버그)
- */
 function decodeTextAuto(bytes) {
     // BOM 확인
     if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
-        console.log('📝 Encoding: UTF-8 (BOM)');
         return new TextDecoder('utf-8').decode(bytes.slice(3));
     }
     if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
-        console.log('📝 Encoding: UTF-16 LE (BOM)');
         return new TextDecoder('utf-16le').decode(bytes.slice(2));
     }
     if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
-        console.log('📝 Encoding: UTF-16 BE (BOM)');
         return new TextDecoder('utf-16be').decode(bytes.slice(2));
     }
 
-    // UTF-8 먼저 시도
+    // ✅ UTF-16 LE 감지 (BOM 없는 경우)
+    // 패턴: 일반 ASCII 문자 뒤에 0x00이 오면 UTF-16 LE일 가능성 높음
+    if (bytes.length >= 4) {
+        var nullCount = 0;
+        for (var i = 1; i < Math.min(100, bytes.length); i += 2) {
+            if (bytes[i] === 0x00) nullCount++;
+        }
+        // 50% 이상이 0x00이면 UTF-16 LE
+        if (nullCount > 20) {
+            return new TextDecoder('utf-16le').decode(bytes);
+        }
+    }
+
+    // UTF-8 시도
     var text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
     
     // 깨진 문자 확인 (처음 1000자만)
     var sample = text.slice(0, 1000);
     var brokenCount = (sample.match(/\uFFFD/g) || []).length;
     
-    console.log('📝 UTF-8 broken chars:', brokenCount, '/', sample.length);
-    
     // 깨진 문자가 5% 이상이면 EUC-KR 시도
     if (brokenCount > sample.length * 0.05) {
         try {
-            var eucText = new TextDecoder('euc-kr').decode(bytes);
-            console.log('📝 Encoding: EUC-KR (fallback)');
-            return eucText;
-        } catch (e) {
-            console.log('📝 EUC-KR failed:', e.message);
-        }
+            return new TextDecoder('euc-kr').decode(bytes);
+        } catch (e) {}
     }
     
-    console.log('📝 Encoding: UTF-8');
     return text;
 }
-
 /**
  * 파일 다운로드 및 처리 (메인 진입점)
  */
