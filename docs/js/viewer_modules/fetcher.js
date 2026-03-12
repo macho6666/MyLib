@@ -77,6 +77,9 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     try {
         const urlStart = performance.now();
         var urlResponse = await API.request('view_get_direct_url', { fileId: fileId });
+urlInfo = urlResponse.body || urlResponse;  // ✅ body 없으면 직접 사용
+console.log('urlInfo:', urlInfo);
+        
         const urlTime = performance.now() - urlStart;
         console.log(`⏱️ [GET URL] ${urlTime.toFixed(2)}ms`);
         
