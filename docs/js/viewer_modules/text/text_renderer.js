@@ -59,24 +59,25 @@ export async function renderTxt(textContent, metadata) {
         viewer.appendChild(container);
     }
     
-    // Cover 이미지 미리 로드
-    if (metadata.coverUrl) {
-        console.log('📸 Preloading cover image...');
-        await new Promise(function(resolve) {
-            const img = new Image();
-            img.onload = function() {
-                console.log('✅ Cover preloaded');
-                resolve();
-            };
-            img.onerror = function() {
-                console.warn('⚠️ Cover failed to load');
-                resolve();
-            };
-            img.src = metadata.coverUrl;
-        });
-    }
-    
-    renderContent();
+// Cover 이미지 미리 로드
+if (metadata.coverUrl) {
+    console.log('📸 Preloading cover image...');
+    await new Promise(function(resolve) {
+        const img = new Image();
+        img.onload = function() {
+            console.log('✅ Cover preloaded');
+            resolve();
+        };
+        img.onerror = function() {
+            console.warn('⚠️ Cover failed to load');
+            resolve();
+        };
+        img.src = metadata.coverUrl;
+    });
+}
+
+// ← 여기서 renderContent() 호출
+renderContent();
     createToggleButton();
     createHeader(metadata.name);
     setupKeyboardNavigation();
@@ -642,8 +643,8 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
         'box-sizing: border-box; ' +
         'display: flex; ' +
         'flex-direction: column; ' +
-        'align-items: center; ' +
-        'justify-content: center;';
+        'align-items: stretch; ' +
+        'justify-content: flex-start;';
     
     const pageNumDiv = document.createElement('div');
     pageNumDiv.style.cssText = 'height: 40px; display: flex; align-items: center; font-size: 12px; color: var(--text-tertiary, #666); justify-content: ' + (side === 'left' ? 'flex-start' : 'flex-end') + ';';
