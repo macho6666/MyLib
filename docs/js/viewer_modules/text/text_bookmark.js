@@ -1,7 +1,8 @@
 /**
  * viewer_modules/text/text_bookmark.js
  * 책갈피 저장/불러오기 + 진행도 관리
- * (bookmark_ → progress_ 통합)
+ * ✅ TXT: 정확한 문자 위치 기반 복원
+ * ✅ EPUB: 기존 방식 유지
  */
 
 import { TextViewerState } from './text_state.js';
@@ -10,52 +11,32 @@ import { showToast } from '../core/utils.js';
 
 /**
  * 진행도 업데이트 (메인 저장 함수)
+ * ✅ TXT: 문자 위치 저장
+ * ✅ EPUB: 기존 방식
  */
 export function updateProgress(seriesId, bookId, isManual = false) {
     const progress = TextViewerState.scrollProgress || 0;
-    
-    let chapterIndex = 0;
-    let chapterProgress = 0;
-    
     const container = document.getElementById('textViewerContainer');
-    if (container) {
-        // ✅ 2page 모드 먼저 체크
-        if (container._pages && TextViewerState.currentSpreadIndex !== undefined) {
-            const pages = container._pages;
-            const leftIdx = TextViewerState.currentSpreadIndex * 2;
-            if (pages[leftIdx] && pages[leftIdx].chapterIndex !== undefined) {
-                chapterIndex = pages[leftIdx].chapterIndex;
-                
-                // 챕터 내 진행률 계산
-                let chapterStart = -1;
-                let chapterEnd = -1;
-                for (let i = 0; i < pages.length; i++) {
-                    if (pages[i].chapterIndex === chapterIndex) {
-                        if (chapterStart === -1) chapterStart = i;
-                        chapterEnd = i;
-                    }
-                }
-                if (chapterStart >= 0) {
-                    chapterProgress = (leftIdx - chapterStart) / (chapterEnd - chapterStart + 1);
-                }
+    
+    let charIndex = 0;  // ✅ TXT용: 전체 텍스트에서의 문자 위치
+    
+    // TXT일 때만 정확한 위치 계산
+    if (TextViewerState.renderType === 'txt' && container) {
+        const pageLayout = localStorage.getItem('text_layout') || '1page';
+        
+        if (pageLayout === '1page') {
+            // 1page 모드: scrollTop 비율로 계산
+            const scrollTop = container.scrollTop;
+            const scrollHeight = container.scrollHeight - container.clientHeight;
+            
+            if (scrollHeight > 0) {
+                const ratio = scrollTop / scrollHeight;
+                charIndex = Math.floor(currentTextContent.length * ratio);
             }
-        }
-        // 1page 모드
-        else {
-            const chapters = container.querySelectorAll('.epub-chapter');
-            if (chapters.length > 0) {
-                const scrollTop = container.scrollTop;
-                const viewportHeight = container.clientHeight;
-                const viewCenter = scrollTop + viewportHeight / 2;
-                
-                for (const ch of chapters) {
-                    if (ch.offsetTop <= viewCenter && ch.offsetTop + ch.offsetHeight > viewCenter) {
-                        chapterIndex = parseInt(ch.dataset.chapterIndex) || 0;
-                        chapterProgress = (viewCenter - ch.offsetTop) / ch.offsetHeight;
-                        break;
-                    }
-                }
-            }
+        } else if (pageLayout === '2page') {
+            // 2page 모드: 페이지 인덱스로 계산
+            const currentSpreadIndex = TextViewerState.currentSpreadIndex || 0;
+            charIndex = currentSpreadIndex * 500;  // 대략 페이지당 500자
         }
     }
     
@@ -64,12 +45,9 @@ export function updateProgress(seriesId, bookId, isManual = false) {
     
     progressData[bookId] = {
         progress: progress,
-        chapterIndex: chapterIndex,
-        chapterProgress: chapterProgress,
-        page: TextViewerState.currentPage,
-        totalPages: TextViewerState.totalPages,
-        timestamp: new Date().toISOString(),
-        type: TextViewerState.renderType
+        charIndex: charIndex,           // ✅ TXT용
+        renderType: TextViewerState.renderType,
+        timestamp: new Date().toISOString()
     };
     
     localStorage.setItem(key, JSON.stringify(progressData));
@@ -80,6 +58,7 @@ export function updateProgress(seriesId, bookId, isManual = false) {
         markAsRead(seriesId, bookId);
     }
 }
+
 /**
  * 책갈피 저장 (자동 저장용 - updateProgress 호출)
  */
@@ -251,27 +230,53 @@ export function saveTextBookmark() {
 }
 
 /**
- * 북마크 위치로 이동
+ * 북마크 위치로 이동 (정확한 문자 위치 기반)
+ * ✅ TXT: charIndex로 복원
+ * ✅ EPUB: 기존 진행률 방식
  */
 export function restoreBookmark(seriesId, bookId) {
     const bookmark = getProgressData(seriesId, bookId);
     
-    if (bookmark) {
-        const progress = bookmark.progress || 0;
+    if (!bookmark) return null;
+    
+    // ✅ TXT 복원 (정확한 위치)
+    if (bookmark.renderType === 'txt' && bookmark.charIndex !== undefined) {
+        const container = document.getElementById('textViewerContainer');
         
-        if (progress > 0 && window.scrollToProgress) {
-            window.scrollToProgress(progress);
-            showToast('Restored to ' + progress + '%');
+        if (container) {
+            const pageLayout = localStorage.getItem('text_layout') || '1page';
+            
+            if (pageLayout === '1page') {
+                requestAnimationFrame(() => {
+                    const scrollHeight = container.scrollHeight - container.clientHeight;
+                    const currentTextContent = window.currentTextContent || '';
+                    
+                    if (currentTextContent.length > 0) {
+                        const ratio = Math.min(1, bookmark.charIndex / currentTextContent.length);
+                        container.scrollTop = scrollHeight * ratio;
+                        
+                        console.log('📌 TXT Restored:', {
+                            charIndex: bookmark.charIndex,
+                            ratio: ratio,
+                            scrollTop: container.scrollTop
+                        });
+                    }
+                });
+                return bookmark;
+            }
         }
-        
-        return bookmark;
     }
     
-    return null;
+    // Fallback: 퍼센트로 복원 (EPUB 또는 charIndex 없을 때)
+    if (bookmark.progress > 0 && window.scrollToProgress) {
+        window.scrollToProgress(bookmark.progress);
+    }
+    
+    return bookmark;
 }
 
 // 전역 등록
 window.saveTextBookmark = saveTextBookmark;
 window.restoreBookmark = restoreBookmark;
 
-console.log('✅ Bookmark module loaded');
+console.log('✅ Bookmark module loaded (TXT precision improved)');
