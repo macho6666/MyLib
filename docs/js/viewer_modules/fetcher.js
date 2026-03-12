@@ -50,6 +50,7 @@ function decodeWithEncoding(bytes, encoding) {
  * 파일 다운로드 및 처리 (메인 진입점)
  */
 export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
+    console.time('⏱️ 전체 로딩');
     var startTime = performance.now();
 
     fileName = fileName || '';
@@ -67,7 +68,9 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     // ═══════════════════════════════════════
     // ✅ 캐시 확인
     // ═══════════════════════════════════════
+    console.time('1️⃣ 캐시 읽기');
     var cached = await cacheGet(fileId);
+    console.timeEnd('1️⃣ 캐시 읽기');
 
     if (cached) {
         if (isTxt) {
@@ -76,6 +79,8 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
             // 인코딩 같으면 바로 반환
             if (cachedEncoding === currentEncoding) {
                 if (onProgress) onProgress('캐시 로드 완료 (100%)');
+                console.timeEnd('⏱️ 전체 로딩');
+                console.log('✅ 캐시 히트 (인코딩 동일)');
                 return { type: 'text', content: cached.data };
             }
 
@@ -83,26 +88,34 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
             if (cached.rawBytes) {
                 if (onProgress) onProgress('인코딩 변환 중... (50%)');
 
+                console.time('2️⃣ rawBytes 변환');
                 var rawBytes = cached.rawBytes instanceof Uint8Array
                     ? cached.rawBytes
                     : new Uint8Array(cached.rawBytes);
+                console.timeEnd('2️⃣ rawBytes 변환');
 
+                console.time('3️⃣ 재디코딩');
                 var reDecoded = decodeWithEncoding(rawBytes, currentEncoding);
+                console.timeEnd('3️⃣ 재디코딩');
 
-                // 캐시 덮어쓰기 (새 인코딩)
+                console.time('4️⃣ 캐시 덮어쓰기');
                 cacheSet(fileId, reDecoded, cached.size, cached.fileName, currentEncoding, rawBytes).catch(function () {});
+                console.timeEnd('4️⃣ 캐시 덮어쓰기');
 
                 if (onProgress) onProgress('준비 완료 (100%)');
+                console.timeEnd('⏱️ 전체 로딩');
                 return { type: 'text', content: reDecoded };
             }
 
-            // rawBytes 없으면 (구버전 캐시) → 재다운로드
             console.log('⚠️ No rawBytes in cache, re-downloading...');
         } else {
             // ZIP/EPUB/CBZ
             if (onProgress) onProgress('파일 처리 중... (0%)');
+            console.time('2️⃣ ZIP 처리');
             var result = await processZipBytesWithProgress(cached.data, onProgress, true);
+            console.timeEnd('2️⃣ ZIP 처리');
             if (onProgress) onProgress('준비 완료 (100%)');
+            console.timeEnd('⏱️ 전체 로딩');
             return result;
         }
     }
@@ -115,7 +128,7 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     var downloadUrl = null;
     var downloadSize = totalSize;
 
-    // 1단계: GAS에서 URL 받기
+    console.time('5️⃣ URL 받기');
     try {
         var urlResponse = await API.request('view_get_direct_url', { fileId: fileId });
         var urlInfo = urlResponse.body || urlResponse;
@@ -127,6 +140,7 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     } catch (e) {
         downloadUrl = 'https://drive.google.com/uc?export=download&id=' + fileId + '&confirm=t';
     }
+    console.timeEnd('5️⃣ URL 받기');
 
     // 2단계: Bridge로 다운로드 (CORS 우회)
     var bytes = null;
@@ -144,18 +158,22 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
             };
             window.addEventListener('MYLIB_BRIDGE_PROGRESS', progressHandler);
 
+            console.time('6️⃣ Bridge 다운로드');
             var bridgeResult = await window.mylibBridge.fetch(downloadUrl, {
                 responseType: 'arraybuffer'
             });
+            console.timeEnd('6️⃣ Bridge 다운로드');
 
             window.removeEventListener('MYLIB_BRIDGE_PROGRESS', progressHandler);
 
             if (bridgeResult && bridgeResult.base64) {
+                console.time('7️⃣ base64 → bytes');
                 var binaryString = atob(bridgeResult.base64);
                 bytes = new Uint8Array(binaryString.length);
                 for (var i = 0; i < binaryString.length; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
+                console.timeEnd('7️⃣ base64 → bytes');
                 if (onProgress) onProgress('다운로드 완료 (85%)');
             } else {
                 throw new Error('Bridge returned empty result');
@@ -167,6 +185,7 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
 
     // 3단계: Bridge 실패 시 Fallback (GAS 청크)
     if (!bytes) {
+        console.timeEnd('⏱️ 전체 로딩');
         return fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName, startTime);
     }
 
@@ -177,25 +196,33 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     if (isTxt) {
         if (onProgress) onProgress('텍스트 변환 중... (90%)');
 
+        console.time('8️⃣ 텍스트 디코딩');
         var textContent = decodeWithEncoding(bytes, currentEncoding);
+        console.timeEnd('8️⃣ 텍스트 디코딩');
 
-        // rawBytes도 함께 저장 (재디코딩용)
+        console.time('9️⃣ 캐시 저장');
         cacheSet(fileId, textContent, bytes.length, fileName, currentEncoding, bytes).catch(function () {});
+        console.timeEnd('9️⃣ 캐시 저장');
 
         if (onProgress) onProgress('준비 완료 (100%)');
+        console.timeEnd('⏱️ 전체 로딩');
         return { type: 'text', content: textContent };
     } else {
         if (onProgress) onProgress('파일 처리 중... (85%)');
 
+        console.time('8️⃣ 캐시 저장');
         cacheSet(fileId, bytes, bytes.length, fileName).catch(function () {});
+        console.timeEnd('8️⃣ 캐시 저장');
 
+        console.time('9️⃣ ZIP 처리');
         var zipResult = await processZipBytesWithProgress(bytes, onProgress, false);
+        console.timeEnd('9️⃣ ZIP 처리');
 
         if (onProgress) onProgress('준비 완료 (100%)');
+        console.timeEnd('⏱️ 전체 로딩');
         return zipResult;
     }
 }
-
 /**
  * Fallback: 기존 청크 방식
  */
