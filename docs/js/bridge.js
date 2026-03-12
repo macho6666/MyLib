@@ -1,52 +1,53 @@
 /**
  * 🌉 Script Bridge
- * Handles communication between Viewer (Web Page) and UserScript (extension context).
- * Allows Viewer to execute privileged actions (like GM_xmlhttpRequest) via UserScript.
+ * Handles communication between Viewer (Web Page) and UserScript (Tampermonkey).
+ * Uses CustomEvent for same-page communication.
  */
 
 class ScriptBridge {
     constructor() {
         this.pendingRequests = new Map();
         
-        // Listen for responses
-        window.addEventListener('message', (event) => this.handleMessage(event));
+        // Listen for responses from Tampermonkey
+        window.addEventListener('MYLIB_BRIDGE_RESPONSE', (event) => this.handleMessage(event));
     }
 
     /**
-     * Checks if the bridge is connected (opener exists)
+     * Checks if the bridge is connected (Tampermonkey loaded)
      */
     get isConnected() {
-        return !!(window.opener && !window.opener.closed);
+        return !!window._mylibBridgeReady;
     }
 
     /**
-     * Handles incoming messages from UserScript
+     * Handles incoming responses from Tampermonkey
      */
     handleMessage(event) {
-        const { type, payload, requestId, error } = event.data;
+        const { requestId, payload, error } = event.detail || {};
 
-        if (type === 'TOKI_BRIDGE_RESPONSE') {
-            const resolver = this.pendingRequests.get(requestId);
-            if (resolver) {
-                if (error) {
-                    resolver.reject(new Error(error));
-                } else {
-                    resolver.resolve(payload);
-                }
-                this.pendingRequests.delete(requestId);
+        if (!requestId) return;
+
+        const resolver = this.pendingRequests.get(requestId);
+        if (resolver) {
+            if (error) {
+                resolver.reject(new Error(error));
+            } else {
+                resolver.resolve(payload);
             }
+            this.pendingRequests.delete(requestId);
         }
     }
 
     /**
-     * Sends a request to UserScript to fetch a URL (acting as proxy)
+     * Sends a fetch request to Tampermonkey (CORS bypass)
      * @param {string} url - Target URL
-     * @param {Object} options - Fetch options (method, headers, blob, etc.)
-     * @returns {Promise<any>} Response data
+     * @param {Object} options - { responseType: 'arraybuffer'|'text', headers: {} }
+     * @returns {Promise<Uint8Array|string>} Response data
      */
     async fetch(url, options = {}) {
         if (!this.isConnected) {
-            return null; // Graceful fallback
+            console.warn('🌉 Bridge not connected');
+            return null;
         }
 
         const requestId = this.generateId();
@@ -54,21 +55,22 @@ class ScriptBridge {
         return new Promise((resolve, reject) => {
             this.pendingRequests.set(requestId, { resolve, reject });
 
-            // Send Request to UserScript
-            window.opener.postMessage({
-                type: 'TOKI_BRIDGE_REQUEST',
-                requestId: requestId,
-                url: url,
-                options: options
-            }, '*');
+            // Send request to Tampermonkey via CustomEvent
+            window.dispatchEvent(new CustomEvent('MYLIB_BRIDGE_REQUEST', {
+                detail: {
+                    requestId: requestId,
+                    url: url,
+                    options: options
+                }
+            }));
             
             // Timeout safety
             setTimeout(() => {
                 if (this.pendingRequests.has(requestId)) {
-                    this.pendingRequests.get(requestId).reject(new Error("Bridge Request Timeout"));
+                    this.pendingRequests.get(requestId).reject(new Error('Bridge Request Timeout'));
                     this.pendingRequests.delete(requestId);
                 }
-            }, 30000); // 30s timeout
+            }, 120000); // 120s timeout (large files)
         });
     }
 
@@ -79,4 +81,6 @@ class ScriptBridge {
 
 // Export singleton
 const bridge = new ScriptBridge();
-window.tokiBridge = bridge;
+window.mylibBridge = bridge;
+
+console.log('✅ Script Bridge loaded');
