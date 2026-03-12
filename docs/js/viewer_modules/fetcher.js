@@ -2,7 +2,7 @@
  * viewer_modules/fetcher.js
  * 파일 다운로드 + 압축 해제 (TXT/EPUB/CBZ/PDF)
  * ✅ Bridge 우선 다운로드 (CORS 우회) + 캐시 + 프로그레스
- * ✅ 자동 인코딩 감지 (UTF-8, EUC-KR, UTF-16)
+ * ✅ 설정 인코딩 우선 → 캐시 인코딩 비교 → 재디코딩
  */
 
 import { showToast } from './core/utils.js';
@@ -17,55 +17,41 @@ function formatSize(bytes) {
 }
 
 /**
- * 자동 인코딩 감지 + 디코딩
+ * 현재 설정된 인코딩 읽기
  */
-function decodeTextAuto(bytes) {
-    // BOM 확인
-    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
-        return new TextDecoder('utf-8').decode(bytes.slice(3));
-    }
-    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
-        return new TextDecoder('utf-16le').decode(bytes.slice(2));
-    }
-    if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
-        return new TextDecoder('utf-16be').decode(bytes.slice(2));
-    }
-
-    // ✅ UTF-16 LE 감지 (BOM 없는 경우)
-    // 패턴: 일반 ASCII 문자 뒤에 0x00이 오면 UTF-16 LE일 가능성 높음
-    if (bytes.length >= 4) {
-        var nullCount = 0;
-        for (var i = 1; i < Math.min(100, bytes.length); i += 2) {
-            if (bytes[i] === 0x00) nullCount++;
-        }
-        // 50% 이상이 0x00이면 UTF-16 LE
-        if (nullCount > 20) {
-            return new TextDecoder('utf-16le').decode(bytes);
-        }
-    }
-
-    // UTF-8 시도
-    var text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-    
-    // 깨진 문자 확인 (처음 1000자만)
-    var sample = text.slice(0, 1000);
-    var brokenCount = (sample.match(/\uFFFD/g) || []).length;
-    
-    // 깨진 문자가 5% 이상이면 EUC-KR 시도
-    if (brokenCount > sample.length * 0.05) {
-        try {
-            return new TextDecoder('euc-kr').decode(bytes);
-        } catch (e) {}
-    }
-    
-    return text;
+function getSelectedEncoding() {
+    return localStorage.getItem('text_encoding') || 'utf-8';
 }
+
+/**
+ * 지정된 인코딩으로 디코딩
+ */
+function decodeWithEncoding(bytes, encoding) {
+    // BOM 제거
+    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+        bytes = bytes.slice(3);
+    } else if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+        bytes = bytes.slice(2);
+        if (encoding === 'utf-8') encoding = 'utf-16le'; // BOM이 UTF-16 LE인데 설정이 UTF-8이면 보정
+    } else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+        bytes = bytes.slice(2);
+        if (encoding === 'utf-8') encoding = 'utf-16be';
+    }
+
+    try {
+        return new TextDecoder(encoding, { fatal: false }).decode(bytes);
+    } catch (e) {
+        console.warn('Decode failed with', encoding, '→ fallback to UTF-8');
+        return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    }
+}
+
 /**
  * 파일 다운로드 및 처리 (메인 진입점)
  */
 export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     var startTime = performance.now();
-    
+
     fileName = fileName || '';
     var lowerName = fileName.toLowerCase();
 
@@ -75,16 +61,45 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
         return { type: 'external', message: 'PDF opened in new tab' };
     }
 
+    var isTxt = lowerName.endsWith('.txt');
+    var currentEncoding = getSelectedEncoding();
+
     // ═══════════════════════════════════════
     // ✅ 캐시 확인
     // ═══════════════════════════════════════
     var cached = await cacheGet(fileId);
-    
+
     if (cached) {
-        if (lowerName.endsWith('.txt')) {
-            if (onProgress) onProgress('캐시 로드 완료 (100%)');
-            return { type: 'text', content: cached.data };
+        if (isTxt) {
+            var cachedEncoding = cached.encoding || 'utf-8';
+
+            // 인코딩 같으면 바로 반환
+            if (cachedEncoding === currentEncoding) {
+                if (onProgress) onProgress('캐시 로드 완료 (100%)');
+                return { type: 'text', content: cached.data };
+            }
+
+            // 인코딩 다르면 rawBytes로 재디코딩
+            if (cached.rawBytes) {
+                if (onProgress) onProgress('인코딩 변환 중... (50%)');
+
+                var rawBytes = cached.rawBytes instanceof Uint8Array
+                    ? cached.rawBytes
+                    : new Uint8Array(cached.rawBytes);
+
+                var reDecoded = decodeWithEncoding(rawBytes, currentEncoding);
+
+                // 캐시 덮어쓰기 (새 인코딩)
+                cacheSet(fileId, reDecoded, cached.size, cached.fileName, currentEncoding, rawBytes).catch(function () {});
+
+                if (onProgress) onProgress('준비 완료 (100%)');
+                return { type: 'text', content: reDecoded };
+            }
+
+            // rawBytes 없으면 (구버전 캐시) → 재다운로드
+            console.log('⚠️ No rawBytes in cache, re-downloading...');
         } else {
+            // ZIP/EPUB/CBZ
             if (onProgress) onProgress('파일 처리 중... (0%)');
             var result = await processZipBytesWithProgress(cached.data, onProgress, true);
             if (onProgress) onProgress('준비 완료 (100%)');
@@ -104,7 +119,7 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     try {
         var urlResponse = await API.request('view_get_direct_url', { fileId: fileId });
         var urlInfo = urlResponse.body || urlResponse;
-        
+
         if (urlInfo && urlInfo.url) {
             downloadUrl = urlInfo.url;
             downloadSize = urlInfo.size || totalSize;
@@ -120,7 +135,7 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
         try {
             if (onProgress) onProgress('다운로드 중... (0%)');
 
-            var progressHandler = function(e) {
+            var progressHandler = function (e) {
                 var detail = e.detail;
                 if (detail && detail.total > 0 && onProgress) {
                     var percent = Math.round((detail.loaded / detail.total) * 85);
@@ -156,26 +171,26 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     }
 
     // ═══════════════════════════════════════
-    // 💾 캐시 저장 + 처리
+    // 💾 디코딩 + 캐시 저장
     // ═══════════════════════════════════════
-    
-    if (lowerName.endsWith('.txt')) {
+
+    if (isTxt) {
         if (onProgress) onProgress('텍스트 변환 중... (90%)');
-        
-        // ✅ 자동 인코딩 감지
-        var textContent = decodeTextAuto(bytes);
-        
-        cacheSet(fileId, textContent, bytes.length, fileName).catch(function() {});
-        
+
+        var textContent = decodeWithEncoding(bytes, currentEncoding);
+
+        // rawBytes도 함께 저장 (재디코딩용)
+        cacheSet(fileId, textContent, bytes.length, fileName, currentEncoding, bytes).catch(function () {});
+
         if (onProgress) onProgress('준비 완료 (100%)');
         return { type: 'text', content: textContent };
     } else {
         if (onProgress) onProgress('파일 처리 중... (85%)');
-        
-        cacheSet(fileId, bytes, bytes.length, fileName).catch(function() {});
-        
+
+        cacheSet(fileId, bytes, bytes.length, fileName).catch(function () {});
+
         var zipResult = await processZipBytesWithProgress(bytes, onProgress, false);
-        
+
         if (onProgress) onProgress('준비 완료 (100%)');
         return zipResult;
     }
@@ -185,8 +200,11 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
  * Fallback: 기존 청크 방식
  */
 async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName, startTime) {
+    var isTxt = lowerName.endsWith('.txt');
+    var currentEncoding = getSelectedEncoding();
+
     // TXT
-    if (lowerName.endsWith('.txt')) {
+    if (isTxt) {
         if (onProgress) onProgress('텍스트 다운로드 중... (0%)');
 
         try {
@@ -202,14 +220,13 @@ async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, 
                 for (var i = 0; i < binaryString.length; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
-                
-                if (onProgress) onProgress('텍스트 변환 중... (90%)');
-                
-                // ✅ 자동 인코딩 감지
-                var textContent = decodeTextAuto(bytes);
 
-                cacheSet(fileId, textContent, totalSize, fileName).catch(function() {});
-                
+                if (onProgress) onProgress('텍스트 변환 중... (90%)');
+
+                var textContent = decodeWithEncoding(bytes, currentEncoding);
+
+                cacheSet(fileId, textContent, totalSize, fileName, currentEncoding, bytes).catch(function () {});
+
                 if (onProgress) onProgress('준비 완료 (100%)');
                 return { type: 'text', content: textContent };
             } else {
@@ -222,8 +239,8 @@ async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, 
 
     // ZIP/EPUB/CBZ
     var combinedBytes = await downloadBytesChunked(fileId, totalSize, onProgress);
-    cacheSet(fileId, combinedBytes, totalSize, fileName).catch(function() {});
-    
+    cacheSet(fileId, combinedBytes, totalSize, fileName).catch(function () {});
+
     var result = await processZipBytesWithProgress(combinedBytes, onProgress, false);
     if (onProgress) onProgress('준비 완료 (100%)');
     return result;
@@ -277,7 +294,7 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
         var results = new Array(chunkCount);
         var CONCURRENCY = 3;
 
-        var worker = async function() {
+        var worker = async function () {
             while (tasks.length > 0) {
                 var task = tasks.shift();
                 var retries = 3;
@@ -310,7 +327,7 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
                     } catch (e) {
                         retries--;
                         if (retries === 0) throw e;
-                        await new Promise(function(r) { setTimeout(r, 1000); });
+                        await new Promise(function (r) { setTimeout(r, 1000); });
                     }
                 }
             }
@@ -324,10 +341,10 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
 
         if (onProgress) onProgress('병합 중... (85%)');
         var totalLen = 0;
-        results.forEach(function(r) { totalLen += r.length; });
+        results.forEach(function (r) { totalLen += r.length; });
         combinedBytes = new Uint8Array(totalLen);
         var pos = 0;
-        results.forEach(function(r) {
+        results.forEach(function (r) {
             combinedBytes.set(r, pos);
             pos += r.length;
         });
@@ -349,20 +366,20 @@ async function processZipBytesWithProgress(bytes, onProgress, fromCache) {
     var zip = await JSZip.loadAsync(bytes);
     if (onProgress) onProgress('파일 분석 중... (25%)');
 
-    var files = Object.keys(zip.files).sort(function(a, b) {
+    var files = Object.keys(zip.files).sort(function (a, b) {
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
     });
 
     // EPUB 감지
     var isEpub = zip.file('OEBPS/content.opf') ||
-                 zip.file('OPS/content.opf') ||
-                 zip.file('mimetype');
+        zip.file('OPS/content.opf') ||
+        zip.file('mimetype');
 
     if (isEpub) {
         if (onProgress) onProgress('EPUB 준비 중... (50%)');
-        
+
         var blobData = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-        
+
         return {
             type: 'epub',
             zip: zip,
@@ -372,7 +389,7 @@ async function processZipBytesWithProgress(bytes, onProgress, fromCache) {
 
     // CBZ (이미지) 감지
     if (onProgress) onProgress('이미지 추출 중... (30%)');
-    
+
     var imageUrls = [];
     var processedCount = 0;
 
@@ -382,7 +399,7 @@ async function processZipBytesWithProgress(bytes, onProgress, fromCache) {
             try {
                 var blob = await zip.files[filename].async('blob');
                 imageUrls.push(URL.createObjectURL(blob));
-                
+
                 processedCount++;
                 var percent = 30 + Math.round((processedCount / files.length) * 55);
                 if (onProgress) onProgress('이미지 추출 중... (' + percent + '%)');
@@ -398,4 +415,4 @@ async function processZipBytesWithProgress(bytes, onProgress, fromCache) {
     throw new Error('지원되지 않는 파일 형식입니다');
 }
 
-console.log('✅ Fetcher loaded');
+console.log('✅ Fetcher loaded (encoding support)');
