@@ -70,25 +70,36 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     // ═══════════════════════════════════════
     // 🚀 직접 다운로드 URL 방식
     // ═══════════════════════════════════════
-    console.log('🌐 Requesting direct download URL...');
-    if (onProgress) onProgress('다운로드 준비 중... (0%)');
+ console.log('🌐 Requesting direct download URL...');
+if (onProgress) onProgress('다운로드 준비 중... (0%)');
 
-    var urlInfo;
-    try {
-        const urlStart = performance.now();
-        var urlResponse = await API.request('view_get_direct_url', { fileId: fileId });
-urlInfo = urlResponse.body || urlResponse;  // ✅ body 없으면 직접 사용
-console.log('urlInfo:', urlInfo);
-        
-        const urlTime = performance.now() - urlStart;
-        console.log(`⏱️ [GET URL] ${urlTime.toFixed(2)}ms`);
-        
-        urlInfo = urlResponse.body;
-        console.log('✅ Direct URL received');
-    } catch (e) {
-        console.error('❌ Direct URL error:', e.message);
-        return fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName);
+var urlInfo;
+try {
+    const urlStart = performance.now();
+    var urlResponse = await API.request('view_get_direct_url', { fileId: fileId });
+    
+    // ✅ 디버깅
+    console.log('DEBUG urlResponse:', JSON.stringify(urlResponse));
+    
+    // ✅ body가 있으면 body, 없으면 직접 사용
+    urlInfo = urlResponse.body || urlResponse;
+    
+    console.log('DEBUG urlInfo:', JSON.stringify(urlInfo));
+    
+    // ✅ url 확인
+    if (!urlInfo || !urlInfo.url) {
+        throw new Error('urlInfo.url is undefined: ' + JSON.stringify(urlInfo));
     }
+    
+    const urlTime = performance.now() - urlStart;
+    console.log(`⏱️ [GET URL] ${urlTime.toFixed(2)}ms`);
+    console.log('✅ Direct URL received:', urlInfo.url);
+    
+} catch (e) {
+    console.error('❌ Direct URL error:', e.message);
+    console.error('❌ Full error:', e);
+    return fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName);
+}
 
     // fetch로 직접 다운로드
     var bytes;
