@@ -132,6 +132,29 @@ export function updateCoverImage(coverUrl) {
     coverLoaded = false;
     loadCoverBackground(coverUrl);
 }
+export function updateCoverFailed() {
+    console.log('📸 Cover load failed');
+
+    var ph1 = document.getElementById('coverPlaceholder1Page');
+    if (ph1) {
+        ph1.innerHTML = '';
+        var titleWrap = document.createElement('div');
+        titleWrap.style.cssText = 'text-align: center;';
+        var title = currentMetadata ? (currentMetadata.name || 'Untitled') : 'Untitled';
+        var author = currentMetadata ? (currentMetadata.author || '') : '';
+        titleWrap.innerHTML =
+            '<h1 style="font-size: 28px; font-weight: 700; margin: 0 0 20px 0; word-break: keep-all; color: var(--text-primary, #e8e8e8);">' + escapeHtml(title) + '</h1>' +
+            (author ? '<p style="font-size: 16px; color: var(--text-secondary, #999); margin: 0;">저자: ' + escapeHtml(author) + '</p>' : '');
+        ph1.appendChild(titleWrap);
+    }
+
+    var ph2 = document.getElementById('coverPlaceholder2Page');
+    if (ph2) {
+        ph2.innerHTML = '<div style="text-align: center; color: var(--text-tertiary, #666);"><p style="font-size: 14px;">No Cover</p></div>';
+    }
+}
+
+window.updateCoverFailed = updateCoverFailed;
 
 // ═══════════════════════════════════════
 // Cover 백그라운드 로드
@@ -351,52 +374,47 @@ function create1PageContent(container, textContent, metadata) {
         'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
 
-    // ✅ Cover 공간 무조건 생성
-    var coverDiv = document.createElement('div');
-    coverDiv.id = 'coverPlaceholder1Page';
-    coverDiv.style.cssText =
-        'display: flex; flex-direction: column; align-items: center; ' +
-        'justify-content: center; min-height: calc(100vh - 100px); ' +
-        'padding: 20px; box-sizing: border-box; margin-bottom: 20px;';
+ // ✅ Cover 공간 무조건 생성
+var coverDiv = document.createElement('div');
+coverDiv.id = 'coverPlaceholder1Page';
+coverDiv.style.cssText =
+    'display: flex; flex-direction: column; align-items: center; ' +
+    'justify-content: center; min-height: calc(100vh - 100px); ' +
+    'padding: 20px; box-sizing: border-box; margin-bottom: 20px;';
 
-    if (metadata.coverUrl && coverLoaded) {
-        var coverImg = document.createElement('img');
-        coverImg.src = metadata.coverUrl;
-        coverImg.alt = 'cover';
-        coverImg.style.cssText =
-            'max-width: 90%; max-height: 70vh; object-fit: contain; ' +
-            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
-        coverDiv.appendChild(coverImg);
-    } else if (metadata.coverUrl) {
-        var spinnerWrap = document.createElement('div');
-        spinnerWrap.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 16px;';
+if (metadata.coverUrl && coverLoaded) {
+    // 이미 로드 완료된 경우 (리렌더 시)
+    var coverImg = document.createElement('img');
+    coverImg.src = metadata.coverUrl;
+    coverImg.alt = 'cover';
+    coverImg.style.cssText =
+        'max-width: 90%; max-height: 70vh; object-fit: contain; ' +
+        'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+    coverDiv.appendChild(coverImg);
+} else {
+    // ✅ 항상 스피너 (커버 로딩 중)
+    var spinnerWrap = document.createElement('div');
+    spinnerWrap.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 16px;';
 
-        var spinner = document.createElement('div');
-        spinner.className = 'cover-spinner';
-        spinner.style.cssText =
-            'width: 40px; height: 40px; ' +
-            'border: 3px solid var(--border-color, #2a2a2a); ' +
-            'border-top-color: var(--accent, #71717a); ' +
-            'border-radius: 50%; ' +
-            'animation: spin 0.8s linear infinite;';
+    var spinner = document.createElement('div');
+    spinner.className = 'cover-spinner';
+    spinner.style.cssText =
+        'width: 40px; height: 40px; ' +
+        'border: 3px solid var(--border-color, #2a2a2a); ' +
+        'border-top-color: var(--accent, #71717a); ' +
+        'border-radius: 50%; ' +
+        'animation: spin 0.8s linear infinite;';
 
-        var loadingText = document.createElement('p');
-        loadingText.style.cssText = 'margin: 0; font-size: 14px; color: var(--text-tertiary, #666);';
-        loadingText.textContent = '이미지 불러오는 중...';
+    var loadingText = document.createElement('p');
+    loadingText.style.cssText = 'margin: 0; font-size: 14px; color: var(--text-tertiary, #666);';
+    loadingText.textContent = '이미지 불러오는 중...';
 
-        spinnerWrap.appendChild(spinner);
-        spinnerWrap.appendChild(loadingText);
-        coverDiv.appendChild(spinnerWrap);
-    } else {
-        var titleWrap = document.createElement('div');
-        titleWrap.style.cssText = 'text-align: center;';
-        titleWrap.innerHTML =
-            '<h1 style="font-size: 28px; font-weight: 700; margin: 0 0 20px 0; word-break: keep-all; color: var(--text-primary, #e8e8e8);">' + escapeHtml(metadata.name || 'Untitled') + '</h1>' +
-            (metadata.author ? '<p style="font-size: 16px; color: var(--text-secondary, #999); margin: 0;">저자: ' + escapeHtml(metadata.author) + '</p>' : '');
-        coverDiv.appendChild(titleWrap);
-    }
+    spinnerWrap.appendChild(spinner);
+    spinnerWrap.appendChild(loadingText);
+    coverDiv.appendChild(spinnerWrap);
+}
 
-    content.appendChild(coverDiv);
+content.appendChild(coverDiv);
 
     var separator = document.createElement('hr');
     separator.id = 'coverSeparator1Page';
