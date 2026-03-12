@@ -1,7 +1,7 @@
 /**
  * viewer_modules/fetcher.js
  * 파일 다운로드 + 압축 해제 (TXT/EPUB/CBZ/PDF)
- * ✅ 캐시 최적화 + 프로그레스 개선 + 타이밍 측정
+ * ✅ Bridge 우선 다운로드 (CORS 우회) + 캐시 + 프로그레스
  */
 
 import { showToast } from './core/utils.js';
@@ -44,15 +44,12 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     if (cached) {
         console.log('⚡ Cache hit:', fileName, '(' + formatSize(cached.size) + ')');
         
-        // TXT: 캐시는 이미 문자열
         if (lowerName.endsWith('.txt')) {
             if (onProgress) onProgress('캐시 로드 완료 (100%)');
             const totalTime = performance.now() - startTime;
             console.log(`✅ [TOTAL TXT CACHE] ${totalTime.toFixed(2)}ms`);
             return { type: 'text', content: cached.data };
-        } 
-        // ZIP: 캐시된 바이트 처리
-        else {
+        } else {
             if (onProgress) onProgress('파일 처리 중... (0%)');
             
             const processStart = performance.now();
@@ -68,49 +65,85 @@ export async function fetchAndUnzip(fileId, totalSize, onProgress, fileName) {
     }
 
     // ═══════════════════════════════════════
-    // 🚀 직접 다운로드 URL 방식
+    // 🚀 다운로드 URL 생성 + Bridge 다운로드
     // ═══════════════════════════════════════
- console.log('🌐 Requesting direct download URL...');
-if (onProgress) onProgress('다운로드 준비 중... (0%)');
+    console.log('🌐 Requesting direct download URL...');
+    if (onProgress) onProgress('다운로드 준비 중... (0%)');
 
-var urlInfo;
-try {
-    const urlStart = performance.now();
-    var urlResponse = await API.request('view_get_direct_url', { fileId: fileId });
-    
-    // ✅ 디버깅
-    console.log('DEBUG urlResponse:', JSON.stringify(urlResponse));
-    
-    // ✅ body가 있으면 body, 없으면 직접 사용
-    urlInfo = urlResponse.body || urlResponse;
-    
-    console.log('DEBUG urlInfo:', JSON.stringify(urlInfo));
-    
-    // ✅ url 확인
-    if (!urlInfo || !urlInfo.url) {
-        throw new Error('urlInfo.url is undefined: ' + JSON.stringify(urlInfo));
-    }
-    
-    const urlTime = performance.now() - urlStart;
-    console.log(`⏱️ [GET URL] ${urlTime.toFixed(2)}ms`);
-    console.log('✅ Direct URL received:', urlInfo.url);
-    
-} catch (e) {
-    console.error('❌ Direct URL error:', e.message);
-    console.error('❌ Full error:', e);
-    return fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName);
-}
+    var downloadUrl = null;
+    var downloadSize = totalSize;
 
-    // fetch로 직접 다운로드
-    var bytes;
+    // 1단계: GAS에서 URL 받기
     try {
-        const downloadStart = performance.now();
-        bytes = await downloadDirect(urlInfo.url, urlInfo.size || totalSize, onProgress);
-        const downloadTime = performance.now() - downloadStart;
-        console.log(`⏱️ [DOWNLOAD] ${downloadTime.toFixed(2)}ms (${formatSize(bytes.length)})`);
+        const urlStart = performance.now();
+        var urlResponse = await API.request('view_get_direct_url', { fileId: fileId });
+        var urlInfo = urlResponse.body || urlResponse;
+        
+        if (urlInfo && urlInfo.url) {
+            downloadUrl = urlInfo.url;
+            downloadSize = urlInfo.size || totalSize;
+            const urlTime = performance.now() - urlStart;
+            console.log(`⏱️ [GET URL] ${urlTime.toFixed(2)}ms`);
+            console.log('✅ Direct URL received');
+        }
     } catch (e) {
-        console.error('❌ Direct download failed:', e.message);
-        return fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName);
+        console.warn('⚠️ Direct URL failed:', e.message);
+        // URL 실패해도 기본 URL로 시도
+        downloadUrl = 'https://drive.google.com/uc?export=download&id=' + fileId + '&confirm=t';
+        console.log('🔄 Using fallback URL');
+    }
+
+    // 2단계: Bridge로 다운로드 (CORS 우회)
+    var bytes = null;
+
+    if (downloadUrl && window.mylibBridge && window.mylibBridge.isConnected) {
+        try {
+            const downloadStart = performance.now();
+            console.log('🌉 Downloading via Bridge (CORS bypass)...');
+            if (onProgress) onProgress('다운로드 중... (0%)');
+
+            // Bridge 프로그레스 리스너
+            var progressHandler = function(e) {
+                var detail = e.detail;
+                if (detail && detail.total > 0 && onProgress) {
+                    var percent = Math.round((detail.loaded / detail.total) * 85);
+                    onProgress('다운로드 중... (' + percent + '%)');
+                }
+            };
+            window.addEventListener('MYLIB_BRIDGE_PROGRESS', progressHandler);
+
+            var bridgeResult = await window.mylibBridge.fetch(downloadUrl, {
+                responseType: 'arraybuffer'
+            });
+
+            window.removeEventListener('MYLIB_BRIDGE_PROGRESS', progressHandler);
+
+            if (bridgeResult && bridgeResult.base64) {
+                // base64 → Uint8Array
+                var binaryString = atob(bridgeResult.base64);
+                bytes = new Uint8Array(binaryString.length);
+                for (var i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                const downloadTime = performance.now() - downloadStart;
+                console.log(`⏱️ [BRIDGE DOWNLOAD] ${downloadTime.toFixed(2)}ms (${formatSize(bytes.length)})`);
+                if (onProgress) onProgress('다운로드 완료 (85%)');
+            } else {
+                throw new Error('Bridge returned empty result');
+            }
+        } catch (e) {
+            console.error('❌ Bridge download failed:', e.message);
+            bytes = null;
+        }
+    } else {
+        console.log('🌉 Bridge not available, skipping direct download');
+    }
+
+    // 3단계: Bridge 실패 시 Fallback (GAS 청크)
+    if (!bytes) {
+        console.log('⚠️ Falling back to chunked download');
+        return fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName, startTime);
     }
 
     // ═══════════════════════════════════════
@@ -125,7 +158,6 @@ try {
         const decodeTime = performance.now() - decodeStart;
         console.log(`⏱️ [DECODE TEXT] ${decodeTime.toFixed(2)}ms`);
         
-        // 백그라운드 캐시 저장 (비동기)
         cacheSet(fileId, textContent, bytes.length, fileName).catch(function (e) {
             console.warn('Cache save failed:', e);
         });
@@ -134,75 +166,30 @@ try {
         const totalTime = performance.now() - startTime;
         console.log(`✅ [TOTAL TXT NEW] ${totalTime.toFixed(2)}ms`);
         return { type: 'text', content: textContent };
-    } 
-    else {
+    } else {
         if (onProgress) onProgress('파일 처리 중... (85%)');
         
-        // 백그라운드 캐시 저장
         cacheSet(fileId, bytes, bytes.length, fileName).catch(function (e) {
             console.warn('Cache save failed:', e);
         });
         
         const processStart = performance.now();
-        var result = await processZipBytesWithProgress(bytes, onProgress, false);
+        var zipResult = await processZipBytesWithProgress(bytes, onProgress, false);
         const processTime = performance.now() - processStart;
         console.log(`⏱️ [ZIP PROCESS] ${processTime.toFixed(2)}ms`);
         
         if (onProgress) onProgress('준비 완료 (100%)');
         const totalTime = performance.now() - startTime;
         console.log(`✅ [TOTAL ZIP NEW] ${totalTime.toFixed(2)}ms`);
-        return result;
+        return zipResult;
     }
-}
-
-/**
- * 직접 다운로드 (fetch + 프로그레스)
- */
-async function downloadDirect(url, totalSize, onProgress) {
-    console.log('📥 Starting direct download, size:', formatSize(totalSize));
-    
-    var response = await fetch(url);
-    if (!response.ok) {
-        throw new Error('HTTP ' + response.status);
-    }
-
-    var reader = response.body.getReader();
-    var chunks = [];
-    var receivedLength = 0;
-
-    while (true) {
-        var result = await reader.read();
-        if (result.done) break;
-
-        chunks.push(result.value);
-        receivedLength += result.value.length;
-
-        if (totalSize && onProgress) {
-            var percent = Math.round((receivedLength / totalSize) * 100);
-            // 0-85% 범위로 조정 (나머지는 처리 단계)
-            var displayPercent = Math.round((percent * 85) / 100);
-            onProgress('다운로드 중... (' + displayPercent + '%)');
-        }
-    }
-
-    if (onProgress) onProgress('다운로드 완료 (85%)');
-
-    // 청크 병합
-    var allChunks = new Uint8Array(receivedLength);
-    var position = 0;
-    for (var i = 0; i < chunks.length; i++) {
-        allChunks.set(chunks[i], position);
-        position += chunks[i].length;
-    }
-
-    console.log('✅ Download complete:', formatSize(receivedLength));
-    return allChunks;
 }
 
 /**
  * Fallback: 기존 청크 방식
  */
-async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName) {
+async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, lowerName, startTime) {
+    const fallbackStart = performance.now();
     console.log('⚠️ Using fallback chunked download');
     
     // TXT
@@ -230,6 +217,8 @@ async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, 
                 cacheSet(fileId, textContent, totalSize, fileName).catch(function () {});
                 
                 if (onProgress) onProgress('준비 완료 (100%)');
+                const totalTime = performance.now() - (startTime || fallbackStart);
+                console.log(`✅ [TOTAL TXT FALLBACK] ${totalTime.toFixed(2)}ms`);
                 return { type: 'text', content: textContent };
             } else {
                 throw new Error('Empty Response');
@@ -245,6 +234,8 @@ async function fallbackChunkedDownload(fileId, totalSize, onProgress, fileName, 
     
     var result = await processZipBytesWithProgress(combinedBytes, onProgress, false);
     if (onProgress) onProgress('준비 완료 (100%)');
+    const totalTime = performance.now() - (startTime || fallbackStart);
+    console.log(`✅ [TOTAL ZIP FALLBACK] ${totalTime.toFixed(2)}ms`);
     return result;
 }
 
@@ -256,7 +247,6 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
     var combinedBytes;
 
     if (totalSize > 0 && totalSize < SAFE_THRESHOLD) {
-        // Single chunk
         console.log('📉 Small File (' + formatSize(totalSize) + ')');
         if (onProgress) onProgress('다운로드 중... (0%)');
 
@@ -281,7 +271,6 @@ async function downloadBytesChunked(fileId, totalSize, onProgress) {
             throw new Error('다운로드 실패: ' + e.message);
         }
     } else {
-        // Multiple chunks
         console.log('📈 Large File (' + formatSize(totalSize) + ')');
 
         var CHUNK_SIZE = 10 * 1024 * 1024;
