@@ -25,6 +25,7 @@ var currentMetadata = null;
 var clickGuideVisible = false;
 var clickGuideTimeout = null;
 var coverLoaded = false;
+var pendingCoverUrl = null;
 
 // ═══════════════════════════════════════
 // 메인 진입점
@@ -39,6 +40,12 @@ export async function renderTxt(textContent, metadata) {
     currentSpreadIndex = 0;
     currentTextContent = textContent;
     currentMetadata = metadata;
+    // ✅ 커버가 렌더러보다 먼저 로드됐으면 적용
+if (pendingCoverUrl) {
+    console.log('📸 Applying pending cover:', pendingCoverUrl);
+    currentMetadata.coverUrl = pendingCoverUrl;
+    pendingCoverUrl = null;
+}
     coverLoaded = false;
 
     readMode = localStorage.getItem('mylib_text_readmode') || 'scroll';
@@ -110,8 +117,17 @@ export async function renderTxt(textContent, metadata) {
 // ═══════════════════════════════════════
 
 export function updateCoverImage(coverUrl) {
-    if (!coverUrl || !currentMetadata) return;
-
+    if (!coverUrl) return;
+    
+    console.log('📸 updateCoverImage:', coverUrl);
+    
+    // 렌더러 아직 준비 안 됐으면 저장해두기
+    if (!currentMetadata) {
+        pendingCoverUrl = coverUrl;
+        console.log('📸 Pending (renderer not ready)');
+        return;
+    }
+    
     currentMetadata.coverUrl = coverUrl;
     coverLoaded = false;
     loadCoverBackground(coverUrl);
@@ -1066,7 +1082,7 @@ export function cleanupTextRenderer() {
     stopAutoSave();
 
     headerVisible = false; currentSpreadIndex = 0; totalSpreads = 0;
-    currentTextContent = ''; currentMetadata = null; coverLoaded = false;
+    currentTextContent = ''; currentMetadata = null; coverLoaded = false; pendingCoverUrl = null;
 
     if (headerAutoCloseTimer) { clearTimeout(headerAutoCloseTimer); headerAutoCloseTimer = null; }
     if (clickGuideTimeout) { clearTimeout(clickGuideTimeout); clickGuideTimeout = null; }
