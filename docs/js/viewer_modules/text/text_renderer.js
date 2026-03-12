@@ -439,38 +439,47 @@ function create1PageContent(container, textContent, metadata) {
         'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
     
-    // ✅ Cover 영역 (로딩 중 placeholder 표시)
+    // ✅ Cover 영역
     if (metadata.coverUrl) {
         const coverWrapper = document.createElement('div');
         coverWrapper.id = 'textCoverWrapper';
         coverWrapper.style.cssText = 
             'display: flex; flex-direction: column; align-items: center; ' +
             'justify-content: center; min-height: calc(100vh - 100px); ' +
-            'padding: 20px; box-sizing: border-box; margin-bottom: 20px;';
+            'padding: 20px; box-sizing: border-box; margin-bottom: 20px; ' +
+            'background: var(--bg-primary, #0d0d0d);';
         
         const coverImg = document.createElement('img');
         coverImg.id = 'textCoverImage';
-        coverImg.src = metadata.coverUrl;
         coverImg.alt = 'cover';
         coverImg.style.cssText = 
             'max-width: 90%; max-height: 70vh; object-fit: contain; ' +
-            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); ' +
+            'display: none;';  // ← 처음엔 숨김
         
-        // ✅ 로딩 상태 처리
+        // ✅ 로딩 중 spinner 표시
+        const spinner = document.createElement('div');
+        spinner.id = 'textCoverSpinner';
+        spinner.style.cssText = 
+            'width: 40px; height: 40px; border: 3px solid var(--border-color, #2a2a2a); ' +
+            'border-top-color: var(--accent, #71717a); border-radius: 50%; ' +
+            'animation: spin 0.8s linear infinite;';
+        
         coverImg.onload = function() {
-            coverImg.style.opacity = '1';
+            spinner.style.display = 'none';
+            coverImg.style.display = 'block';  // ← 보이게 함
             console.log('✅ Cover image loaded');
         };
         
         coverImg.onerror = function() {
             console.warn('⚠️ Cover image failed to load');
+            spinner.style.display = 'none';
             coverWrapper.style.display = 'none';
         };
         
-        // 로딩 중 스타일
-        coverImg.style.opacity = '0';
-        coverImg.style.transition = 'opacity 0.3s ease';
+        coverImg.src = metadata.coverUrl;  // ← src는 마지막에 설정
         
+        coverWrapper.appendChild(spinner);
         coverWrapper.appendChild(coverImg);
         content.appendChild(coverWrapper);
         
