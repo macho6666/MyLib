@@ -40,12 +40,16 @@ export async function renderTxt(textContent, metadata) {
     currentSpreadIndex = 0;
     currentTextContent = textContent;
     currentMetadata = metadata;
+    
     // ✅ 커버가 렌더러보다 먼저 로드됐으면 적용
-if (pendingCoverUrl) {
-    console.log('📸 Applying pending cover:', pendingCoverUrl);
-    currentMetadata.coverUrl = pendingCoverUrl;
-    pendingCoverUrl = null;
-}
+    var hasPendingCover = false;
+    if (pendingCoverUrl) {
+        console.log('📸 Applying pending cover:', pendingCoverUrl);
+        currentMetadata.coverUrl = pendingCoverUrl;
+        pendingCoverUrl = null;
+        hasPendingCover = true;
+    }
+    
     coverLoaded = false;
 
     readMode = localStorage.getItem('mylib_text_readmode') || 'scroll';
@@ -74,6 +78,14 @@ if (pendingCoverUrl) {
     }
 
     renderContent();
+    
+    // ✅ 여기에 추가 - 커버 백그라운드 로드
+    if (currentMetadata.coverUrl && !coverLoaded) {
+        loadCoverBackground(currentMetadata.coverUrl);
+    } else if (hasPendingCover && currentMetadata.coverUrl) {
+        loadCoverBackground(currentMetadata.coverUrl);
+    }
+    
     createToggleButton();
     createHeader(metadata.name);
     setupKeyboardNavigation();
@@ -111,7 +123,6 @@ if (pendingCoverUrl) {
     Events.emit('text:open', { bookId: metadata.bookId, metadata: metadata });
     console.log('📖 TXT Viewer opened (' + (performance.now() - renderStart).toFixed(0) + 'ms)');
 }
-
 // ═══════════════════════════════════════
 // Cover 업데이트 (외부에서 호출)
 // ═══════════════════════════════════════
