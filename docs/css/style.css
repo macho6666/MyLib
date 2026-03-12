@@ -303,6 +303,14 @@ body {
   background: var(--accent);
   color: white;
 }
+.logout-item {
+  font-weight: 600;
+  color: #ff4444;
+}
+
+.logout-item:hover {
+  color: #ff0000;
+}
 /* ===== ACCORDION & SETTINGS ===== */
 .accordion-header {
   cursor: pointer;
