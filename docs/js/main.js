@@ -165,10 +165,10 @@ function toggleSettingsAccordion() {
     
     if (content.style.maxHeight) {
         content.style.maxHeight = null;
-        if (icon) icon.textContent = '▼';
+        if (icon) icon.textContent = '▲';
     } else {
         content.style.maxHeight = content.scrollHeight + 'px';
-        if (icon) icon.textContent = '▲';
+        if (icon) icon.textContent = '▼';
     }
 }
 // Config Modal 상세 설정 토글
