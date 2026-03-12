@@ -1,6 +1,7 @@
 /**
  * viewer_modules/text/text_controls.js
  * 텍스트 뷰어 컨트롤 UI (설정 패널)
+ * ✅ 인코딩 선택 추가
  */
 
 import { TextViewerState, setLayout, setTheme, setFontSize, setLineHeight } from './text_state.js';
@@ -43,11 +44,40 @@ function createSettingsPanel() {
     const savedPaddingTop = localStorage.getItem('text_padding_top') || '24';
     const savedPaddingBottom = localStorage.getItem('text_padding_bottom') || '24';
     const saved2pagePaddingBottom = localStorage.getItem('text_2page_padding_bottom') || '20';
+    const savedEncoding = localStorage.getItem('text_encoding') || 'utf-8';
     
     panel.innerHTML = `
         <div class="settings-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary, #e8e8e8);">Settings</h3>
             <button id="btnCloseSettings" style="background: none; border: none; font-size: 24px; color: var(--text-tertiary, #666); cursor: pointer;">×</button>
+        </div>
+        
+        <!-- 텍스트 인코딩 -->
+        <div class="setting-group" style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">Text Encoding</label>
+            <select id="encodingSelect" style="
+                width: 100%;
+                padding: 10px 12px;
+                background: var(--bg-input, #222);
+                border: 1px solid var(--border-color, #333);
+                border-radius: 8px;
+                color: var(--text-primary, #e8e8e8);
+                font-size: 13px;
+                cursor: pointer;
+            ">
+                <option value="utf-8">UTF-8 (기본값)</option>
+                <option value="euc-kr">EUC-KR (한글/ANSI)</option>
+                <option value="utf-16le">UTF-16 LE</option>
+                <option value="utf-16be">UTF-16 BE</option>
+                <option value="windows-1252">Windows-1252 (서유럽)</option>
+                <option value="shift_jis">Shift_JIS (일본어)</option>
+                <option value="gbk">GBK (중국어 간체)</option>
+                <option value="big5">Big5 (중국어 번체)</option>
+            </select>
+            <p style="font-size: 11px; color: var(--text-tertiary, #666); margin-top: 8px; line-height: 1.5;">
+                텍스트가 깨져서 보이면 인코딩을 변경하세요.<br>
+                변경 후 파일을 다시 열어야 적용됩니다.
+            </p>
         </div>
         
         <!-- 읽기 모드 -->
@@ -179,7 +209,7 @@ function createSettingsPanel() {
             </div>
         </div>
         
-        <!-- EPUB Style (epub일 때만 표시) -->
+        <!-- EPUB Style -->
         <div class="setting-group" id="epubStyleGroup" style="margin-bottom: 24px; display: none;">
             <label style="display: block; font-size: 13px; color: var(--text-tertiary, #888); margin-bottom: 10px;">EPUB Style</label>
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
@@ -196,6 +226,13 @@ function createSettingsPanel() {
     `;
     
     document.body.appendChild(panel);
+    
+    // 인코딩 선택 설정
+    const encodingSelect = document.getElementById('encodingSelect');
+    if (encodingSelect) {
+        encodingSelect.value = savedEncoding;
+    }
+    
     setupControlEvents();
 }
 
@@ -208,6 +245,17 @@ function setupControlEvents() {
         closeBtn.onclick = closeSettings;
         closeBtn.onmouseenter = function() { this.style.color = '#4a9eff'; };
         closeBtn.onmouseleave = function() { this.style.color = '#888'; };
+    }
+    
+    // 인코딩 변경
+    const encodingSelect = document.getElementById('encodingSelect');
+    if (encodingSelect) {
+        encodingSelect.onchange = function() {
+            localStorage.setItem('text_encoding', encodingSelect.value);
+            if (window.showToast) {
+                window.showToast('인코딩 변경됨: ' + encodingSelect.value + '\n파일을 다시 열어주세요', 3000);
+            }
+        };
     }
     
     const scrollBtn = document.getElementById('btnModeScroll');
@@ -292,22 +340,19 @@ function setupControlEvents() {
         };
     }
     
-// ✅ 2페이지 하단 여백 - oninput → onchange로 변경
-const padding2pageBottomSlider = document.getElementById('padding2pageBottomSlider');
-if (padding2pageBottomSlider) {
-    // 드래그 중에는 숫자만 표시
-    padding2pageBottomSlider.oninput = (e) => {
-        const value = parseInt(e.target.value);
-        document.getElementById('padding2pageBottomValue').innerText = value + 'px';
-    };
-    
-    // 손 뗄 때만 저장 + 재렌더
-    padding2pageBottomSlider.onchange = (e) => {
-        const value = parseInt(e.target.value);
-        localStorage.setItem('text_2page_padding_bottom', value);
-        if (window.rerenderTextContent) window.rerenderTextContent();
-    };
-}
+    const padding2pageBottomSlider = document.getElementById('padding2pageBottomSlider');
+    if (padding2pageBottomSlider) {
+        padding2pageBottomSlider.oninput = (e) => {
+            const value = parseInt(e.target.value);
+            document.getElementById('padding2pageBottomValue').innerText = value + 'px';
+        };
+        
+        padding2pageBottomSlider.onchange = (e) => {
+            const value = parseInt(e.target.value);
+            localStorage.setItem('text_2page_padding_bottom', value);
+            if (window.rerenderTextContent) window.rerenderTextContent();
+        };
+    }
     
     const chkSaveProgress = document.getElementById('chkSaveProgress');
     if (chkSaveProgress) {
@@ -366,9 +411,6 @@ if (padding2pageBottomSlider) {
     updatePaddingUI();
 }
 
-/**
- * ✅ 여백 슬라이더 표시/숨김
- */
 function updatePaddingVisibility() {
     const currentLayout = window.getTextLayout ? window.getTextLayout() : '1page';
     const is2Page = currentLayout === '2page';
@@ -485,9 +527,6 @@ function resetCurrentBookmark() {
     closeSettings();
 }
 
-/**
- * 설정 패널 열기
- */
 export function openSettings() {
     const panel = document.getElementById('textViewerSettings');
     const toggleBtn = document.getElementById('textToggleBtn');
@@ -506,12 +545,20 @@ export function openSettings() {
         updatePaddingUI();
         updatePaddingVisibility();
         updateCalendarUI();
+        updateEncodingUI();
         
         const epubStyleGroup = document.getElementById('epubStyleGroup');
         if (epubStyleGroup) {
             const isEpub = TextViewerState.renderType === 'epub';
             epubStyleGroup.style.display = isEpub ? 'block' : 'none';
         }
+    }
+}
+
+function updateEncodingUI() {
+    const encodingSelect = document.getElementById('encodingSelect');
+    if (encodingSelect) {
+        encodingSelect.value = localStorage.getItem('text_encoding') || 'utf-8';
     }
 }
 
@@ -539,9 +586,6 @@ function updateCalendarUI() {
     });
 }
 
-/**
- * 설정 패널 닫기
- */
 export function closeSettings() {
     const panel = document.getElementById('textViewerSettings');
     const toggleBtn = document.getElementById('textToggleBtn');
@@ -553,9 +597,6 @@ export function closeSettings() {
     }
 }
 
-/**
- * 설정 패널 토글
- */
 export function toggleSettings() {
     const panel = document.getElementById('textViewerSettings');
     if (panel && panel.style.right === '0px') {
@@ -565,21 +606,14 @@ export function toggleSettings() {
     }
 }
 
-/**
- * 하이라이트 색상 가져오기
- */
 export function getHighlightColor() {
     return localStorage.getItem('text_highlight_color') || '#ffeb3b';
 }
 
-/**
- * 진행도 저장 설정 가져오기
- */
 export function getSaveProgressSetting() {
     return localStorage.getItem('text_save_progress_to_calendar') !== 'false';
 }
 
-// CSS 스타일 추가
 const style = document.createElement('style');
 style.textContent = `
     .setting-btn {
@@ -661,6 +695,17 @@ style.textContent = `
     
     .color-circle {
         transition: all 0.2s ease;
+    }
+    
+    #encodingSelect {
+        transition: border-color 0.2s ease;
+    }
+    #encodingSelect:hover {
+        border-color: var(--accent, #4a9eff);
+    }
+    #encodingSelect:focus {
+        outline: none;
+        border-color: var(--accent, #4a9eff);
     }
 `;
 document.head.appendChild(style);
