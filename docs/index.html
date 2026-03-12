@@ -19,7 +19,7 @@
     <span class="toggle-icon">☰</span>
   </button>
 
-  <div id="sidebar" class="sidebar">
+<div id="sidebar" class="sidebar">
 <div class="sidebar-header">
   <div class="sidebar-logo">MyLib</div>
   <div class="sidebar-title-row">
@@ -64,52 +64,30 @@
         <div id="sidebarTagList" class="sidebar-tag-list"></div>
       </div>
       <div class="sidebar-divider" id="tagDivider" style="display:none;"></div>
-      <div class="sidebar-section">
-        <div class="sidebar-item" onclick="openIndexModal('quick')">
-          ϟ Quick Update
-        </div>
-        <div class="sidebar-item" onclick="openIndexModal('full')">
-          ⟳ Full Rebuild
-        </div>
-        <div class="sidebar-item" onclick="dataSync()">
-          ↻ Data Sync
-        </div>
-        <div class="sidebar-item" onclick="logout()">
-          → Logout
-        </div>
-      </div>
-    </div>
-    <div class="sidebar-divider"></div>
+
       <div class="sidebar-section">
         <div class="sidebar-item accordion-header" onclick="toggleSettingsAccordion()">
           <span>Settings</span>
           <span class="accordion-icon" id="settingsIcon">▼</span>
         </div>
         <div class="accordion-content" id="settingsContent">
-          <div class="settings-group">
-            <div class="settings-label">뷰어 설정</div>
-            <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input type="checkbox" id="pref_2page" />
-                <span>2쪽 보기</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" id="pref_cover" />
-                <span>표지 우선</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" id="pref_rtl" />
-                <span>일본만화(우좌)</span>
-              </label>
-            </div>
-            <div style="display:none;">
-              <input type="radio" name="view_engine" value="foliate" />
-              <input type="radio" name="view_engine" value="legacy" checked />
-            </div>
+          <div class="sidebar-item" onclick="openIndexModal('quick')">
+            ϟ Quick Update
           </div>
-          <button class="btn btn-save-settings" onclick="saveActiveSettings()">저장</button>
+          <div class="sidebar-item" onclick="openIndexModal('full')">
+            ⟳ Full Rebuild
+          </div>
+          <div class="sidebar-item" onclick="dataSync()">
+            ↻ Data Sync
+          </div>
+          <div class="sidebar-item logout-item" onclick="logout()">
+            → Logout
+          </div>
         </div>
       </div>
+
+    </div>
+    <div class="sidebar-divider"></div>
     <div class="sidebar-version" id="viewerVersionDisplay">MyLib: Loading...</div>
   </div>
 
