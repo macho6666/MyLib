@@ -33,7 +33,9 @@ var coverLoaded = false;
 export async function renderTxt(textContent, metadata) {
     var renderStart = performance.now();
     console.log('⏱️ [START] renderTxt');
-
+    console.log('📋 metadata:', metadata);
+    console.log('📋 coverUrl:', metadata.coverUrl);
+    
     TextViewerState.renderType = 'txt';
     TextViewerState.currentBook = metadata;
     headerVisible = false;
@@ -119,6 +121,7 @@ export async function renderTxt(textContent, metadata) {
 
 function loadCoverBackground(coverUrl) {
     console.log('📸 Loading cover in background...');
+    console.log('📸 Cover URL:', coverUrl);  // ✅ 추가
     var img = new Image();
     img.onload = function() {
         console.log('✅ Cover loaded');
@@ -147,6 +150,7 @@ function loadCoverBackground(coverUrl) {
     };
     img.onerror = function() {
         console.warn('⚠️ Cover failed');
+        console.warn('⚠️ Failed URL:', coverUrl);  // ✅ 추가
         coverLoaded = false;
         
         // 1페이지: 실패 메시지
