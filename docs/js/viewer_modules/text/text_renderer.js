@@ -439,13 +439,47 @@ function create1PageContent(container, textContent, metadata) {
         'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
     
+    // ✅ Cover 영역 (로딩 중 placeholder 표시)
     if (metadata.coverUrl) {
-        content.innerHTML += 
-            '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 100px); padding: 20px; box-sizing: border-box;">' +
-                '<img src="' + metadata.coverUrl + '" alt="cover" style="max-width: 90%; max-height: 70vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
-            '</div>' +
-            '<hr style="border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;">';
+        const coverWrapper = document.createElement('div');
+        coverWrapper.id = 'textCoverWrapper';
+        coverWrapper.style.cssText = 
+            'display: flex; flex-direction: column; align-items: center; ' +
+            'justify-content: center; min-height: calc(100vh - 100px); ' +
+            'padding: 20px; box-sizing: border-box; margin-bottom: 20px;';
+        
+        const coverImg = document.createElement('img');
+        coverImg.id = 'textCoverImage';
+        coverImg.src = metadata.coverUrl;
+        coverImg.alt = 'cover';
+        coverImg.style.cssText = 
+            'max-width: 90%; max-height: 70vh; object-fit: contain; ' +
+            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+        
+        // ✅ 로딩 상태 처리
+        coverImg.onload = function() {
+            coverImg.style.opacity = '1';
+            console.log('✅ Cover image loaded');
+        };
+        
+        coverImg.onerror = function() {
+            console.warn('⚠️ Cover image failed to load');
+            coverWrapper.style.display = 'none';
+        };
+        
+        // 로딩 중 스타일
+        coverImg.style.opacity = '0';
+        coverImg.style.transition = 'opacity 0.3s ease';
+        
+        coverWrapper.appendChild(coverImg);
+        content.appendChild(coverWrapper);
+        
+        const separator = document.createElement('hr');
+        separator.style.cssText = 'border: none; border-top: 1px solid var(--border-color, #2a2a2a); margin: 32px 0;';
+        content.appendChild(separator);
     }
+    
+    // ✅ TXT 본문
     content.innerHTML += formatText(textContent);
     content.innerHTML += '<div style="text-align: center; padding: 40px 0; color: var(--text-tertiary, #666); font-size: 14px;">— 끝 —</div>';
     container.appendChild(content);
@@ -477,9 +511,14 @@ function create2PageContent(container, textContent, metadata) {
     container.appendChild(bookWrapper);
     container._pages = pages;
     
-    renderSpread(0);
+    // ✅ Cover가 있으면 첫 spread에 표시
+    if (metadata.coverUrl) {
+        // pages 배열의 0번 페이지가 cover이면 자동으로 renderSpread(0)에서 표시됨
+        renderSpread(0);
+    } else {
+        renderSpread(0);
+    }
 }
-
 /**
  * ✅ 최적화된 페이지 분할 (샘플링 + 여백 반영)
  */
