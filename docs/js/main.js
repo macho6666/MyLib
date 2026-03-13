@@ -961,9 +961,19 @@ function handleCoverSelect(event) {
  * 특정 카드의 커버 이미지만 업데이트
  */
 function updateSeriesCard(index) {
-    const card = document.querySelector(`.series-card[data-index="${index}"]`);
+    // 먼저 index로 시도
+    let card = document.querySelector(`.card[data-index="${index}"]`);
+    
+    // 없으면 seriesId로 시도
+    if (!card && allSeries[index]) {
+        const seriesId = allSeries[index].id;
+        card = document.querySelector(`.card[data-series-id="${seriesId}"]`);
+    }
+    
     if (!card) {
         console.warn('Card not found for index:', index);
+        // 카드 못 찾으면 전체 새로고침
+        renderGrid(allSeries);
         return;
     }
     
@@ -978,7 +988,6 @@ function updateSeriesCard(index) {
         const newSrc = `https://lh3.googleusercontent.com/d/${series.thumbnailId}=s400`;
         console.log('🖼️ Updating card image:', newSrc);
         
-        // 이미지 즉시 로드 (lazy load 무시)
         img.src = newSrc;
         img.dataset.src = newSrc;
         img.classList.remove('lazy-load');
