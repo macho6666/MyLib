@@ -1061,7 +1061,6 @@ window.dispatchEvent(new CustomEvent('COVER_UPLOAD_COMPLETE', {
  * 백그라운드 info 저장
  */
 async function saveInfoBackground(folderId, infoData, seriesIndex) {
-    savingInfoCount++;
     const title = infoData.title || 'Unknown';
     
     try {
@@ -1070,27 +1069,26 @@ async function saveInfoBackground(folderId, infoData, seriesIndex) {
             window.dispatchEvent(new CustomEvent('INFO_SAVE_START', {
                 detail: { 
                     title: title,
-                    count: savingInfoCount
+                    folderId: folderId
                 }
             }));
         }
         
-        // GAS 저장
+        // GAS 저장 (info.json + library_index.json 동시 업데이트)
         await API.request('edit_save_info', {
             folderId: folderId,
             infoData: infoData
         });
         
-        console.log('✅ Info 저장 완료:', title);
+        console.log('✅ Info + Index 저장 완료:', title);
         
         // 완료 이벤트
         if (window.dispatchEvent) {
-            savingInfoCount--;
             window.dispatchEvent(new CustomEvent('INFO_SAVE_COMPLETE', {
                 detail: { 
                     status: 'success',
                     title: title,
-                    count: savingInfoCount
+                    indexUpdated: true
                 }
             }));
         }
@@ -1100,13 +1098,11 @@ async function saveInfoBackground(folderId, infoData, seriesIndex) {
         
         // 실패 이벤트
         if (window.dispatchEvent) {
-            savingInfoCount--;
             window.dispatchEvent(new CustomEvent('INFO_SAVE_COMPLETE', {
                 detail: { 
                     status: 'error',
                     title: title,
-                    error: error.message,
-                    count: savingInfoCount
+                    error: error.message
                 }
             }));
         }
@@ -1114,10 +1110,7 @@ async function saveInfoBackground(folderId, infoData, seriesIndex) {
 }
 
 async function saveEditInfo() {
-    console.log('💾 saveEditInfo 시작, editCoverFile:', window.editCoverFile);
     if (!editingSeriesId) return;
-
-    showToast("Saving...", 1000);  // ✅ 1초로 단축
 
     var saveBtn = document.querySelector('.edit-btn-save');
     if (saveBtn) {
@@ -1147,12 +1140,13 @@ async function saveEditInfo() {
             file_count: 0,
             last_updated: new Date().toISOString()
         };
-        
-        // ✅ 로컬 데이터 먼저 업데이트
+
+        // ✅ 1. 로컬 데이터 즉시 업데이트
         seriesTags[editingSeriesId] = editSelectedTags;
         saveLocalData();
         updateSidebarTags();
 
+        // ✅ 2. allSeries 메모리 즉시 업데이트
         if (editingSeriesIndex >= 0 && allSeries[editingSeriesIndex]) {
             var series = allSeries[editingSeriesIndex];
             series.name = infoData.title;
@@ -1171,20 +1165,20 @@ async function saveEditInfo() {
             };
         }
 
-                // ✅ 미리 저장! (closeEditModal 전에!)
+        // ✅ 3. 변수 미리 저장
         const savedSeriesId = editingSeriesId;
         const savedSeriesIndex = editingSeriesIndex;
         const savedCoverFile = window.editCoverFile;
 
-        // ✅ UI 즉시 반영
+        // ✅ 4. UI 즉시 반영
         renderGrid(allSeries);
         showToast("saved!");
         closeEditModal();
-        
-        // ✅ 백그라운드 info 저장 (응답 안 기다림)
+
+        // ✅ 5. 백그라운드: info + library_index 저장 (GAS에서 Lock으로 안전)
         saveInfoBackground(savedSeriesId, infoData, savedSeriesIndex);
-        
-        // ✅ 커버 백그라운드 업로드
+
+        // ✅ 6. 백그라운드: 커버 업로드
         if (savedCoverFile) {
             const hasThumbnail = allSeries[savedSeriesIndex]?.thumbnailId;
             
@@ -1194,10 +1188,7 @@ async function saveEditInfo() {
             }
             
             if (shouldUpload) {
-                console.log('🖼️ Background cover upload started');
                 uploadCoverBackground(savedSeriesId, savedCoverFile, savedSeriesIndex);
-            } else {
-                console.log('🖼️ Cover upload cancelled');
             }
         }
 
@@ -1211,7 +1202,6 @@ async function saveEditInfo() {
         }
     }
 }
-
         
 function fileToBase64(file) {
     return new Promise(function(resolve, reject) {
