@@ -277,7 +277,8 @@ var observer = new IntersectionObserver(function(entries, obs) {
             var card = document.createElement('div');
             card.className = 'card';
             card.dataset.index = index;
-
+            card.dataset.seriesId = s.id; //추가
+            
             var meta = series.metadata || {};
             var authors = meta.authors || [];
             var status = meta.status || '';
@@ -956,9 +957,104 @@ function handleCoverSelect(event) {
     };
     reader.readAsDataURL(file);
 }
+/**
+ * 특정 카드의 커버 이미지만 업데이트
+ */
+function updateSeriesCard(index) {
+    const card = document.querySelector(`.series-card[data-index="${index}"]`);
+    if (!card) {
+        console.warn('Card not found for index:', index);
+        return;
+    }
+    
+    const series = allSeries[index];
+    if (!series || !series.thumbnailId) {
+        console.warn('No thumbnailId for series:', index);
+        return;
+    }
+    
+    const img = card.querySelector('.lazy-load');
+    if (img) {
+        const newSrc = `https://lh3.googleusercontent.com/d/${series.thumbnailId}=s400`;
+        console.log('🖼️ Updating card image:', newSrc);
+        
+        // 이미지 즉시 로드 (lazy load 무시)
+        img.src = newSrc;
+        img.dataset.src = newSrc;
+        img.classList.remove('lazy-load');
+        img.style.opacity = '1';
+    }
+}
+
+/**
+ * 백그라운드 커버 업로드
+ */
+async function uploadCoverBackground(folderId, file, seriesIndex) {
+    try {
+        console.log('🖼️ 백그라운드 커버 업로드 시작');
+        
+        // Tampermonkey 로그 - 시작
+        if (window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('COVER_UPLOAD_START', {
+                detail: { 
+                    fileName: file.name, 
+                    fileSize: file.size 
+                }
+            }));
+        }
+        
+        showToast('커버 업로드 중... (백그라운드)', 3000);
+        
+        // Base64 변환
+        var base64 = await fileToBase64(file);
+        console.log('🖼️ Base64 변환 완료, 길이:', base64.length);
+        
+        // 업로드
+        const result = await API.request('edit_upload_cover', {
+            folderId: folderId,
+            fileName: 'cover.jpg',
+            base64Data: base64,
+            mimeType: file.type
+        });
+        
+        console.log('🖼️ 업로드 완료, result:', result);
+        
+        // thumbnailId 업데이트
+        if (allSeries[seriesIndex] && result.fileId) {
+            allSeries[seriesIndex].thumbnailId = result.fileId;
+            console.log('🖼️ thumbnailId 업데이트:', result.fileId);
+            
+            // 특정 카드만 업데이트 (최적화)
+            updateSeriesCard(seriesIndex);
+        }
+        
+        showToast('커버 업로드 완료!', 2000);
+        
+        // Tampermonkey 로그 - 완료
+        if (window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('COVER_UPLOAD_COMPLETE', {
+                detail: { status: 'success' }
+            }));
+        }
+        
+    } catch (error) {
+        console.error('🖼️ 커버 업로드 실패:', error);
+        showToast('커버 업로드 실패: ' + error.message, 5000);
+        
+        // Tampermonkey 로그 - 실패
+        if (window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('COVER_UPLOAD_COMPLETE', {
+                detail: { 
+                    status: 'error', 
+                    error: error.message 
+                }
+            }));
+        }
+    }
+}
 
 async function saveEditInfo() {
-    console.log('💾 saveEditInfo 시작, editCoverFile:', window.editCoverFile);  // ← 수정
+    console.log('💾 saveEditInfo 시작, editCoverFile:', window.editCoverFile);
     if (!editingSeriesId) return;
 
     showToast("Saving...", 5000);
@@ -973,7 +1069,6 @@ async function saveEditInfo() {
         var authorsRaw = document.getElementById('editAuthor').value.trim();
         var authors = authorsRaw ? authorsRaw.split(',').map(function(a) { return a.trim(); }).filter(function(a) { return a; }) : [];
 
-        // ✅ 원본 형식으로 수정
         var infoData = {
             id: document.getElementById('editSourceId').value.trim(),
             title: document.getElementById('editTitle').value.trim(),
@@ -993,40 +1088,13 @@ async function saveEditInfo() {
             last_updated: new Date().toISOString()
         };
                 
+        // info.json 저장
         await API.request('edit_save_info', {
             folderId: editingSeriesId,
             infoData: infoData
         });
         
-if (window.editCoverFile) {
-    const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
-    
-    let shouldUpload = true;
-    
-    if (hasThumbnail) {
-        shouldUpload = confirm('Cover image already exists.\nReplace with new image?');
-    }
-    
-    if (shouldUpload) {
-        console.log('🖼️ 커버 업로드 시작:', window.editCoverFile);
-        var base64 = await fileToBase64(window.editCoverFile);
-        console.log('🖼️ base64 길이:', base64.length);
-        await API.request('edit_upload_cover', {
-            folderId: editingSeriesId,
-            fileName: 'cover.jpg',
-            base64Data: base64,
-            mimeType: window.editCoverFile.type
-        });
-        console.log('🖼️ 커버 업로드 완료');
-        showToast("저장 완료");
-        closeEditModal();
-        location.reload();
-        return;  // ✅ 여기서 함수 종료!
-    } else {
-        console.log('🖼️ 커버 업로드 취소');
-    }
-}
-
+        // 로컬 데이터 업데이트
         seriesTags[editingSeriesId] = editSelectedTags;
         saveLocalData();
         updateSidebarTags();
@@ -1049,9 +1117,28 @@ if (window.editCoverFile) {
             };
         }
 
+        // UI 즉시 반영
         renderGrid(allSeries);
-        showToast("저장 완료");
+        showToast("정보 저장 완료!");
         closeEditModal();
+        
+        // ✅ 커버 백그라운드 업로드
+        if (window.editCoverFile) {
+            const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
+            
+            let shouldUpload = true;
+            if (hasThumbnail) {
+                shouldUpload = confirm('커버 이미지가 이미 있습니다.\n새 이미지로 교체하시겠습니까?');
+            }
+            
+            if (shouldUpload) {
+                console.log('🖼️ 백그라운드 업로드 시작');
+                // 응답 기다리지 않음!
+                uploadCoverBackground(editingSeriesId, window.editCoverFile, editingSeriesIndex);
+            } else {
+                console.log('🖼️ 커버 업로드 취소됨');
+            }
+        }
 
     } catch (e) {
         console.error('Save Error:', e);
@@ -1063,7 +1150,6 @@ if (window.editCoverFile) {
         }
     }
 }
-
 function fileToBase64(file) {
     return new Promise(function(resolve, reject) {
         var reader = new FileReader();
