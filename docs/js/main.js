@@ -1117,39 +1117,29 @@ async function saveEditInfo() {
             };
         }
 
-        // UI 즉시 반영
-        renderGrid(allSeries);
-        showToast("정보 저장 완료!");
-        closeEditModal();
-        
-        // ✅ 커버 백그라운드 업로드
-        if (window.editCoverFile) {
-            const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
-            
-            let shouldUpload = true;
-            if (hasThumbnail) {
-                shouldUpload = confirm('커버 이미지가 이미 있습니다.\n새 이미지로 교체하시겠습니까?');
-            }
-            
-            if (shouldUpload) {
-                console.log('🖼️ 백그라운드 업로드 시작');
-                // 응답 기다리지 않음!
-                uploadCoverBackground(editingSeriesId, window.editCoverFile, editingSeriesIndex);
-            } else {
-                console.log('🖼️ 커버 업로드 취소됨');
-            }
-        }
-
-    } catch (e) {
-        console.error('Save Error:', e);
-        showToast("저장 실패: " + e.message, 5000);
-    } finally {
-        if (saveBtn) {
-            saveBtn.textContent = '저장';
-            saveBtn.disabled = false;
-        }
+// ✅ 커버 백그라운드 업로드 (먼저!)
+if (window.editCoverFile) {
+    console.log('🔍 editCoverFile 있음!');
+    
+    const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
+    
+    let shouldUpload = true;
+    if (hasThumbnail) {
+        shouldUpload = confirm('커버 이미지가 이미 있습니다.\n새 이미지로 교체하시겠습니까?');
+    }
+    
+    if (shouldUpload) {
+        console.log('🖼️ 백그라운드 업로드 시작');
+        uploadCoverBackground(editingSeriesId, window.editCoverFile, editingSeriesIndex);
     }
 }
+
+// UI 즉시 반영 (나중에!)
+renderGrid(allSeries);
+showToast("정보 저장 완료!");
+closeEditModal();  // ← 이게 맨 마지막!
+
+        
 function fileToBase64(file) {
     return new Promise(function(resolve, reject) {
         var reader = new FileReader();
