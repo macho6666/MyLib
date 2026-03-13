@@ -25,7 +25,7 @@ let editingSeriesIndex = -1;
 let editingSeriesId = '';
 window.editCoverFile = null;
 let editSelectedTags = [];
-
+let savingInfoCount = 0;
 let _currentBooks = [];
 let _currentSeriesId = '';
 let _currentSeriesTitle = '';
@@ -1057,11 +1057,67 @@ window.dispatchEvent(new CustomEvent('COVER_UPLOAD_COMPLETE', {
     }
 }
 
+/**
+ * 백그라운드 info 저장
+ */
+async function saveInfoBackground(folderId, infoData, seriesIndex) {
+    savingInfoCount++;
+    const title = infoData.title || 'Unknown';
+    
+    try {
+        // 시작 이벤트
+        if (window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('INFO_SAVE_START', {
+                detail: { 
+                    title: title,
+                    count: savingInfoCount
+                }
+            }));
+        }
+        
+        // GAS 저장
+        await API.request('edit_save_info', {
+            folderId: folderId,
+            infoData: infoData
+        });
+        
+        console.log('✅ Info 저장 완료:', title);
+        
+        // 완료 이벤트
+        if (window.dispatchEvent) {
+            savingInfoCount--;
+            window.dispatchEvent(new CustomEvent('INFO_SAVE_COMPLETE', {
+                detail: { 
+                    status: 'success',
+                    title: title,
+                    count: savingInfoCount
+                }
+            }));
+        }
+        
+    } catch (error) {
+        console.error('❌ Info 저장 실패:', title, error);
+        
+        // 실패 이벤트
+        if (window.dispatchEvent) {
+            savingInfoCount--;
+            window.dispatchEvent(new CustomEvent('INFO_SAVE_COMPLETE', {
+                detail: { 
+                    status: 'error',
+                    title: title,
+                    error: error.message,
+                    count: savingInfoCount
+                }
+            }));
+        }
+    }
+}
+
 async function saveEditInfo() {
     console.log('💾 saveEditInfo 시작, editCoverFile:', window.editCoverFile);
     if (!editingSeriesId) return;
 
-    showToast("Saving...", 5000);
+    showToast("Saving...", 1000);  // ✅ 1초로 단축
 
     var saveBtn = document.querySelector('.edit-btn-save');
     if (saveBtn) {
@@ -1091,14 +1147,8 @@ async function saveEditInfo() {
             file_count: 0,
             last_updated: new Date().toISOString()
         };
-                
-        // info.json 저장
-        await API.request('edit_save_info', {
-            folderId: editingSeriesId,
-            infoData: infoData
-        });
         
-        // 로컬 데이터 업데이트
+        // ✅ 로컬 데이터 먼저 업데이트
         seriesTags[editingSeriesId] = editSelectedTags;
         saveLocalData();
         updateSidebarTags();
@@ -1121,29 +1171,32 @@ async function saveEditInfo() {
             };
         }
 
-// ✅ 커버 백그라운드 업로드 (먼저!)
-if (window.editCoverFile) {
-    console.log('🔍 editCoverFile 있음!');
-    
-    const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
-    
-    let shouldUpload = true;
-    if (hasThumbnail) {
-        shouldUpload = confirm('커버 이미지가 이미 있습니다.\n새 이미지로 교체하시겠습니까?');
-    }
-    
-    if (shouldUpload) {
-        console.log('🖼️ 백그라운드 업로드 시작');
-        uploadCoverBackground(editingSeriesId, window.editCoverFile, editingSeriesIndex);
-    }
-}
+        // ✅ UI 즉시 반영
+        renderGrid(allSeries);
+        showToast("저장됨!");
+        closeEditModal();
+        
+        // ✅ 백그라운드 info 저장 (응답 안 기다림)
+        saveInfoBackground(editingSeriesId, infoData, editingSeriesIndex);
+        
+        // ✅ 커버 백그라운드 업로드
+        if (window.editCoverFile) {
+            const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
+            
+            let shouldUpload = true;
+            if (hasThumbnail) {
+                shouldUpload = confirm('커버 이미지가 이미 있습니다.\n새 이미지로 교체하시겠습니까?');
+            }
+            
+            if (shouldUpload) {
+                console.log('🖼️ 백그라운드 업로드 시작');
+                uploadCoverBackground(editingSeriesId, window.editCoverFile, editingSeriesIndex);
+            } else {
+                console.log('🖼️ 커버 업로드 취소됨');
+            }
+        }
 
-// UI 즉시 반영 (나중에!)
-renderGrid(allSeries);
-showToast("정보 저장 완료!");
-closeEditModal();  // ← 이게 맨 마지막!
-
-            } catch (e) {
+    } catch (e) {
         console.error('Save Error:', e);
         showToast("저장 실패: " + e.message, 5000);
     } finally {
@@ -1153,6 +1206,7 @@ closeEditModal();  // ← 이게 맨 마지막!
         }
     }
 }
+
         
 function fileToBase64(file) {
     return new Promise(function(resolve, reject) {
