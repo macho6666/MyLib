@@ -277,7 +277,7 @@ var observer = new IntersectionObserver(function(entries, obs) {
             var card = document.createElement('div');
             card.className = 'card';
             card.dataset.index = index;
-            card.dataset.seriesId = s.id; //추가
+            card.dataset.seriesId = series.id //추가
             
             var meta = series.metadata || {};
             var authors = meta.authors || [];
