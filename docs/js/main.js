@@ -1171,34 +1171,39 @@ async function saveEditInfo() {
             };
         }
 
+                // ✅ 미리 저장! (closeEditModal 전에!)
+        const savedSeriesId = editingSeriesId;
+        const savedSeriesIndex = editingSeriesIndex;
+        const savedCoverFile = window.editCoverFile;
+
         // ✅ UI 즉시 반영
         renderGrid(allSeries);
-        showToast("저장됨!");
+        showToast("saved!");
         closeEditModal();
         
         // ✅ 백그라운드 info 저장 (응답 안 기다림)
-        saveInfoBackground(editingSeriesId, infoData, editingSeriesIndex);
+        saveInfoBackground(savedSeriesId, infoData, savedSeriesIndex);
         
         // ✅ 커버 백그라운드 업로드
-        if (window.editCoverFile) {
-            const hasThumbnail = allSeries[editingSeriesIndex]?.thumbnailId;
+        if (savedCoverFile) {
+            const hasThumbnail = allSeries[savedSeriesIndex]?.thumbnailId;
             
             let shouldUpload = true;
             if (hasThumbnail) {
-                shouldUpload = confirm('커버 이미지가 이미 있습니다.\n새 이미지로 교체하시겠습니까?');
+                shouldUpload = confirm('Cover image already exists.\nReplace with new image?');
             }
             
             if (shouldUpload) {
-                console.log('🖼️ 백그라운드 업로드 시작');
-                uploadCoverBackground(editingSeriesId, window.editCoverFile, editingSeriesIndex);
+                console.log('🖼️ Background cover upload started');
+                uploadCoverBackground(savedSeriesId, savedCoverFile, savedSeriesIndex);
             } else {
-                console.log('🖼️ 커버 업로드 취소됨');
+                console.log('🖼️ Cover upload cancelled');
             }
         }
 
     } catch (e) {
         console.error('Save Error:', e);
-        showToast("저장 실패: " + e.message, 5000);
+        showToast("Save Error: " + e.message, 5000);
     } finally {
         if (saveBtn) {
             saveBtn.textContent = '저장';
