@@ -1139,6 +1139,16 @@ renderGrid(allSeries);
 showToast("정보 저장 완료!");
 closeEditModal();  // ← 이게 맨 마지막!
 
+            } catch (e) {
+        console.error('Save Error:', e);
+        showToast("저장 실패: " + e.message, 5000);
+    } finally {
+        if (saveBtn) {
+            saveBtn.textContent = '저장';
+            saveBtn.disabled = false;
+        }
+    }
+}
         
 function fileToBase64(file) {
     return new Promise(function(resolve, reject) {
