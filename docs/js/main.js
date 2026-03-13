@@ -994,12 +994,13 @@ async function uploadCoverBackground(folderId, file, seriesIndex) {
         
         // Tampermonkey 로그 - 시작
         if (window.dispatchEvent) {
-            window.dispatchEvent(new CustomEvent('COVER_UPLOAD_START', {
-                detail: { 
-                    fileName: file.name, 
-                    fileSize: file.size 
-                }
-            }));
+ window.dispatchEvent(new CustomEvent('COVER_UPLOAD_START', {
+    detail: { 
+        fileName: file.name, 
+        fileSize: file.size,
+        title: allSeries[seriesIndex]?.name || 'Unknown'  // ✅ 제목 추가
+    }
+}));
         }
         
         showToast('커버 업로드 중... (백그라운드)', 3000);
