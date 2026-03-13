@@ -962,27 +962,29 @@ function handleCoverSelect(event) {
  */
 function updateSeriesCard(index) {
     const card = document.querySelector(`.card[data-index="${index}"]`);
-        if (!card) {
+    
+    if (!card) {
         console.warn('Card not found for index:', index);
         return;
     }
+    
     const series = allSeries[index];
-        if (!series || !series.thumbnailId) {
+    if (!series || !series.thumbnailId) {
         console.warn('No thumbnailId for series:', index);
         return;
     }
-    const img = card.querySelector('.lazy-load');
-        if (img) {
+    
+    // ✅ .thumb 으로 수정!
+    const img = card.querySelector('.thumb');
+    if (img) {
         const newSrc = `https://lh3.googleusercontent.com/d/${series.thumbnailId}=s400`;
         console.log('🖼️ Updating card image:', newSrc);
         
         img.src = newSrc;
-        img.dataset.src = newSrc;
-        img.classList.remove('lazy-load');
-        img.style.opacity = '1';
+        img.dataset.thumb = newSrc;  // ✅ data-thumb도 업데이트
+        img.dataset.loaded = 'true';
     }
 }
-
 /**
  * 백그라운드 커버 업로드
  */
