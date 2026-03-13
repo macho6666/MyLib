@@ -1032,9 +1032,12 @@ async function uploadCoverBackground(folderId, file, seriesIndex) {
         
         // Tampermonkey 로그 - 완료
         if (window.dispatchEvent) {
-            window.dispatchEvent(new CustomEvent('COVER_UPLOAD_COMPLETE', {
-                detail: { status: 'success' }
-            }));
+window.dispatchEvent(new CustomEvent('COVER_UPLOAD_COMPLETE', {
+    detail: { 
+        status: 'success',
+        title: allSeries[seriesIndex]?.name || 'Unknown'  // ✅ 추가
+    }
+}));
         }
         
     } catch (error) {
@@ -1043,12 +1046,13 @@ async function uploadCoverBackground(folderId, file, seriesIndex) {
         
         // Tampermonkey 로그 - 실패
         if (window.dispatchEvent) {
-            window.dispatchEvent(new CustomEvent('COVER_UPLOAD_COMPLETE', {
-                detail: { 
-                    status: 'error', 
-                    error: error.message 
-                }
-            }));
+window.dispatchEvent(new CustomEvent('COVER_UPLOAD_COMPLETE', {
+    detail: { 
+        status: 'error', 
+        error: error.message,
+        title: allSeries[seriesIndex]?.name || 'Unknown'  // ✅ 추가
+    }
+}));
         }
     }
 }
