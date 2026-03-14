@@ -111,11 +111,11 @@ export async function renderTxt(textContent, metadata) {
 
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
 
-requestAnimationFrame(function() {
+setTimeout(function() {
     if (window.restoreBookmark) {
         window.restoreBookmark(metadata.seriesId, metadata.bookId);
     }
-});
+}, 300);
     Events.emit('text:open', { bookId: metadata.bookId, metadata: metadata });
     console.log('📖 TXT Viewer opened (' + (performance.now() - renderStart).toFixed(0) + 'ms)');
 }
