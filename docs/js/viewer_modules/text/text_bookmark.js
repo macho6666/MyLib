@@ -18,25 +18,38 @@ export function updateProgress(seriesId, bookId, isManual = false) {
     const progress = TextViewerState.scrollProgress || 0;
     const container = document.getElementById('textViewerContainer');
     
-    let charIndex = 0;  // ✅ TXT용: 전체 텍스트에서의 문자 위치
+    let charIndex = 0;
     
     // TXT일 때만 정확한 위치 계산
     if (TextViewerState.renderType === 'txt' && container) {
+        const textContent = window.currentTextContent || '';
         const pageLayout = localStorage.getItem('text_layout') || '1page';
         
-        if (pageLayout === '1page') {
-            // 1page 모드: scrollTop 비율로 계산
-            const scrollTop = container.scrollTop;
-            const scrollHeight = container.scrollHeight - container.clientHeight;
-            
-            if (scrollHeight > 0) {
-                const ratio = scrollTop / scrollHeight;
-                charIndex = Math.floor(currentTextContent.length * ratio);
+        if (textContent.length > 0) {
+            if (pageLayout === '1page') {
+                // 1page 모드: scrollTop 비율로 계산
+                const scrollTop = container.scrollTop;
+                const scrollHeight = container.scrollHeight - container.clientHeight;
+                
+                if (scrollHeight > 0) {
+                    const ratio = scrollTop / scrollHeight;
+                    charIndex = Math.floor(textContent.length * ratio);
+                }
+            } else if (pageLayout === '2page') {
+                // 2page 모드: 현재 스프레드의 실제 텍스트 위치 계산
+                const pages = container._pages || [];
+                const spreadIndex = TextViewerState.currentSpreadIndex || 0;
+                const leftIdx = spreadIndex * 2;
+                
+                // 현재 스프레드 이전까지의 텍스트 길이 합산
+                let totalChars = 0;
+                for (let i = 0; i < leftIdx && i < pages.length; i++) {
+                    if (pages[i].type === 'text' && pages[i].content) {
+                        totalChars += pages[i].content.length;
+                    }
+                }
+                charIndex = totalChars;
             }
-        } else if (pageLayout === '2page') {
-            // 2page 모드: 페이지 인덱스로 계산
-            const currentSpreadIndex = TextViewerState.currentSpreadIndex || 0;
-            charIndex = currentSpreadIndex * 500;  // 대략 페이지당 500자
         }
     }
     
@@ -45,7 +58,7 @@ export function updateProgress(seriesId, bookId, isManual = false) {
     
     progressData[bookId] = {
         progress: progress,
-        charIndex: charIndex,           // ✅ TXT용
+        charIndex: charIndex,
         renderType: TextViewerState.renderType,
         timestamp: new Date().toISOString()
     };
@@ -231,7 +244,7 @@ export function saveTextBookmark() {
 
 /**
  * 북마크 위치로 이동 (정확한 문자 위치 기반)
- * ✅ TXT: charIndex로 복원
+ * ✅ TXT: charIndex로 복원 (1page/2page 모두)
  * ✅ EPUB: 기존 진행률 방식
  */
 export function restoreBookmark(seriesId, bookId) {
@@ -240,27 +253,52 @@ export function restoreBookmark(seriesId, bookId) {
     if (!bookmark) return null;
     
     // ✅ TXT 복원 (정확한 위치)
-    if (bookmark.renderType === 'txt' && bookmark.charIndex !== undefined) {
+    if (bookmark.renderType === 'txt' && bookmark.charIndex !== undefined && bookmark.charIndex > 0) {
         const container = document.getElementById('textViewerContainer');
+        const textContent = window.currentTextContent || '';
         
-        if (container) {
+        if (container && textContent.length > 0) {
             const pageLayout = localStorage.getItem('text_layout') || '1page';
             
             if (pageLayout === '1page') {
+                // 1page: charIndex → scrollTop 비율 복원
                 requestAnimationFrame(() => {
                     const scrollHeight = container.scrollHeight - container.clientHeight;
-                    const currentTextContent = window.currentTextContent || '';
+                    const ratio = Math.min(1, bookmark.charIndex / textContent.length);
+                    container.scrollTop = scrollHeight * ratio;
                     
-                    if (currentTextContent.length > 0) {
-                        const ratio = Math.min(1, bookmark.charIndex / currentTextContent.length);
-                        container.scrollTop = scrollHeight * ratio;
-                        
-                        console.log('📌 TXT Restored:', {
-                            charIndex: bookmark.charIndex,
-                            ratio: ratio,
-                            scrollTop: container.scrollTop
-                        });
+                    console.log('📌 TXT 1page Restored:', {
+                        charIndex: bookmark.charIndex,
+                        ratio: ratio,
+                        scrollTop: container.scrollTop
+                    });
+                });
+                return bookmark;
+                
+            } else if (pageLayout === '2page') {
+                // 2page: charIndex → 해당 스프레드 찾기
+                const pages = container._pages || [];
+                let totalChars = 0;
+                let targetSpread = 0;
+                
+                for (let i = 0; i < pages.length; i++) {
+                    if (pages[i].type === 'text' && pages[i].content) {
+                        totalChars += pages[i].content.length;
+                        if (totalChars >= bookmark.charIndex) {
+                            targetSpread = Math.floor(i / 2);
+                            break;
+                        }
                     }
+                }
+                
+                // renderSpread는 window에서 접근
+                if (window._renderSpread) {
+                    window._renderSpread(targetSpread);
+                }
+                
+                console.log('📌 TXT 2page Restored:', {
+                    charIndex: bookmark.charIndex,
+                    targetSpread: targetSpread
                 });
                 return bookmark;
             }
