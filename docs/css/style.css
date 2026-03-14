@@ -1102,7 +1102,7 @@ h1:hover {
 /* ===== EDIT MODAL ===== */
 .edit-modal {
   max-width: 500px;
-  max-height: 95vh;
+  max-height: 90vh;
 }
 
 .edit-cover-section {
