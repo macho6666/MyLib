@@ -1003,7 +1003,7 @@ async function uploadCoverBackground(folderId, file, seriesIndex) {
 }));
         }
         
-        showToast('커버 업로드 중... (백그라운드)', 3000);
+        showToast('Uploading cover... (background)', 3000);
         
         // Base64 변환
         var base64 = await fileToBase64(file);
@@ -1028,7 +1028,7 @@ async function uploadCoverBackground(folderId, file, seriesIndex) {
             updateSeriesCard(seriesIndex);
         }
         
-        showToast('커버 업로드 완료!', 2000);
+        showToast('Cover uploaded!', 2000);
         
         // Tampermonkey 로그 - 완료
         if (window.dispatchEvent) {
@@ -1042,7 +1042,7 @@ window.dispatchEvent(new CustomEvent('COVER_UPLOAD_COMPLETE', {
         
     } catch (error) {
         console.error('🖼️ 커버 업로드 실패:', error);
-        showToast('커버 업로드 실패: ' + error.message, 5000);
+        showToast('Cover upload failed: ' + error.message, 5000);
         
         // Tampermonkey 로그 - 실패
         if (window.dispatchEvent) {
@@ -1277,7 +1277,7 @@ async function refreshEpisodeCache(seriesId, title) {
         var books = await API.request('view_refresh_cache', { seriesId: seriesId });
         document.querySelector('#episodeModal .modal-title').innerText = title + ' (' + (books ? books.length : 0) + ')';
         renderEpisodeList(books, seriesId, title);
-        showToast('캐시 재생성 완료');
+        showToast('Cache rebuilt');
     } catch (e) {
         listEl.innerHTML = '<div style="padding:20px; color:var(--danger);">오류: ' + e.message + '</div>';
     }
@@ -1295,17 +1295,17 @@ function openEpisodeEdit(index) {
     if (newName === null || newName.trim() === '' || newName.trim() === nameOnly) return;
 
     var fullName = newName.trim() + ext;
-    showToast("이름 변경 중...", 3000);
+    showToast("Renaming...", 3000);
 
     API.request('view_rename_file', {
         fileId: book.id,
         newName: fullName,
         seriesId: _currentSeriesId
     }).then(function() {
-        showToast('파일 이름 변경 완료');
+        showToast('File renamed');
         refreshEpisodeCache(_currentSeriesId, _currentSeriesTitle);
     }).catch(function(e) {
-        showToast('수정 실패: ' + e.message, 5000);
+        showToast('Update failed: ' + e.message, 5000);
     });
 }
 
