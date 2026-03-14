@@ -684,36 +684,31 @@ function renderSinglePage(pageEl, pageData, pageNumber, side) {
                 '</div>';
             break;
 
-        case 'cover':
-            contentDiv.id = 'coverPlaceholder2Page';
-            contentDiv.style.display = 'flex';
-            contentDiv.style.flexDirection = 'column';
-            contentDiv.style.alignItems = 'center';
-            contentDiv.style.justifyContent = 'center';
+case 'cover':
+    contentDiv.id = 'coverPlaceholder2Page';
+    contentDiv.style.display = 'flex';
+    contentDiv.style.flexDirection = 'column';
+    contentDiv.style.alignItems = 'center';
+    contentDiv.style.justifyContent = 'center';
 
-            if (pageData.coverUrl && coverLoaded) {
-                contentDiv.innerHTML =
-                    '<img src="' + pageData.coverUrl + '" alt="cover" ' +
-                    'style="max-width: 90%; max-height: 90%; object-fit: contain; ' +
-                    'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">';
-            } else if (pageData.coverUrl) {
-                contentDiv.innerHTML =
-                    '<div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">' +
-                        '<div class="cover-spinner" style="' +
-                        'width: 40px; height: 40px; ' +
-                        'border: 3px solid var(--border-color, #2a2a2a); ' +
-                        'border-top-color: var(--accent, #71717a); ' +
-                        'border-radius: 50%; ' +
-                        'animation: spin 0.8s linear infinite;"></div>' +
-                        '<p style="margin: 0; font-size: 14px; color: var(--text-tertiary, #666);">이미지 불러오는 중...</p>' +
-                    '</div>';
-            } else {
-                contentDiv.innerHTML =
-                    '<div style="text-align: center; color: var(--text-tertiary, #666);">' +
-                        '<p style="font-size: 14px;">No Cover</p>' +
-                    '</div>';
-            }
-            break;
+    if (pageData.coverUrl && coverLoaded) {
+        contentDiv.innerHTML =
+            '<img src="' + pageData.coverUrl + '" alt="cover" ' +
+            'style="max-width: 90%; max-height: 90%; object-fit: contain; ' +
+            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">';
+    } else {
+        contentDiv.innerHTML =
+            '<div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">' +
+                '<div class="cover-spinner" style="' +
+                'width: 40px; height: 40px; ' +
+                'border: 3px solid var(--border-color, #2a2a2a); ' +
+                'border-top-color: var(--accent, #71717a); ' +
+                'border-radius: 50%; ' +
+                'animation: spin 0.8s linear infinite;"></div>' +
+                '<p style="margin: 0; font-size: 14px; color: var(--text-tertiary, #666);">이미지 불러오는 중...</p>' +
+            '</div>';
+    }
+    break;
 
         case 'text':
             contentDiv.innerHTML = formatText(pageData.content);
