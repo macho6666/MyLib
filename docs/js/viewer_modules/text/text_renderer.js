@@ -179,6 +179,18 @@ export function updateCoverImage(coverUrl) {
     }
     
     currentMetadata.coverUrl = coverUrl;
+    
+    // ✅ 2페이지 모드: _pages의 cover 데이터도 업데이트
+    var container = document.getElementById('textViewerContainer');
+    if (container && container._pages) {
+        for (var i = 0; i < container._pages.length; i++) {
+            if (container._pages[i].type === 'cover') {
+                container._pages[i].coverUrl = coverUrl;
+                break;
+            }
+        }
+    }
+    
     coverLoaded = false;
     loadCoverBackground(coverUrl);
 }
