@@ -102,6 +102,7 @@ export async function renderTxt(textContent, metadata) {
     window.onTextThemeChange = onThemeChange;
     window.scrollToProgress = scrollToProgress;
     window.updateCoverImage = updateCoverImage;
+    window._renderSpread = renderSpread;
     window.rerenderTextContent = function() {
         var currentProgress = TextViewerState.scrollProgress || 0;
         renderContent();
@@ -110,17 +111,11 @@ export async function renderTxt(textContent, metadata) {
 
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
 
-    var saved = localStorage.getItem('progress_' + metadata.seriesId);
-    if (saved) {
-        var progressData = JSON.parse(saved);
-        var bookProgress = progressData[metadata.bookId];
-        if (bookProgress && bookProgress.progress > 0) {
-            requestAnimationFrame(function() {
-                scrollToProgress(bookProgress.progress);
-            });
-        }
+requestAnimationFrame(function() {
+    if (window.restoreBookmark) {
+        window.restoreBookmark(metadata.seriesId, metadata.bookId);
     }
-
+});
     Events.emit('text:open', { bookId: metadata.bookId, metadata: metadata });
     console.log('📖 TXT Viewer opened (' + (performance.now() - renderStart).toFixed(0) + 'ms)');
 }
@@ -580,6 +575,8 @@ function renderSpread(spreadIndex) {
     renderSinglePage(rightPage, pages[rightIdx], rightIdx + 1, 'right');
 
     currentSpreadIndex = spreadIndex;
+    TextViewerState.currentSpreadIndex = spreadIndex;  // ✅ 추가
+
     var progress = totalSpreads > 1 ? Math.round((spreadIndex / (totalSpreads - 1)) * 100) : 100;
     updateProgressIndicator(progress);
 
