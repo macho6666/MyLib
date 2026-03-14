@@ -3,7 +3,7 @@
  * TXT 렌더링 (스크롤/클릭 모드, 1페이지/2페이지 레이아웃)
  * ✅ Cover 공간 무조건 생성 + 백그라운드 로드
  * ✅ 외부에서 Cover 업데이트 가능
- * ✅ 모드/여백 변경 시 위치 유지
+ * ✅ 모드/여백 변경 시 charIndex 기반 위치 유지
  */
 
 import { TextViewerState, setCurrentPage } from './text_state.js';
@@ -28,6 +28,38 @@ var coverLoaded = false;
 var pendingCoverUrl = null;
 
 // ═══════════════════════════════════════
+// 현재 위치를 charIndex로 가져오기
+// ═══════════════════════════════════════
+
+function getCurrentCharIndex() {
+    var textContent = window.currentTextContent || '';
+    var container = document.getElementById('textViewerContainer');
+    if (!container || textContent.length === 0) return 0;
+
+    if (pageLayout === '2page') {
+        var pages = container._pages || [];
+        var spreadIndex = currentSpreadIndex || 0;
+        var leftIdx = spreadIndex * 2;
+        var totalChars = 0;
+
+        for (var i = 0; i < leftIdx && i < pages.length; i++) {
+            if (pages[i].type === 'text' && pages[i].content) {
+                totalChars += pages[i].content.length;
+            }
+        }
+        return totalChars;
+    } else {
+        var scrollTop = container.scrollTop;
+        var scrollHeight = container.scrollHeight - container.clientHeight;
+        if (scrollHeight > 0) {
+            var ratio = scrollTop / scrollHeight;
+            return Math.floor(textContent.length * ratio);
+        }
+        return 0;
+    }
+}
+
+// ═══════════════════════════════════════
 // 메인 진입점
 // ═══════════════════════════════════════
 
@@ -42,7 +74,6 @@ export async function renderTxt(textContent, metadata) {
     window.currentTextContent = textContent;
     currentMetadata = metadata;
     
-    // ✅ 커버가 렌더러보다 먼저 로드됐으면 적용
     var hasPendingCover = false;
     if (pendingCoverUrl) {
         console.log('📸 Applying pending cover:', pendingCoverUrl);
@@ -80,7 +111,6 @@ export async function renderTxt(textContent, metadata) {
 
     renderContent();
     
-    // ✅ 여기에 추가 - 커버 백그라운드 로드
     if (currentMetadata.coverUrl && !coverLoaded) {
         loadCoverBackground(currentMetadata.coverUrl);
     } else if (hasPendingCover && currentMetadata.coverUrl) {
@@ -104,21 +134,35 @@ export async function renderTxt(textContent, metadata) {
     window.updateCoverImage = updateCoverImage;
     window._renderSpread = renderSpread;
     window.rerenderTextContent = function() {
-        var currentProgress = TextViewerState.scrollProgress || 0;
+        var savedCharIndex = getCurrentCharIndex();
         renderContent();
-        restorePosition(currentProgress);
+        restorePosition(savedCharIndex);
     };
 
     startAutoSave(metadata.seriesId, metadata.bookId, 10000);
 
-setTimeout(function() {
-    if (window.restoreBookmark) {
-        window.restoreBookmark(metadata.seriesId, metadata.bookId);
-    }
-}, 300);
+    // ✅ 북마크 복원: charIndex 우선, fallback %
+    setTimeout(function() {
+        var saved = localStorage.getItem('progress_' + metadata.seriesId);
+        if (saved) {
+            var progressData = JSON.parse(saved);
+            var bookProgress = progressData[metadata.bookId];
+            if (bookProgress && bookProgress.charIndex > 0) {
+                restorePosition(bookProgress.charIndex);
+            } else if (bookProgress && bookProgress.progress > 0) {
+                var c = document.getElementById('textViewerContainer');
+                if (c) {
+                    var scrollHeight = c.scrollHeight - c.clientHeight;
+                    c.scrollTop = (bookProgress.progress / 100) * scrollHeight;
+                }
+            }
+        }
+    }, 100);
+
     Events.emit('text:open', { bookId: metadata.bookId, metadata: metadata });
     console.log('📖 TXT Viewer opened (' + (performance.now() - renderStart).toFixed(0) + 'ms)');
 }
+
 // ═══════════════════════════════════════
 // Cover 업데이트 (외부에서 호출)
 // ═══════════════════════════════════════
@@ -128,7 +172,6 @@ export function updateCoverImage(coverUrl) {
     
     console.log('📸 updateCoverImage:', coverUrl);
     
-    // 렌더러 아직 준비 안 됐으면 저장해두기
     if (!currentMetadata) {
         pendingCoverUrl = coverUrl;
         console.log('📸 Pending (renderer not ready)');
@@ -139,6 +182,7 @@ export function updateCoverImage(coverUrl) {
     coverLoaded = false;
     loadCoverBackground(coverUrl);
 }
+
 export function updateCoverFailed() {
     console.log('📸 Cover load failed');
 
@@ -172,7 +216,6 @@ function loadCoverBackground(coverUrl) {
     img.onload = function() {
         coverLoaded = true;
 
-        // 1페이지 모드
         var ph1 = document.getElementById('coverPlaceholder1Page');
         if (ph1) {
             ph1.innerHTML = '';
@@ -187,7 +230,6 @@ function loadCoverBackground(coverUrl) {
             requestAnimationFrame(function() { coverImg.style.opacity = '1'; });
         }
 
-        // 2페이지 모드
         var ph2 = document.getElementById('coverPlaceholder2Page');
         if (ph2) {
             renderSpread(currentSpreadIndex);
@@ -208,19 +250,39 @@ function loadCoverBackground(coverUrl) {
 }
 
 // ═══════════════════════════════════════
-// 위치 복원
+// 위치 복원 (charIndex 기반)
 // ═══════════════════════════════════════
 
-function restorePosition(progress) {
+function restorePosition(charIndex) {
+    var textContent = window.currentTextContent || '';
+    if (textContent.length === 0 || charIndex <= 0) return;
+
     if (pageLayout === '2page') {
-        var spreadIndex = Math.round((progress / 100) * (totalSpreads - 1));
-        renderSpread(Math.max(0, Math.min(spreadIndex, totalSpreads - 1)));
+        var container = document.getElementById('textViewerContainer');
+        var pages = container ? container._pages : [];
+        var totalChars = 0;
+        var targetSpread = 0;
+
+        for (var i = 0; i < pages.length; i++) {
+            if (pages[i].type === 'text' && pages[i].content) {
+                totalChars += pages[i].content.length;
+                if (totalChars >= charIndex) {
+                    targetSpread = Math.floor(i / 2);
+                    break;
+                }
+            }
+        }
+        renderSpread(targetSpread);
     } else {
         var container = document.getElementById('textViewerContainer');
         if (container) {
-            requestAnimationFrame(function() {
-                container.scrollTop = (progress / 100) * (container.scrollHeight - container.clientHeight);
-            });
+            setTimeout(function() {
+                var scrollHeight = container.scrollHeight - container.clientHeight;
+                if (scrollHeight > 0 && textContent.length > 0) {
+                    var ratio = Math.min(1, charIndex / textContent.length);
+                    container.scrollTop = scrollHeight * ratio;
+                }
+            }, 50);
         }
     }
 }
@@ -381,47 +443,44 @@ function create1PageContent(container, textContent, metadata) {
         'font-size: 18px; line-height: 1.9; word-break: keep-all; letter-spacing: 0.3px;' +
         'box-sizing: border-box; overflow-x: hidden; width: 100%;';
 
- // ✅ Cover 공간 무조건 생성
-var coverDiv = document.createElement('div');
-coverDiv.id = 'coverPlaceholder1Page';
-coverDiv.style.cssText =
-    'display: flex; flex-direction: column; align-items: center; ' +
-    'justify-content: center; min-height: calc(100vh - 100px); ' +
-    'padding: 20px; box-sizing: border-box; margin-bottom: 20px;';
+    var coverDiv = document.createElement('div');
+    coverDiv.id = 'coverPlaceholder1Page';
+    coverDiv.style.cssText =
+        'display: flex; flex-direction: column; align-items: center; ' +
+        'justify-content: center; min-height: calc(100vh - 100px); ' +
+        'padding: 20px; box-sizing: border-box; margin-bottom: 20px;';
 
-if (metadata.coverUrl && coverLoaded) {
-    // 이미 로드 완료된 경우 (리렌더 시)
-    var coverImg = document.createElement('img');
-    coverImg.src = metadata.coverUrl;
-    coverImg.alt = 'cover';
-    coverImg.style.cssText =
-        'max-width: 90%; max-height: 70vh; object-fit: contain; ' +
-        'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
-    coverDiv.appendChild(coverImg);
-} else {
-    // ✅ 항상 스피너 (커버 로딩 중)
-    var spinnerWrap = document.createElement('div');
-    spinnerWrap.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 16px;';
+    if (metadata.coverUrl && coverLoaded) {
+        var coverImg = document.createElement('img');
+        coverImg.src = metadata.coverUrl;
+        coverImg.alt = 'cover';
+        coverImg.style.cssText =
+            'max-width: 90%; max-height: 70vh; object-fit: contain; ' +
+            'border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+        coverDiv.appendChild(coverImg);
+    } else {
+        var spinnerWrap = document.createElement('div');
+        spinnerWrap.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 16px;';
 
-    var spinner = document.createElement('div');
-    spinner.className = 'cover-spinner';
-    spinner.style.cssText =
-        'width: 40px; height: 40px; ' +
-        'border: 3px solid var(--border-color, #2a2a2a); ' +
-        'border-top-color: var(--accent, #71717a); ' +
-        'border-radius: 50%; ' +
-        'animation: spin 0.8s linear infinite;';
+        var spinner = document.createElement('div');
+        spinner.className = 'cover-spinner';
+        spinner.style.cssText =
+            'width: 40px; height: 40px; ' +
+            'border: 3px solid var(--border-color, #2a2a2a); ' +
+            'border-top-color: var(--accent, #71717a); ' +
+            'border-radius: 50%; ' +
+            'animation: spin 0.8s linear infinite;';
 
-    var loadingText = document.createElement('p');
-    loadingText.style.cssText = 'margin: 0; font-size: 14px; color: var(--text-tertiary, #666);';
-    loadingText.textContent = '이미지 불러오는 중...';
+        var loadingText = document.createElement('p');
+        loadingText.style.cssText = 'margin: 0; font-size: 14px; color: var(--text-tertiary, #666);';
+        loadingText.textContent = '이미지 불러오는 중...';
 
-    spinnerWrap.appendChild(spinner);
-    spinnerWrap.appendChild(loadingText);
-    coverDiv.appendChild(spinnerWrap);
-}
+        spinnerWrap.appendChild(spinner);
+        spinnerWrap.appendChild(loadingText);
+        coverDiv.appendChild(spinnerWrap);
+    }
 
-content.appendChild(coverDiv);
+    content.appendChild(coverDiv);
 
     var separator = document.createElement('hr');
     separator.id = 'coverSeparator1Page';
@@ -575,7 +634,7 @@ function renderSpread(spreadIndex) {
     renderSinglePage(rightPage, pages[rightIdx], rightIdx + 1, 'right');
 
     currentSpreadIndex = spreadIndex;
-    TextViewerState.currentSpreadIndex = spreadIndex;  // ✅ 추가
+    TextViewerState.currentSpreadIndex = spreadIndex;
 
     var progress = totalSpreads > 1 ? Math.round((spreadIndex / (totalSpreads - 1)) * 100) : 100;
     updateProgressIndicator(progress);
@@ -842,11 +901,11 @@ function setupScrollTracking(container, metadata) {
 }
 
 // ═══════════════════════════════════════
-// 모드/레이아웃 변경 (위치 유지)
+// 모드/레이아웃 변경 (charIndex 기반 위치 유지)
 // ═══════════════════════════════════════
 
 function setReadMode(mode) {
-    var currentProgress = TextViewerState.scrollProgress || 0;
+    var savedCharIndex = getCurrentCharIndex();
 
     readMode = mode || (readMode === 'scroll' ? 'click' : 'scroll');
     localStorage.setItem('mylib_text_readmode', readMode);
@@ -858,18 +917,19 @@ function setReadMode(mode) {
     if (pageLayout === '2page') apply2PageTheme();
     updateReadModeUI();
 
-    restorePosition(currentProgress);
+    restorePosition(savedCharIndex);
 
     if (window.showToast) window.showToast(readMode === 'scroll' ? 'Scroll Mode' : 'Click Mode');
 }
 
 function setTextLayout(layout) {
-    var currentProgress = TextViewerState.scrollProgress || 0;
+    var savedCharIndex = getCurrentCharIndex();
+
     pageLayout = layout;
     localStorage.setItem('text_layout', layout);
 
     renderContent();
-    restorePosition(currentProgress);
+    restorePosition(savedCharIndex);
 
     if (window.showToast) window.showToast(layout === '2page' ? '2 Page Mode' : '1 Page Mode');
 }
@@ -896,7 +956,16 @@ export function scrollToPosition(position) {
 }
 
 export function scrollToProgress(percent) {
-    restorePosition(percent);
+    var textContent = window.currentTextContent || '';
+    if (textContent.length > 0) {
+        var charIndex = Math.floor(textContent.length * (percent / 100));
+        restorePosition(charIndex);
+    } else {
+        var container = document.getElementById('textViewerContainer');
+        if (container) {
+            container.scrollTop = (percent / 100) * (container.scrollHeight - container.clientHeight);
+        }
+    }
 }
 
 // ═══════════════════════════════════════
@@ -1134,6 +1203,7 @@ export function cleanupTextRenderer() {
     delete window.setTextLayout; delete window.getTextLayout;
     delete window.onTextThemeChange; delete window.scrollToProgress;
     delete window.updateCoverImage; delete window.rerenderTextContent;
+    delete window._renderSpread;
 }
 
 function escapeHtml(text) {
