@@ -43,37 +43,39 @@
       <div class="sidebar-item" data-tab="Manga" onclick="switchTab('Manga')">Comic</div>
       <div class="sidebar-item" data-tab="Completed" onclick="switchTab('Completed')">Completed</div>
     </div>
-    <div class="sidebar-divider"></div>
-
-<div class="sidebar-section">
-  <div class="sidebar-item" onclick="sortByDate()">Sort by Date</div>
-  <div class="sidebar-item" onclick="sortByName()">Sort by Name</div>
-  <div class="sidebar-item" onclick="shuffleCards()">Shuffle</div>
-</div>
 
     <div class="sidebar-divider"></div>
 
-<div class="sidebar-section">
-  <div class="sidebar-item" onclick="toggleAdultFilter()">
-    <span>Adult</span>
-    <span class="toggle-switch" id="adultToggle"></span>
+    <div class="sidebar-section">
+      <div class="sidebar-item" onclick="sortByDate()">Sort by Date</div>
+      <div class="sidebar-item" onclick="sortByName()">Sort by Name</div>
+      <div class="sidebar-item" onclick="shuffleCards()">Shuffle</div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-item" onclick="toggleAdultFilter()">
+        <span>Adult</span>
+        <span class="toggle-switch" id="adultToggle"></span>
+      </div>
+      <div class="sidebar-item" onclick="showFavorites()">Favorites</div>
+      <div class="sidebar-item" onclick="showTags()">Tags</div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section" id="tagSection" style="display:none;">
+      <div class="sidebar-section-title">Tags</div>
+      <div id="sidebarTagList" class="sidebar-tag-list"></div>
+    </div>
+    <div class="sidebar-divider" id="tagDivider" style="display:none;"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title" onclick="showCalendar()" style="cursor:pointer;">Calendar</div>
+    </div>
   </div>
-  <div class="sidebar-item" onclick="showFavorites()">Favorites</div>
-  <div class="sidebar-item" onclick="showTags()">Tags</div>
-</div>
 
-<div class="sidebar-divider"></div>
-
-<div class="sidebar-section" id="tagSection" style="display:none;">
-  <div class="sidebar-section-title">Tags</div>
-  <div id="sidebarTagList" class="sidebar-tag-list"></div>
-</div>
-<div class="sidebar-divider" id="tagDivider" style="display:none;"></div>
-
-<div class="sidebar-section">
-  <div class="sidebar-section-title" onclick="showCalendar()" style="cursor:pointer;">Calendar</div>
-</div>
-    
   <div class="sidebar-divider"></div>
   <div class="sidebar-section" style="padding: 8px;">
     <div class="sidebar-item accordion-header" onclick="toggleSettingsAccordion()">
@@ -91,7 +93,6 @@
 </div>
 
 <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
-  </div>
 
   <div class="app-container">
     <header>
