@@ -232,6 +232,7 @@ async function refreshDB(forceId, silent, bypassCache) {
         }
 
         allSeries = seriesList;
+        applySavedSort();
         renderGrid(allSeries);
         showToast("Library loaded");
 
@@ -246,6 +247,9 @@ async function refreshDB(forceId, silent, bypassCache) {
 
 // ===== 그리드 렌더링 =====
 function renderGrid(seriesList) {
+    if (originalSeriesOrder.length === 0 && seriesList.length > 0) {
+    originalSeriesOrder = seriesList.map(function(s) { return s.id; });
+    }
     var grid = document.getElementById('grid');
     var calendarPage = document.getElementById('calendarPage');
     
@@ -424,7 +428,100 @@ function updateAdultToggle() {
         }
     }
 }
+// ===== View 정렬 =====
+let originalSeriesOrder = [];
 
+function saveOriginalOrder() {
+    if (originalSeriesOrder.length === 0) {
+        originalSeriesOrder = allSeries.map(function(s) { return s.id; });
+    }
+}
+
+function sortByDate() {
+    saveOriginalOrder();
+    
+    // 원래 순서로 복원 (GAS에서 받아온 순서 = 날짜순)
+    var orderMap = {};
+    originalSeriesOrder.forEach(function(id, index) {
+        orderMap[id] = index;
+    });
+    
+    allSeries.sort(function(a, b) {
+        return (orderMap[a.id] || 0) - (orderMap[b.id] || 0);
+    });
+    
+    localStorage.setItem('mylib_sort_type', 'date');
+    localStorage.removeItem('mylib_shuffle_order');
+    
+    renderGrid(allSeries);
+    toggleSidebar();
+    showToast('Sorted by Date');
+}
+
+function sortByName() {
+    saveOriginalOrder();
+    
+    allSeries.sort(function(a, b) {
+        return (a.name || '').localeCompare(b.name || '', 'ko');
+    });
+    
+    localStorage.setItem('mylib_sort_type', 'name');
+    localStorage.removeItem('mylib_shuffle_order');
+    
+    renderGrid(allSeries);
+    toggleSidebar();
+    showToast('Sorted by Name');
+}
+
+function shuffleCards() {
+    saveOriginalOrder();
+    
+    // Fisher-Yates 셔플
+    for (var i = allSeries.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = allSeries[i];
+        allSeries[i] = allSeries[j];
+        allSeries[j] = temp;
+    }
+    
+    // 셔플된 순서 저장
+    var shuffledOrder = allSeries.map(function(s) { return s.id; });
+    localStorage.setItem('mylib_sort_type', 'shuffle');
+    localStorage.setItem('mylib_shuffle_order', JSON.stringify(shuffledOrder));
+    
+    renderGrid(allSeries);
+    toggleSidebar();
+    showToast('Shuffled');
+}
+
+function applySavedSort() {
+    var sortType = localStorage.getItem('mylib_sort_type');
+    
+    if (sortType === 'name') {
+        allSeries.sort(function(a, b) {
+            return (a.name || '').localeCompare(b.name || '', 'ko');
+        });
+    } else if (sortType === 'shuffle') {
+        var savedOrder = JSON.parse(localStorage.getItem('mylib_shuffle_order') || '[]');
+        if (savedOrder.length > 0) {
+            var orderMap = {};
+            savedOrder.forEach(function(id, index) {
+                orderMap[id] = index;
+            });
+            allSeries.sort(function(a, b) {
+                var aIdx = orderMap[a.id] !== undefined ? orderMap[a.id] : 9999;
+                var bIdx = orderMap[b.id] !== undefined ? orderMap[b.id] : 9999;
+                return aIdx - bIdx;
+            });
+        }
+    }
+    // date는 기본 순서라 별도 처리 불필요
+}
+
+// Window 등록
+window.sortByDate = sortByDate;
+window.sortByName = sortByName;
+window.shuffleCards = shuffleCards;
 // ===== 태그 관리 =====
 function showTags() {
     renderTagsList();
